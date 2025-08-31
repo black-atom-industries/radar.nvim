@@ -1,5 +1,5 @@
 if vim.g.loaded_radar then
-	return
+  return
 end
 
 vim.g.loaded_radar = true
