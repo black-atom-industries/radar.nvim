@@ -1,23 +1,29 @@
 # radar.nvim
 
-> Navigate your files at the speed of thought - like a fighter pilot's radar display
+> Navigate your files like a fighter pilot.
 
 A Neovim plugin that treats file navigation like a fighter pilot's radar system. Your most important files are "locked targets" that you can instantly access, while other files appear as "blips" on your radar for quick identification and engagement.
 
-## 🎯 Core Philosophy
+## ✨ Concept
 
-radar.nvim provides **instant access** to your working files through spatial keyboard shortcuts, eliminating the need for fuzzy finders or file trees for your active working set.
-
-## ✨ Current Features (v0.5)
+`radar.nvim` provides **instant access** to your working files through spatial keyboard shortcuts, eliminating the need for fuzzy finders or file trees for your active working set.
 
 - **📍 File Pinning**: Lock your most important files to slots 1-9 for instant access
 - **🎯 Smart Persistence**: Context-aware storage per project and git branch
 - **⚡ Dynamic Highlighting**: Auto-highlight the currently active pinned file
 - **🛡️ Robust Error Handling**: Graceful handling of special characters and edge cases
 
-## 🚀 Future Vision (v1.0)
+See also [Concept](./docs/concept.md)
 
-radar.nvim will expand into a comprehensive navigation system with four file categories:
+**Mini** Radar
+
+![](./assets/mini.png)
+
+**Full** Radar
+
+![](./assets/full.png)
+
+**Keybindings**
 
 ```
 [1][2][3][4][5][6][7][8][9]  ← Loks (manually locked targets)
