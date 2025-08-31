@@ -283,13 +283,6 @@ function M:is_current_file_pinned()
   return is_pinned
 end
 
-vim.api.nvim_create_autocmd("BufEnter", {
-  group = vim.api.nvim_create_augroup("pins_read", { clear = true }),
-  callback = function()
-    M:highlight_active_pin()
-  end,
-})
-
 ---@param label string
 function M:open_pin(label)
   local pin = self.state.get_pin_from_label(tostring(label))
@@ -443,5 +436,19 @@ function M.setup(opts)
 
   _G.Pins = M
 end
+
+vim.api.nvim_create_autocmd("BufEnter", {
+  group = vim.api.nvim_create_augroup("radar.BufEnter", { clear = true }),
+  callback = function()
+    M:highlight_active_pin()
+  end,
+})
+
+vim.api.nvim_create_autocmd("VimResized", {
+  group = vim.api.nvim_create_augroup("radar.VimResized", { clear = true }),
+  callback = function()
+    M:update_board()
+  end,
+})
 
 return M
