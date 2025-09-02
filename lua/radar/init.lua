@@ -87,6 +87,11 @@ function M:write(path, tbl)
     assert(vim.uv.fs_close(fd))
   end)
 
+  -- Format with prettier if available and it's a JSON file
+  if ok and vim.fn.executable("prettier") == 1 then
+    vim.fn.system("prettier --write " .. vim.fn.shellescape(path))
+  end
+
   return ok
 end
 
