@@ -10,9 +10,10 @@ M.config = {
     prefix = "<space>",
     lock = ",<space>",
     locks = { "1", "2", "3", "4", "5", "6", "7", "8", "9" }, -- num row
-    modified = { "q", "w", "e", "r", "t" }, -- upper row
-    recent = { "a", "s", "d", "f", "g" }, -- home row
-    pr_files = { "z", "x", "c", "v", "b" }, -- bottom row
+    -- Future radar features:
+    -- modified = { "q", "w", "e", "r", "t" }, -- upper row
+    -- recent = { "a", "s", "d", "f", "g" }, -- home row
+    -- pr_files = { "z", "x", "c", "v", "b" }, -- bottom row
   },
 
   -- See :h filename-modifiers
@@ -205,7 +206,7 @@ function M:persist()
 end
 
 function M:populate()
-  local data = self:read(self:get_data_file_path())
+  local data = self:load()
 
   if data ~= nil then
     local project_path = M:get_project_path()
@@ -272,20 +273,6 @@ function M:lock(buf_nr)
   end
 end
 
-function M:is_current_file_locked()
-  local current_file = self:get_current_filename()
-
-  local is_locked = false
-
-  for _, lock in ipairs(self.state.locks) do
-    if lock.filename == current_file then
-      is_locked = true
-      break
-    end
-  end
-
-  return is_locked
-end
 
 ---@param label string
 function M:open_lock(label)
@@ -294,19 +281,6 @@ function M:open_lock(label)
   vim.cmd.edit(path)
 end
 
-function M:get_lock_for_current_file()
-  local filename = self:get_current_filename()
-
-  local lock_for_current_file
-  for _, lock in ipairs(self.state.locks) do
-    if lock.filename == filename then
-      lock_for_current_file = lock
-    else
-      lock_for_current_file = nil
-    end
-  end
-  return lock_for_current_file
-end
 
 ---@param path string
 ---@return string
@@ -321,7 +295,7 @@ function M:create_entries(locks)
   local entries = {}
 
   for _, lock in ipairs(locks) do
-    local path = vim.fn.fnamemodify(lock.filename, self.config.path_format)
+    local path = self:get_formatted_filepath(lock.filename)
     local entry = string.format("  [%s] %s  ", lock.label, path)
     table.insert(entries, entry)
   end
