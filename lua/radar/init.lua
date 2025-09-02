@@ -161,9 +161,10 @@ function M:get_persist_file_path()
 end
 
 function M:load()
-  local is_readable = vim.fn.filereadable(self.config.persist.path)
+  local file_path = self:get_persist_file_path()
+  local is_readable = vim.fn.filereadable(file_path)
   if is_readable == 1 then
-    return self:read(self.config.persist.path)
+    return self:read(file_path)
   else
     return nil
   end
@@ -259,9 +260,8 @@ function M:pin(buf_nr)
 
   if #M.state.pins == 0 and M:does_pin_board_exist() then
     vim.api.nvim_win_close(M.state.pin_board_win, true)
-  end
-
-  if not M:does_pin_board_exist() then
+    M.state.pin_board_win = nil
+  elseif not M:does_pin_board_exist() then
     M:create_board()
   else
     M:update_board()
@@ -397,6 +397,13 @@ function M:highlight_active_pin()
 end
 
 function M:update_board()
+  -- Close window if no pins left
+  if #self.state.pins == 0 and self:does_pin_board_exist() then
+    vim.api.nvim_win_close(self.state.pin_board_win, true)
+    self.state.pin_board_win = nil
+    return
+  end
+
   local pin_board_buf_id = self:get_board_bufid()
   if pin_board_buf_id == nil then
     return
