@@ -220,7 +220,7 @@ function M:populate()
     self.state.locks = locks
 
     if #locks > 0 then
-      M:create_board()
+      M:create_mini_radar()
     end
   end
 end
@@ -267,12 +267,11 @@ function M:lock(buf_nr)
     vim.api.nvim_win_close(M.state.mini_radar_winid, true)
     M.state.mini_radar_winid = nil
   elseif not M:does_mini_radar_exist() then
-    M:create_board()
+    M:create_mini_radar()
   else
-    M:update_board()
+    M:update_mini_radar()
   end
 end
-
 
 ---@param label string
 function M:open_lock(label)
@@ -280,7 +279,6 @@ function M:open_lock(label)
   local path = vim.fn.fnameescape(lock.filename)
   vim.cmd.edit(path)
 end
-
 
 ---@param path string
 ---@return string
@@ -313,7 +311,7 @@ function M:get_mini_radar_bufid()
   end
 end
 
-function M:create_board()
+function M:create_mini_radar()
   local entries = M:create_entries(self.state.locks)
 
   local new_buf_id = vim.api.nvim_create_buf(false, true)
@@ -374,7 +372,7 @@ function M:highlight_active_lock()
   end
 end
 
-function M:update_board()
+function M:update_mini_radar()
   -- Close window if no locks left
   if #self.state.locks == 0 and self:does_mini_radar_exist() then
     vim.api.nvim_win_close(self.state.mini_radar_winid, true)
@@ -442,7 +440,7 @@ vim.api.nvim_create_autocmd("BufEnter", {
 vim.api.nvim_create_autocmd("VimResized", {
   group = vim.api.nvim_create_augroup("radar.VimResized", { clear = true }),
   callback = function()
-    M:update_board()
+    M:update_mini_radar()
   end,
 })
 
