@@ -444,6 +444,11 @@ function M.setup(opts)
     end, { desc = "Open " .. label .. " Pin" })
   end
 
+  -- Temporary binding to edit the data file directly
+  vim.keymap.set("n", M.config.keys.prefix .. "e", function()
+    vim.cmd("vsplit " .. M:get_persist_file_path())
+  end, { desc = "Open radar data file" })
+
   M:populate()
 
   _G.Pins = M
