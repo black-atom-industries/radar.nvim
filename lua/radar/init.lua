@@ -1,14 +1,14 @@
 local M = {}
 
 M.constants = {
-  ns_mini_win = vim.api.nvim_create_namespace("radar.win.mini"),
+  ns_mini_radar = vim.api.nvim_create_namespace("radar.win.mini"),
 }
 
 ---@class Radar.Config
 M.config = {
   keys = {
     prefix = ",",
-    lock = ",,",
+    lock = ",l",
     locks = { "1", "2", "3", "4", "5", "6", "7", "8", "9" }, -- num row
     modified = { "q", "w", "e", "r", "t" }, -- upper row
     recent = { "a", "s", "d", "f", "g" }, -- home row
@@ -23,7 +23,7 @@ M.config = {
     width = 50,
     relative = "editor",
     anchor = "NW",
-    title = "📌 Pins",
+    title = "◎ RADAR",
     title_pos = "left",
     style = "minimal",
     border = "solid",
@@ -32,43 +32,42 @@ M.config = {
   },
 
   persist = {
-    -- Path to persist session data in
-    path = vim.fs.joinpath(vim.fn.stdpath("data"), "pins"),
+    folder = vim.fs.joinpath(vim.fn.stdpath("data"), "radar"),
     filename = "data.json",
   },
 }
 
----@class Pin
+---@class Radar.Lock
 ---@field label string
 ---@field filename string
 
----@class Pins.State
+---@class Radar.State
 M.state = {
-  ---@type Pin[]
-  pins = {},
-  pin_board_win = nil,
+  ---@type Radar.Lock[]
+  locks = {},
+  mini_radar_winid = nil,
   ---@param field "label" | "filename"
   ---@param value string
-  get_pin_by_field = function(field, value)
-    for _, p in ipairs(M.state.pins) do
-      if p[field] == value then
-        return p
+  get_lock_by_field = function(field, value)
+    for _, lock in ipairs(M.state.locks) do
+      if lock[field] == value then
+        return lock
       end
     end
   end,
   ---@param filename string
-  get_pin_from_filename = function(filename)
-    return M.state.get_pin_by_field("filename", filename)
+  get_lock_from_filename = function(filename)
+    return M.state.get_lock_by_field("filename", filename)
   end,
-  get_pin_from_label = function(label)
-    return M.state.get_pin_by_field("label", label)
+  get_lock_from_label = function(label)
+    return M.state.get_lock_by_field("label", label)
   end,
 }
 
-function M:get_next_unused_pin_label()
+function M:get_next_unused_lock_label()
   local used_labels = {}
-  for _, p in ipairs(self.state.pins) do
-    table.insert(used_labels, p.label)
+  for _, lock in ipairs(self.state.locks) do
+    table.insert(used_labels, lock.label)
   end
 
   for _, label in ipairs(self.config.keys.locks) do
@@ -77,7 +76,7 @@ function M:get_next_unused_pin_label()
     end
   end
 
-  error("No more pins available")
+  error("No more lock slots available")
 end
 
 function M:write(path, tbl)
@@ -108,35 +107,35 @@ function M:read(path)
 end
 
 ---@param filename string
----@returns Pin
-function M:add_pin(filename)
-  local next_free_pin_label = M:get_next_unused_pin_label()
+---@returns Radar.Lock
+function M:add_lock(filename)
+  local next_free_lock_label = M:get_next_unused_lock_label()
 
-  ---@type Pin
-  local pin = {
-    label = next_free_pin_label,
+  ---@type Radar.Lock
+  local lock = {
+    label = next_free_lock_label,
     filename = filename,
   }
 
-  table.insert(self.state.pins, pin)
-  return pin
+  table.insert(self.state.locks, lock)
+  return lock
 end
 
 ---@param filename string
----@return Pin
-function M:remove_pin(filename)
-  ---@type Pin
-  local removed_pin
+---@return Radar.Lock
+function M:remove_lock(filename)
+  ---@type Radar.Lock
+  local removed_lock
 
-  for i, p in ipairs(self.state.pins) do
-    if p.filename == filename then
-      removed_pin = p
-      table.remove(self.state.pins, i)
+  for i, lock in ipairs(self.state.locks) do
+    if lock.filename == filename then
+      removed_lock = lock
+      table.remove(self.state.locks, i)
       break
     end
   end
 
-  return removed_pin
+  return removed_lock
 end
 
 function M:get_project_path()
@@ -161,12 +160,12 @@ function M:get_git_branch()
   return sanitized_branch
 end
 
-function M:get_persist_file_path()
-  return self.config.persist.path .. "/" .. self.config.persist.filename
+function M:get_data_file_path()
+  return self.config.persist.folder .. "/" .. self.config.persist.filename
 end
 
 function M:load()
-  local file_path = self:get_persist_file_path()
+  local file_path = self:get_data_file_path()
   local is_readable = vim.fn.filereadable(file_path)
   if is_readable == 1 then
     return self:read(file_path)
@@ -186,7 +185,7 @@ function M:persist()
     data = {
       [project_path] = {
         [git_branch] = {
-          pins = self.state.pins,
+          locks = self.state.locks,
         },
       },
     }
@@ -194,60 +193,60 @@ function M:persist()
     data = vim.tbl_deep_extend("force", persisted_data, {
       [project_path] = {
         [git_branch] = {
-          pins = self.state.pins,
+          locks = self.state.locks,
         },
       },
     })
   end
 
-  vim.fn.mkdir(self.config.persist.path, "p")
-  self:write(self:get_persist_file_path(), data)
+  vim.fn.mkdir(self.config.persist.folder, "p")
+  self:write(self:get_data_file_path(), data)
   return data
 end
 
 function M:populate()
-  local data = self:read(self:get_persist_file_path())
+  local data = self:read(self:get_data_file_path())
 
   if data ~= nil then
     local project_path = M:get_project_path()
     local git_branch = M:get_git_branch()
-    local persisted_pins = vim.tbl_get(data, project_path, git_branch, "pins")
+    local locks = vim.tbl_get(data, project_path, git_branch, "locks")
 
-    if persisted_pins == nil then
+    if locks == nil then
       return
     end
 
-    self.state.pins = persisted_pins
+    self.state.locks = locks
 
-    if #persisted_pins > 0 then
+    if #locks > 0 then
       M:create_board()
     end
   end
 end
 
 ---@param filename string
----@return Pin
-function M:toggle_pin(filename)
-  local exists = self.state.get_pin_from_filename(filename)
+---@return Radar.Lock
+function M:toggle_lock(filename)
+  local exists = self.state.get_lock_from_filename(filename)
 
-  local pin
+  local lock
 
   if not exists then
-    pin = M:add_pin(filename)
+    lock = M:add_lock(filename)
   else
-    pin = M:remove_pin(filename)
+    lock = M:remove_lock(filename)
   end
 
   vim.defer_fn(function()
     self:persist()
   end, 500)
 
-  return pin
+  return lock
 end
 
-function M:does_pin_board_exist()
-  return self.state.pin_board_win
-    and vim.api.nvim_win_is_valid(self.state.pin_board_win)
+function M:does_mini_radar_exist()
+  return self.state.mini_radar_winid
+    and vim.api.nvim_win_is_valid(self.state.mini_radar_winid)
 end
 
 ---If no buf_nr is provided it uses its current buf
@@ -259,54 +258,54 @@ function M:get_current_filename(buf_nr)
 end
 
 ---@param buf_nr integer
-function M:pin(buf_nr)
+function M:lock(buf_nr)
   local filename = M:get_current_filename(buf_nr)
-  M:toggle_pin(filename)
+  M:toggle_lock(filename)
 
-  if #M.state.pins == 0 and M:does_pin_board_exist() then
-    vim.api.nvim_win_close(M.state.pin_board_win, true)
-    M.state.pin_board_win = nil
-  elseif not M:does_pin_board_exist() then
+  if #M.state.locks == 0 and M:does_mini_radar_exist() then
+    vim.api.nvim_win_close(M.state.mini_radar_winid, true)
+    M.state.mini_radar_winid = nil
+  elseif not M:does_mini_radar_exist() then
     M:create_board()
   else
     M:update_board()
   end
 end
 
-function M:is_current_file_pinned()
+function M:is_current_file_locked()
   local current_file = self:get_current_filename()
 
-  local is_pinned = false
+  local is_locked = false
 
-  for _, pin in ipairs(self.state.pins) do
-    if pin.filename == current_file then
-      is_pinned = true
+  for _, lock in ipairs(self.state.locks) do
+    if lock.filename == current_file then
+      is_locked = true
       break
     end
   end
 
-  return is_pinned
+  return is_locked
 end
 
 ---@param label string
-function M:open_pin(label)
-  local pin = self.state.get_pin_from_label(tostring(label))
-  local path = vim.fn.fnameescape(pin.filename)
+function M:open_lock(label)
+  local lock = self.state.get_lock_from_label(tostring(label))
+  local path = vim.fn.fnameescape(lock.filename)
   vim.cmd.edit(path)
 end
 
-function M:get_pin_for_current_file()
+function M:get_lock_for_current_file()
   local filename = self:get_current_filename()
 
-  local pin_for_current_file
-  for _, pin in ipairs(self.state.pins) do
-    if pin.filename == filename then
-      pin_for_current_file = pin
+  local lock_for_current_file
+  for _, lock in ipairs(self.state.locks) do
+    if lock.filename == filename then
+      lock_for_current_file = lock
     else
-      pin_for_current_file = nil
+      lock_for_current_file = nil
     end
   end
-  return pin_for_current_file
+  return lock_for_current_file
 end
 
 ---@param path string
@@ -315,23 +314,23 @@ function M:get_formatted_filepath(path)
   return vim.fn.fnamemodify(path, self.config.path_format)
 end
 
----Create formatted pin entries from pins
----@param pins Pin[]
+---Create formatted entries
+---@param locks Radar.Lock[]
 ---@return string[] -- ATTENTION: This does NOT generate a new array of objects, but just an array of strings
-function M:create_entries(pins)
+function M:create_entries(locks)
   local entries = {}
 
-  for _, p in ipairs(pins) do
-    local path = vim.fn.fnamemodify(p.filename, self.config.path_format)
-    local entry = string.format("  [%s] %s  ", p.label, path)
+  for _, lock in ipairs(locks) do
+    local path = vim.fn.fnamemodify(lock.filename, self.config.path_format)
+    local entry = string.format("  [%s] %s  ", lock.label, path)
     table.insert(entries, entry)
   end
 
   return entries
 end
 
-function M:get_board_bufid()
-  local win = self.state.pin_board_win
+function M:get_mini_radar_bufid()
+  local win = self.state.mini_radar_winid
 
   if win ~= nil and vim.api.nvim_win_is_valid(win) then
     return vim.api.nvim_win_get_buf(win)
@@ -341,7 +340,7 @@ function M:get_board_bufid()
 end
 
 function M:create_board()
-  local entries = M:create_entries(self.state.pins)
+  local entries = M:create_entries(self.state.locks)
 
   local new_buf_id = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_lines(new_buf_id, 0, -1, false, entries)
@@ -356,18 +355,18 @@ function M:create_board()
   })
 
   local win = vim.api.nvim_open_win(new_buf_id, false, win_opts)
-  M.state.pin_board_win = win
-  M:highlight_active_pin()
+  M.state.mini_radar_winid = win
+  M:highlight_active_lock()
 end
 
-function M:highlight_active_pin()
-  local pin_board_buf_id = self:get_board_bufid()
+function M:highlight_active_lock()
+  local lock_board_bufid = self:get_mini_radar_bufid()
 
-  if pin_board_buf_id == nil then
+  if lock_board_bufid == nil then
     return
   end
 
-  local lines = vim.api.nvim_buf_get_lines(pin_board_buf_id, 0, -1, false)
+  local lines = vim.api.nvim_buf_get_lines(lock_board_bufid, 0, -1, false)
 
   local curr_filepath = self:get_current_filename()
   local curr_formatted_filepath = self:get_formatted_filepath(curr_filepath)
@@ -378,8 +377,8 @@ function M:highlight_active_pin()
   end
 
   vim.api.nvim_buf_clear_namespace(
-    pin_board_buf_id,
-    self.constants.ns_mini_win,
+    lock_board_bufid,
+    self.constants.ns_mini_radar,
     0,
     -1
   )
@@ -387,8 +386,8 @@ function M:highlight_active_pin()
   for i, line in ipairs(lines) do
     if line:find(curr_formatted_filepath, 1, true) then
       vim.api.nvim_buf_set_extmark(
-        pin_board_buf_id,
-        self.constants.ns_mini_win,
+        lock_board_bufid,
+        self.constants.ns_mini_radar,
         i - 1,
         0,
         {
@@ -402,28 +401,28 @@ function M:highlight_active_pin()
 end
 
 function M:update_board()
-  -- Close window if no pins left
-  if #self.state.pins == 0 and self:does_pin_board_exist() then
-    vim.api.nvim_win_close(self.state.pin_board_win, true)
-    self.state.pin_board_win = nil
+  -- Close window if no locks left
+  if #self.state.locks == 0 and self:does_mini_radar_exist() then
+    vim.api.nvim_win_close(self.state.mini_radar_winid, true)
+    self.state.mini_radar_winid = nil
     return
   end
 
-  local pin_board_buf_id = self:get_board_bufid()
-  if pin_board_buf_id == nil then
+  local mini_radar_bufid = self:get_mini_radar_bufid()
+  if mini_radar_bufid == nil then
     return
   end
 
-  local entries = M:create_entries(self.state.pins)
+  local entries = M:create_entries(self.state.locks)
 
-  vim.api.nvim_buf_set_lines(pin_board_buf_id, 0, -1, false, entries)
-  vim.api.nvim_win_set_config(self.state.pin_board_win, {
+  vim.api.nvim_buf_set_lines(mini_radar_bufid, 0, -1, false, entries)
+  vim.api.nvim_win_set_config(self.state.mini_radar_winid, {
     relative = "editor",
-    height = #self.state.pins,
+    height = #self.state.locks,
     row = 1,
     col = math.floor((vim.o.columns - self.config.win.width) - 2),
   })
-  M:highlight_active_pin()
+  M:highlight_active_lock()
 end
 
 ---@param opts Radar.Config
@@ -432,32 +431,37 @@ function M.setup(opts)
   local merged_config = vim.tbl_deep_extend("force", M.config, opts)
   M.config = merged_config
 
-  vim.keymap.set("n", M.config.keys.lock, M.pin, { desc = "Pin the current buffer" })
+  vim.keymap.set(
+    "n",
+    M.config.keys.lock,
+    M.lock,
+    { desc = "Lock the current buffer" }
+  )
 
   vim.keymap.set("n", ";q", function()
-    vim.api.nvim_win_close(M.state.pin_board_win, true)
-  end, { desc = "Close Pins" })
+    vim.api.nvim_win_close(M.state.mini_radar_winid, true)
+  end, { desc = "Close Mini Radar" })
 
   for _, label in ipairs(M.config.keys.locks) do
     vim.keymap.set("n", M.config.keys.prefix .. label, function()
-      M:open_pin(label)
-    end, { desc = "Open " .. label .. " Pin" })
+      M:open_lock(label)
+    end, { desc = "Open " .. label .. " Lock" })
   end
 
   -- Temporary binding to edit the data file directly
   vim.keymap.set("n", M.config.keys.prefix .. "e", function()
-    vim.cmd("vsplit " .. M:get_persist_file_path())
+    vim.cmd("vsplit " .. M:get_data_file_path())
   end, { desc = "Open radar data file" })
 
   M:populate()
 
-  _G.Pins = M
+  _G.Radar = M
 end
 
 vim.api.nvim_create_autocmd("BufEnter", {
   group = vim.api.nvim_create_augroup("radar.BufEnter", { clear = true }),
   callback = function()
-    M:highlight_active_pin()
+    M:highlight_active_lock()
   end,
 })
 
