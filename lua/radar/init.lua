@@ -7,8 +7,8 @@ M.constants = {
 ---@class Radar.Config
 M.config = {
   keys = {
-    prefix = ",",
-    lock = ",l",
+    prefix = "<space>",
+    lock = ",<space>",
     locks = { "1", "2", "3", "4", "5", "6", "7", "8", "9" }, -- num row
     modified = { "q", "w", "e", "r", "t" }, -- upper row
     recent = { "a", "s", "d", "f", "g" }, -- home row
