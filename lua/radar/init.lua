@@ -4,7 +4,34 @@ M.constants = {
   ns_mini_radar = vim.api.nvim_create_namespace("radar.win.mini"),
 }
 
+---@class Radar.Config.Keys
+---@field prefix string
+---@field lock string
+---@field locks string[]
+
+---@class Radar.Config.Persist
+---@field folder string
+---@field filename string
+
 ---@class Radar.Config
+---@field keys Radar.Config.Keys
+---@field path_format string
+---@field win vim.api.keyset.win_config
+---@field persist Radar.Config.Persist
+
+---@class Radar.Lock
+---@field label string
+---@field filename string
+
+---@class Radar.ProjectData
+---@field locks Radar.Lock[]
+
+---@class Radar.BranchData
+---@field [string] Radar.ProjectData
+
+---@class Radar.PersistenceData
+---@field [string] Radar.BranchData
+
 M.config = {
   keys = {
     prefix = "<space>",
@@ -38,17 +65,15 @@ M.config = {
   },
 }
 
----@class Radar.Lock
----@field label string
----@field filename string
-
 ---@class Radar.State
 M.state = {
   ---@type Radar.Lock[]
   locks = {},
+  ---@type integer?
   mini_radar_winid = nil,
   ---@param field "label" | "filename"
   ---@param value string
+  ---@return Radar.Lock?
   get_lock_by_field = function(field, value)
     for _, lock in ipairs(M.state.locks) do
       if lock[field] == value then
@@ -57,14 +82,18 @@ M.state = {
     end
   end,
   ---@param filename string
+  ---@return Radar.Lock?
   get_lock_from_filename = function(filename)
     return M.state.get_lock_by_field("filename", filename)
   end,
+  ---@param label string
+  ---@return Radar.Lock?
   get_lock_from_label = function(label)
     return M.state.get_lock_by_field("label", label)
   end,
 }
 
+---@return string
 function M:get_next_unused_lock_label()
   local used_labels = {}
   for _, lock in ipairs(self.state.locks) do
@@ -80,6 +109,9 @@ function M:get_next_unused_lock_label()
   error("No more lock slots available")
 end
 
+---@param path string
+---@param tbl table
+---@return boolean
 function M:write(path, tbl)
   local ok, _ = pcall(function()
     local fd = assert(vim.uv.fs_open(path, "w", 438)) -- 438 = 0666
@@ -95,6 +127,8 @@ function M:write(path, tbl)
   return ok
 end
 
+---@param path string
+---@return Radar.PersistenceData?
 function M:read(path)
   local ok, content = pcall(function()
     local fd = assert(vim.uv.fs_open(path, "r", 438)) -- 438 = 0666
@@ -139,6 +173,7 @@ function M:remove_lock(filename)
   return removed_lock
 end
 
+---@return string?
 function M:get_project_path()
   local cwd = vim.uv.cwd()
 
@@ -151,6 +186,7 @@ function M:get_project_path()
 end
 
 -- TODO: Could not be a git project
+---@return string?
 function M:get_git_branch()
   local branch = vim.fn.systemlist("git branch --show-current")[1]
   if branch == "" then
@@ -161,10 +197,12 @@ function M:get_git_branch()
   return sanitized_branch
 end
 
+---@return string
 function M:get_data_file_path()
   return self.config.persist.folder .. "/" .. self.config.persist.filename
 end
 
+---@return Radar.PersistenceData?
 function M:load()
   local file_path = self:get_data_file_path()
   local is_readable = vim.fn.filereadable(file_path)
@@ -175,6 +213,7 @@ function M:load()
   end
 end
 
+---@return Radar.PersistenceData
 function M:persist()
   local project_path = M:get_project_path()
   local git_branch = M:get_git_branch()
@@ -205,6 +244,7 @@ function M:persist()
   return data
 end
 
+---@return nil
 function M:populate()
   local data = self:load()
 
@@ -245,9 +285,11 @@ function M:toggle_lock(filename)
   return lock
 end
 
+---@return boolean
 function M:does_mini_radar_exist()
   return self.state.mini_radar_winid
-    and vim.api.nvim_win_is_valid(self.state.mini_radar_winid)
+      and vim.api.nvim_win_is_valid(self.state.mini_radar_winid)
+    or false
 end
 
 ---If no buf_nr is provided it uses its current buf
@@ -258,7 +300,8 @@ function M:get_current_filename(buf_nr)
   return vim.api.nvim_buf_get_name(buf_nr)
 end
 
----@param buf_nr integer
+---@param buf_nr? integer
+---@return nil
 function M:lock(buf_nr)
   local filename = M:get_current_filename(buf_nr)
   M:toggle_lock(filename)
@@ -274,9 +317,20 @@ function M:lock(buf_nr)
 end
 
 ---@param label string
+---@return nil
 function M:open_lock(label)
   local lock = self.state.get_lock_from_label(tostring(label))
+
+  if lock == nil then
+    return
+  end
+
+  if not M:does_mini_radar_exist() then
+    M:create_mini_radar()
+  end
+
   local path = vim.fn.fnameescape(lock.filename)
+
   vim.cmd.edit(path)
 end
 
@@ -301,6 +355,7 @@ function M:create_entries(locks)
   return entries
 end
 
+---@return integer?
 function M:get_mini_radar_bufid()
   local win = self.state.mini_radar_winid
 
@@ -311,6 +366,7 @@ function M:get_mini_radar_bufid()
   end
 end
 
+---@return nil
 function M:create_mini_radar()
   local entries = M:create_entries(self.state.locks)
 
@@ -331,6 +387,7 @@ function M:create_mini_radar()
   M:highlight_active_lock()
 end
 
+---@return nil
 function M:highlight_active_lock()
   local lock_board_bufid = self:get_mini_radar_bufid()
 
@@ -372,6 +429,7 @@ function M:highlight_active_lock()
   end
 end
 
+---@return nil
 function M:update_mini_radar()
   -- Close window if no locks left
   if #self.state.locks == 0 and self:does_mini_radar_exist() then
@@ -397,7 +455,8 @@ function M:update_mini_radar()
   M:highlight_active_lock()
 end
 
----@param opts Radar.Config
+---@param opts? Radar.Config
+---@return nil
 function M.setup(opts)
   opts = opts or {}
   local merged_config = vim.tbl_deep_extend("force", M.config, opts)

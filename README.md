@@ -82,15 +82,18 @@ This is a **learning project** demonstrating:
 
 ## 📋 Roadmap
 
-### v0.5 (Current)
+### v0.5
 
 - [x] File pinning with 1-9 keybindings
 - [x] Context-aware persistence
 - [x] Dynamic highlighting
 - [x] Floating window UI
+- [ ] Remove mentions of `pin(s)`
+- [ ] Automatic Reorder of Labels after deleting entries
+- [ ] Make Mini.Radar an editable buffer
 - [ ] Recent files section (vim.v.oldfiles integration)
 
-### v1.0 (Planned)
+### v1.0
 
 - [ ] Modified files section (git integration)
 - [ ] PR files section (branch changes)
