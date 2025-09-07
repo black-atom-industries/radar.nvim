@@ -218,10 +218,10 @@ function M:edit_locks()
   self.state.edit_bufid = edit_buf
 
   -- Set buffer options
-  vim.api.nvim_buf_set_option(edit_buf, "buftype", "acwrite")
-  vim.api.nvim_buf_set_option(edit_buf, "filetype", "radar-edit")
+  vim.api.nvim_set_option_value("buftype", "acwrite", { buf = edit_buf })
+  vim.api.nvim_set_option_value("filetype", "radar-edit", { buf = edit_buf })
   vim.api.nvim_buf_set_name(edit_buf, "radar-locks")
-  vim.api.nvim_buf_set_option(edit_buf, "bufhidden", "wipe")
+  vim.api.nvim_set_option_value("bufhidden", "wipe", { buf = edit_buf })
 
   -- Create buffer lines: just the filepaths (labels assigned by line order)
   local lines = {}
@@ -380,7 +380,7 @@ function M:save_edit_buffer(edit_buf)
   self:update_mini_radar()
 
   -- Mark buffer as saved
-  vim.api.nvim_buf_set_option(edit_buf, "modified", false)
+  vim.api.nvim_set_option_value("modified", false, { buf = edit_buf })
   vim.notify("Locks saved successfully", vim.log.levels.INFO)
 end
 
