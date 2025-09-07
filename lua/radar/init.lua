@@ -253,6 +253,52 @@ function M:edit_locks()
     silent = true,
     desc = "Save and quit radar edit buffer",
   })
+  
+  -- Navigation keymaps
+  vim.api.nvim_buf_set_keymap(edit_buf, "n", "<CR>", "", {
+    noremap = true,
+    silent = true,
+    desc = "Open file under cursor",
+    callback = function()
+      self:open_file_from_edit(edit_buf, "edit")
+    end,
+  })
+  
+  vim.api.nvim_buf_set_keymap(edit_buf, "n", "<C-v>", "", {
+    noremap = true,
+    silent = true,
+    desc = "Open file in vertical split",
+    callback = function()
+      self:open_file_from_edit(edit_buf, "vsplit")
+    end,
+  })
+  
+  vim.api.nvim_buf_set_keymap(edit_buf, "n", "<C-s>", "", {
+    noremap = true,
+    silent = true,
+    desc = "Open file in horizontal split",
+    callback = function()
+      self:open_file_from_edit(edit_buf, "split")
+    end,
+  })
+  
+  vim.api.nvim_buf_set_keymap(edit_buf, "n", "<C-x>", "", {
+    noremap = true,
+    silent = true,
+    desc = "Open file in horizontal split",
+    callback = function()
+      self:open_file_from_edit(edit_buf, "split")
+    end,
+  })
+  
+  vim.api.nvim_buf_set_keymap(edit_buf, "n", "<C-t>", "", {
+    noremap = true,
+    silent = true,
+    desc = "Open file in new tab",
+    callback = function()
+      self:open_file_from_edit(edit_buf, "tabedit")
+    end,
+  })
 end
 
 ---Setup autocmds for edit buffer save and close handling
@@ -329,6 +375,48 @@ function M:save_edit_buffer(edit_buf)
   -- Mark buffer as saved
   vim.api.nvim_buf_set_option(edit_buf, "modified", false)
   vim.notify("Locks saved successfully", vim.log.levels.INFO)
+end
+
+---Open file from edit window line and cleanup
+---@param edit_buf integer
+---@param open_cmd string Command to open file (edit, vsplit, split, tabedit)
+---@return nil
+function M:open_file_from_edit(edit_buf, open_cmd)
+  local cursor = vim.api.nvim_win_get_cursor(self.state.edit_winid)
+  local line_nr = cursor[1]
+  local lines = vim.api.nvim_buf_get_lines(edit_buf, 0, -1, false)
+  
+  if line_nr > #lines then
+    vim.notify("Invalid line", vim.log.levels.WARN)
+    return
+  end
+  
+  local line = lines[line_nr]
+  
+  -- Skip empty lines
+  if line:match("^%s*$") then
+    vim.notify("Empty line - no file to open", vim.log.levels.WARN)
+    return
+  end
+  
+  -- Save current state first
+  self:save_edit_buffer(edit_buf)
+  
+  -- Extract and expand filepath
+  local filepath = line:match("^%s*(.-)%s*$")
+  local full_path = vim.fn.expand(filepath)
+  
+  if not vim.fn.filereadable(full_path) then
+    vim.notify(string.format("File not found: %s", filepath), vim.log.levels.ERROR)
+    return
+  end
+  
+  -- Clean up edit window
+  self:cleanup_edit_mode()
+  
+  -- Open the file
+  local escaped_path = vim.fn.fnameescape(full_path)
+  vim.cmd(open_cmd .. " " .. escaped_path)
 end
 
 ---Cleanup edit mode state
