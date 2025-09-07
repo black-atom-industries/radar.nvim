@@ -8,6 +8,7 @@ M.constants = {
 ---@field prefix string
 ---@field lock string
 ---@field locks string[]
+---@field recent string[]
 ---@field vertical string
 ---@field horizontal string
 ---@field tab string
@@ -40,13 +41,13 @@ M.config = {
     prefix = "<space>",
     lock = ",<space>",
     locks = { "1", "2", "3", "4", "5", "6", "7", "8", "9" }, -- num row
+    recent = { "a", "s", "d", "f", "g" }, -- home row
     -- Navigation modifiers
     vertical = "v",
     horizontal = "s",
     tab = "t",
     -- Future radar features:
     -- modified = { "q", "w", "e", "r", "t" }, -- upper row
-    -- recent = { "a", "s", "d", "f", "g" }, -- home row
     -- pr_files = { "z", "x", "c", "v", "b" }, -- bottom row
   },
 
@@ -79,6 +80,10 @@ M.config = {
 M.state = {
   ---@type Radar.Lock[]
   locks = {},
+  ---@type string[]
+  recent_files = {},
+  ---@type string[]
+  session_files = {},
   ---@type integer?
   mini_radar_winid = nil,
   ---@type integer?
@@ -173,19 +178,118 @@ end
 ---Calculate optimal window width based on longest file path
 ---@return integer
 function M:calculate_window_width()
-  if #self.state.locks == 0 then
-    return self.config.win.width
-  end
-
   local max_width = 0
+
+  -- Check locked files
   for _, lock in ipairs(self.state.locks) do
     local formatted_path = self:get_formatted_filepath(lock.filename)
     local entry_text = string.format("  [%s] %s  ", lock.label, formatted_path)
     max_width = math.max(max_width, vim.fn.strdisplaywidth(entry_text))
   end
 
+  -- Check recent files
+  for i, filename in ipairs(self.state.recent_files) do
+    local label = self.config.keys.recent[i]
+    if label then
+      local formatted_path = self:get_formatted_filepath(filename)
+      local entry_text = string.format("  [%s] %s  ", label, formatted_path)
+      max_width = math.max(max_width, vim.fn.strdisplaywidth(entry_text))
+    end
+  end
+
   -- Ensure minimum width and add padding
   return math.max(max_width, self.config.win.width)
+end
+
+---Get recent files filtered by current working directory and excluding locked files
+---@return string[]
+function M:get_recent_files()
+  local cwd = vim.uv.cwd()
+  if not cwd then
+    return {}
+  end
+  
+  local recent_files = {}
+  local seen_files = {}
+  local locked_files = {}
+  
+  -- Create lookup table for locked files (normalize to absolute paths)
+  for _, lock in ipairs(self.state.locks) do
+    local abs_path = vim.fn.fnamemodify(lock.filename, ":p")
+    locked_files[abs_path] = true
+  end
+  
+  -- Add current session files first (most recent)
+  for i = #self.state.session_files, 1, -1 do
+    local filepath = self.state.session_files[i]
+    
+    if not locked_files[filepath] and not seen_files[filepath] then
+      if vim.startswith(filepath, cwd) and vim.fn.filereadable(filepath) == 1 then
+        table.insert(recent_files, filepath)
+        seen_files[filepath] = true
+        
+        if #recent_files >= #self.config.keys.recent then
+          return recent_files
+        end
+      end
+    end
+  end
+  
+  -- Fill remaining slots with vim.v.oldfiles
+  for _, filepath in ipairs(vim.v.oldfiles) do
+    -- Skip if already seen, locked, or if we're at capacity
+    if seen_files[filepath] or locked_files[filepath] or #recent_files >= #self.config.keys.recent then
+      goto continue
+    end
+    
+    -- Only include files from current working directory
+    if vim.startswith(filepath, cwd) and vim.fn.filereadable(filepath) == 1 then
+      table.insert(recent_files, filepath)
+      seen_files[filepath] = true
+    end
+    
+    ::continue::
+  end
+  
+  return recent_files
+end
+
+---Add current file to session tracking
+---@return nil
+function M:track_current_file()
+  local current_file = vim.api.nvim_buf_get_name(0)
+  
+  -- Only track real files (not empty buffers, help files, etc.)
+  if current_file == "" or 
+     vim.bo.buftype ~= "" or 
+     vim.bo.filetype == "help" then
+    return
+  end
+  
+  -- Get absolute path
+  local abs_path = vim.fn.fnamemodify(current_file, ":p")
+  
+  -- Remove if already exists (we'll add it to the end)
+  for i = #self.state.session_files, 1, -1 do
+    if self.state.session_files[i] == abs_path then
+      table.remove(self.state.session_files, i)
+      break
+    end
+  end
+  
+  -- Add to end (most recent)
+  table.insert(self.state.session_files, abs_path)
+  
+  -- Keep only last 20 session files
+  if #self.state.session_files > 20 then
+    table.remove(self.state.session_files, 1)
+  end
+end
+
+---Update recent files in state
+---@return nil
+function M:update_recent_files()
+  self.state.recent_files = self:get_recent_files()
 end
 
 ---@param filename string
@@ -517,15 +621,14 @@ function M:populate()
     local git_branch = M:get_git_branch()
     local locks = vim.tbl_get(data, project_path, git_branch, "locks")
 
-    if locks == nil then
-      return
+    if locks ~= nil then
+      self.state.locks = locks
     end
+  end
 
-    self.state.locks = locks
-
-    if #locks > 0 then
-      M:create_mini_radar()
-    end
+  -- Create radar if we have locks (recent files will load after VimEnter)
+  if #self.state.locks > 0 then
+    M:create_mini_radar()
   end
 end
 
@@ -612,7 +715,7 @@ function M:get_formatted_filepath(path)
   return vim.fn.fnamemodify(path, self.config.path_format)
 end
 
----Create formatted entries
+---Create formatted entries for locks
 ---@param locks Radar.Lock[]
 ---@return string[] -- ATTENTION: This does NOT generate a new array of objects, but just an array of strings
 function M:create_entries(locks)
@@ -625,6 +728,41 @@ function M:create_entries(locks)
   end
 
   return entries
+end
+
+---Create formatted entries for recent files
+---@return string[]
+function M:create_recent_entries()
+  local entries = {}
+
+  for i, filename in ipairs(self.state.recent_files) do
+    local label = self.config.keys.recent[i]
+    if label then
+      local path = self:get_formatted_filepath(filename)
+      local entry = string.format("  [%s] %s  ", label, path)
+      table.insert(entries, entry)
+    end
+  end
+
+  return entries
+end
+
+---Open recent file by label
+---@param label string
+---@param open_cmd? string Command to open file (edit, vsplit, split, tabedit)
+---@return nil
+function M:open_recent(label, open_cmd)
+  -- Find the recent file by label
+  for i, recent_label in ipairs(self.config.keys.recent) do
+    if recent_label == label and self.state.recent_files[i] then
+      local filename = self.state.recent_files[i]
+      local path = vim.fn.fnameescape(filename)
+      open_cmd = open_cmd or "edit"
+
+      vim.cmd(open_cmd .. " " .. path)
+      return
+    end
+  end
 end
 
 ---@return integer?
@@ -640,16 +778,34 @@ end
 
 ---@return nil
 function M:create_mini_radar()
-  local entries = M:create_entries(self.state.locks)
+  -- Update recent files first
+  self:update_recent_files()
+
+  local all_entries = {}
+
+  -- Add lock entries
+  local lock_entries = M:create_entries(self.state.locks)
+  for _, entry in ipairs(lock_entries) do
+    table.insert(all_entries, entry)
+  end
+
+  -- Add separator and recent entries if we have recent files
+  if #self.state.recent_files > 0 then
+    table.insert(all_entries, "") -- Empty line separator
+    local recent_entries = M:create_recent_entries()
+    for _, entry in ipairs(recent_entries) do
+      table.insert(all_entries, entry)
+    end
+  end
 
   local new_buf_id = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_buf_set_lines(new_buf_id, 0, -1, false, entries)
+  vim.api.nvim_buf_set_lines(new_buf_id, 0, -1, false, all_entries)
 
   local board_width = self:calculate_window_width()
   local win_opts = vim.tbl_deep_extend("force", self.config.win, {
     width = board_width,
-    height = #entries,
-    -- row = math.floor((vim.o.lines - #entries) - 10),
+    height = #all_entries,
+    -- row = math.floor((vim.o.lines - #all_entries) - 10),
     row = 1,
     col = math.floor((vim.o.columns - board_width) - 2),
   })
@@ -689,8 +845,10 @@ function M:highlight_active_lock()
     -1
   )
 
+  -- Highlight current file if it appears in the radar (locks or recent files)
   for i, line in ipairs(lines) do
-    if line:find(curr_formatted_filepath, 1, true) then
+    -- Skip empty separator lines
+    if line ~= "" and line:find(curr_formatted_filepath, 1, true) then
       vim.api.nvim_buf_set_extmark(
         lock_board_bufid,
         self.constants.ns_mini_radar,
@@ -708,8 +866,15 @@ end
 
 ---@return nil
 function M:update_mini_radar()
-  -- Close window if no locks left
-  if #self.state.locks == 0 and self:does_mini_radar_exist() then
+  -- Update recent files
+  self:update_recent_files()
+
+  -- Close window if no content
+  if
+    #self.state.locks == 0
+    and #self.state.recent_files == 0
+    and self:does_mini_radar_exist()
+  then
     vim.api.nvim_win_close(self.state.mini_radar_winid, true)
     self.state.mini_radar_winid = nil
     return
@@ -721,15 +886,30 @@ function M:update_mini_radar()
     return
   end
 
-  local entries = M:create_entries(self.state.locks)
+  local all_entries = {}
 
-  vim.api.nvim_buf_set_lines(mini_radar_bufid, 0, -1, false, entries)
+  -- Add lock entries
+  local lock_entries = M:create_entries(self.state.locks)
+  for _, entry in ipairs(lock_entries) do
+    table.insert(all_entries, entry)
+  end
+
+  -- Add separator and recent entries if we have recent files
+  if #self.state.recent_files > 0 then
+    table.insert(all_entries, "") -- Empty line separator
+    local recent_entries = M:create_recent_entries()
+    for _, entry in ipairs(recent_entries) do
+      table.insert(all_entries, entry)
+    end
+  end
+
+  vim.api.nvim_buf_set_lines(mini_radar_bufid, 0, -1, false, all_entries)
 
   local board_width = self:calculate_window_width()
   vim.api.nvim_win_set_config(self.state.mini_radar_winid, {
     relative = "editor",
     width = board_width,
-    height = #self.state.locks,
+    height = #all_entries,
     row = 1,
     col = math.floor((vim.o.columns - board_width) - 2),
   })
@@ -742,6 +922,7 @@ function M.setup(opts)
   opts = opts or {}
   local merged_config = vim.tbl_deep_extend("force", M.config, opts)
   M.config = merged_config
+
 
   vim.keymap.set(
     "n",
@@ -791,6 +972,44 @@ function M.setup(opts)
     )
   end
 
+  -- Recent files keymaps
+  for _, label in ipairs(M.config.keys.recent) do
+    -- Regular open
+    vim.keymap.set("n", M.config.keys.prefix .. label, function()
+      M:open_recent(label)
+    end, { desc = "Open " .. label .. " Recent File" })
+
+    -- Vertical split
+    vim.keymap.set(
+      "n",
+      M.config.keys.prefix .. M.config.keys.vertical .. label,
+      function()
+        M:open_recent(label, "vsplit")
+      end,
+      { desc = "Open " .. label .. " Recent File in vertical split" }
+    )
+
+    -- Horizontal split
+    vim.keymap.set(
+      "n",
+      M.config.keys.prefix .. M.config.keys.horizontal .. label,
+      function()
+        M:open_recent(label, "split")
+      end,
+      { desc = "Open " .. label .. " Recent File in horizontal split" }
+    )
+
+    -- New tab
+    vim.keymap.set(
+      "n",
+      M.config.keys.prefix .. M.config.keys.tab .. label,
+      function()
+        M:open_recent(label, "tabedit")
+      end,
+      { desc = "Open " .. label .. " Recent File in new tab" }
+    )
+  end
+
   -- Edit locks in floating window
   vim.keymap.set("n", M.config.keys.prefix .. "e", function()
     M:edit_locks()
@@ -804,7 +1023,15 @@ end
 vim.api.nvim_create_autocmd("BufEnter", {
   group = vim.api.nvim_create_augroup("radar.BufEnter", { clear = true }),
   callback = function()
+    -- Track current file for session recent files
+    M:track_current_file()
     M:highlight_active_lock()
+    -- Update recent files to include current session files
+    M:update_recent_files()
+    -- Update radar if it exists
+    if M:does_mini_radar_exist() then
+      M:update_mini_radar()
+    end
   end,
 })
 
@@ -812,6 +1039,18 @@ vim.api.nvim_create_autocmd("VimResized", {
   group = vim.api.nvim_create_augroup("radar.VimResized", { clear = true }),
   callback = function()
     M:update_mini_radar()
+  end,
+})
+
+vim.api.nvim_create_autocmd("VimEnter", {
+  group = vim.api.nvim_create_augroup("radar.VimEnter", { clear = true }),
+  callback = function()
+    -- Update recent files now that vim.v.oldfiles is loaded
+    M:update_recent_files()
+    -- Update the radar display if it exists, or create it if we now have content
+    if M:does_mini_radar_exist() or #M.state.recent_files > 0 then
+      M:update_mini_radar()
+    end
   end,
 })
 
