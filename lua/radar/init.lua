@@ -292,6 +292,14 @@ function M:does_mini_radar_exist()
     or false
 end
 
+---Ensure mini radar exists, create if needed and locks exist
+---@return nil
+function M:ensure_mini_radar_exists()
+  if #self.state.locks > 0 and not self:does_mini_radar_exist() then
+    self:create_mini_radar()
+  end
+end
+
 ---If no buf_nr is provided it uses its current buf
 ---@param buf_nr? integer
 ---@return string
@@ -325,9 +333,7 @@ function M:open_lock(label)
     return
   end
 
-  if not M:does_mini_radar_exist() then
-    M:create_mini_radar()
-  end
+  M:ensure_mini_radar_exists()
 
   local path = vim.fn.fnameescape(lock.filename)
 
@@ -389,6 +395,7 @@ end
 
 ---@return nil
 function M:highlight_active_lock()
+  self:ensure_mini_radar_exists()
   local lock_board_bufid = self:get_mini_radar_bufid()
 
   if lock_board_bufid == nil then
@@ -438,6 +445,7 @@ function M:update_mini_radar()
     return
   end
 
+  self:ensure_mini_radar_exists()
   local mini_radar_bufid = self:get_mini_radar_bufid()
   if mini_radar_bufid == nil then
     return
@@ -481,6 +489,7 @@ function M.setup(opts)
 
   -- Temporary binding to edit the data file directly
   vim.keymap.set("n", M.config.keys.prefix .. "e", function()
+    M:ensure_mini_radar_exists()
     vim.cmd("vsplit " .. M:get_data_file_path())
   end, { desc = "Open radar data file" })
 
