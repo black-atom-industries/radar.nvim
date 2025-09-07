@@ -46,6 +46,9 @@ M.config = {
   -- See :h filename-modifiers
   path_format = ":p:.",
 
+  -- Window transparency (0-100, where 0 is opaque and 100 is fully transparent)
+  winblend = 15,
+
   ---@type vim.api.keyset.win_config
   win = {
     width = 50,
@@ -556,6 +559,10 @@ function M:create_mini_radar()
 
   local win = vim.api.nvim_open_win(new_buf_id, false, win_opts)
   M.state.mini_radar_winid = win
+  
+  -- Set window transparency
+  vim.api.nvim_set_option_value("winblend", self.config.winblend, { win = win })
+  
   M:highlight_active_lock()
 end
 
