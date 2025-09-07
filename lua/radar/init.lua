@@ -160,6 +160,24 @@ function M:add_lock(filename)
   return lock
 end
 
+---Calculate optimal window width based on longest file path
+---@return integer
+function M:calculate_window_width()
+  if #self.state.locks == 0 then
+    return self.config.win.width
+  end
+
+  local max_width = 0
+  for _, lock in ipairs(self.state.locks) do
+    local formatted_path = self:get_formatted_filepath(lock.filename)
+    local entry_text = string.format("  [%s] %s  ", lock.label, formatted_path)
+    max_width = math.max(max_width, vim.fn.strdisplaywidth(entry_text))
+  end
+
+  -- Ensure minimum width and add padding
+  return math.max(max_width, self.config.win.width)
+end
+
 ---@param filename string
 ---@return Radar.Lock
 function M:remove_lock(filename)
@@ -205,7 +223,8 @@ function M:edit_locks()
   vim.api.nvim_buf_set_lines(edit_buf, 0, -1, false, lines)
 
   -- Open floating window
-  local win_width = math.max(60, self.config.win.width + 10)
+  local calculated_width = self:calculate_window_width()
+  local win_width = math.max(60, calculated_width + 10)
   local win_height = math.min(#lines + 2, 20)
   local win_opts = {
     relative = "editor",
@@ -526,7 +545,7 @@ function M:create_mini_radar()
   local new_buf_id = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_lines(new_buf_id, 0, -1, false, entries)
 
-  local board_width = self.config.win.width
+  local board_width = self:calculate_window_width()
   local win_opts = vim.tbl_deep_extend("force", self.config.win, {
     width = board_width,
     height = #entries,
@@ -601,11 +620,14 @@ function M:update_mini_radar()
   local entries = M:create_entries(self.state.locks)
 
   vim.api.nvim_buf_set_lines(mini_radar_bufid, 0, -1, false, entries)
+  
+  local board_width = self:calculate_window_width()
   vim.api.nvim_win_set_config(self.state.mini_radar_winid, {
     relative = "editor",
+    width = board_width,
     height = #self.state.locks,
     row = 1,
-    col = math.floor((vim.o.columns - self.config.win.width) - 2),
+    col = math.floor((vim.o.columns - board_width) - 2),
   })
   M:highlight_active_lock()
 end
