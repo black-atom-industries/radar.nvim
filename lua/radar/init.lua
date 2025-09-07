@@ -71,6 +71,10 @@ M.state = {
   locks = {},
   ---@type integer?
   mini_radar_winid = nil,
+  ---@type integer?
+  edit_winid = nil,
+  ---@type integer?
+  edit_bufid = nil,
   ---@param field "label" | "filename"
   ---@param value string
   ---@return Radar.Lock?
@@ -171,6 +175,149 @@ function M:remove_lock(filename)
   end
 
   return removed_lock
+end
+
+---Create editable buffer for managing locks
+---@return nil
+function M:edit_locks()
+  if #self.state.locks == 0 then
+    vim.notify("No locks to edit", vim.log.levels.WARN)
+    return
+  end
+
+  -- Create editable buffer
+  local edit_buf = vim.api.nvim_create_buf(false, false)
+  self.state.edit_bufid = edit_buf
+
+  -- Set buffer options
+  vim.api.nvim_buf_set_option(edit_buf, "buftype", "acwrite")
+  vim.api.nvim_buf_set_option(edit_buf, "filetype", "radar-edit")
+  vim.api.nvim_buf_set_name(edit_buf, "radar-locks")
+  vim.api.nvim_buf_set_option(edit_buf, "bufhidden", "wipe")
+
+  -- Create buffer lines: just the filepaths (labels assigned by line order)
+  local lines = {}
+  for _, lock in ipairs(self.state.locks) do
+    local formatted_path = self:get_formatted_filepath(lock.filename)
+    table.insert(lines, formatted_path)
+  end
+
+  vim.api.nvim_buf_set_lines(edit_buf, 0, -1, false, lines)
+
+  -- Open floating window
+  local win_width = math.max(60, self.config.win.width + 10)
+  local win_height = math.min(#lines + 2, 20)
+  local win_opts = {
+    relative = "editor",
+    width = win_width,
+    height = win_height,
+    row = math.floor((vim.o.lines - win_height) / 2),
+    col = math.floor((vim.o.columns - win_width) / 2),
+    style = "minimal",
+    border = "solid",
+    title = " Edit Locks ",
+    title_pos = "center",
+  }
+
+  local edit_win = vim.api.nvim_open_win(edit_buf, true, win_opts)
+  self.state.edit_winid = edit_win
+
+  -- Set up buffer autocmds for save and close
+  self:setup_edit_autocmds(edit_buf)
+
+  -- Set up buffer-local keymaps
+  vim.api.nvim_buf_set_keymap(edit_buf, "n", "q", "<cmd>w<bar>q<CR>", {
+    noremap = true,
+    silent = true,
+    desc = "Save and quit radar edit buffer",
+  })
+end
+
+---Setup autocmds for edit buffer save and close handling
+---@param edit_buf integer
+---@return nil
+function M:setup_edit_autocmds(edit_buf)
+  local augroup = vim.api.nvim_create_augroup("radar.EditLocks", { clear = true })
+
+  -- Handle buffer save (:w)
+  vim.api.nvim_create_autocmd("BufWriteCmd", {
+    group = augroup,
+    buffer = edit_buf,
+    callback = function()
+      self:save_edit_buffer(edit_buf)
+    end,
+  })
+
+  -- Handle buffer close/unload
+  vim.api.nvim_create_autocmd("BufUnload", {
+    group = augroup,
+    buffer = edit_buf,
+    callback = function()
+      self:cleanup_edit_mode()
+    end,
+  })
+end
+
+---Parse and save changes from edit buffer
+---@param edit_buf integer
+---@return nil
+function M:save_edit_buffer(edit_buf)
+  local lines = vim.api.nvim_buf_get_lines(edit_buf, 0, -1, false)
+  local new_locks = {}
+  local errors = {}
+
+  for i, line in ipairs(lines) do
+    -- Skip empty lines
+    if line:match("^%s*$") then
+      goto continue
+    end
+
+    -- Trim whitespace from filepath
+    local filepath = line:match("^%s*(.-)%s*$")
+
+    -- Validate filepath exists (expand to full path)
+    local full_path = vim.fn.expand(filepath)
+    if not vim.fn.filereadable(full_path) then
+      table.insert(errors, string.format("Line %d: File not found: %s", i, filepath))
+      goto continue
+    end
+
+    -- Create lock with label based on line position
+    local new_lock = {
+      label = self.config.keys.locks[i] or tostring(i),
+      filename = full_path,
+    }
+
+    table.insert(new_locks, new_lock)
+
+    ::continue::
+  end
+
+  -- Show errors if any
+  if #errors > 0 then
+    vim.notify("Edit errors:\n" .. table.concat(errors, "\n"), vim.log.levels.ERROR)
+    return
+  end
+
+  -- Update locks and persist
+  self.state.locks = new_locks
+  self:persist()
+  self:update_mini_radar()
+
+  -- Mark buffer as saved
+  vim.api.nvim_buf_set_option(edit_buf, "modified", false)
+  vim.notify("Locks saved successfully", vim.log.levels.INFO)
+end
+
+---Cleanup edit mode state
+---@return nil
+function M:cleanup_edit_mode()
+  if self.state.edit_winid and vim.api.nvim_win_is_valid(self.state.edit_winid) then
+    vim.api.nvim_win_close(self.state.edit_winid, true)
+  end
+
+  self.state.edit_winid = nil
+  self.state.edit_bufid = nil
 end
 
 ---@return string?
@@ -487,11 +634,10 @@ function M.setup(opts)
     end, { desc = "Open " .. label .. " Lock" })
   end
 
-  -- Temporary binding to edit the data file directly
+  -- Edit locks in floating window
   vim.keymap.set("n", M.config.keys.prefix .. "e", function()
-    M:ensure_mini_radar_exists()
-    vim.cmd("vsplit " .. M:get_data_file_path())
-  end, { desc = "Open radar data file" })
+    M:edit_locks()
+  end, { desc = "Edit radar locks" })
 
   M:populate()
 
