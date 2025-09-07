@@ -43,9 +43,9 @@ M.config = {
     locks = { "1", "2", "3", "4", "5", "6", "7", "8", "9" }, -- num row
     recent = { "a", "s", "d", "f", "g" }, -- home row
     -- Navigation modifiers
-    vertical = "v",
-    horizontal = "s",
-    tab = "t",
+    vertical = "<C-v>",
+    horizontal = "<C-s>",
+    tab = "<C-t>",
     -- Future radar features:
     -- modified = { "q", "w", "e", "r", "t" }, -- upper row
     -- pr_files = { "z", "x", "c", "v", "b" }, -- bottom row
@@ -208,49 +208,53 @@ function M:get_recent_files()
   if not cwd then
     return {}
   end
-  
+
   local recent_files = {}
   local seen_files = {}
   local locked_files = {}
-  
+
   -- Create lookup table for locked files (normalize to absolute paths)
   for _, lock in ipairs(self.state.locks) do
     local abs_path = vim.fn.fnamemodify(lock.filename, ":p")
     locked_files[abs_path] = true
   end
-  
+
   -- Add current session files first (most recent)
   for i = #self.state.session_files, 1, -1 do
     local filepath = self.state.session_files[i]
-    
+
     if not locked_files[filepath] and not seen_files[filepath] then
       if vim.startswith(filepath, cwd) and vim.fn.filereadable(filepath) == 1 then
         table.insert(recent_files, filepath)
         seen_files[filepath] = true
-        
+
         if #recent_files >= #self.config.keys.recent then
           return recent_files
         end
       end
     end
   end
-  
+
   -- Fill remaining slots with vim.v.oldfiles
   for _, filepath in ipairs(vim.v.oldfiles) do
     -- Skip if already seen, locked, or if we're at capacity
-    if seen_files[filepath] or locked_files[filepath] or #recent_files >= #self.config.keys.recent then
+    if
+      seen_files[filepath]
+      or locked_files[filepath]
+      or #recent_files >= #self.config.keys.recent
+    then
       goto continue
     end
-    
+
     -- Only include files from current working directory
     if vim.startswith(filepath, cwd) and vim.fn.filereadable(filepath) == 1 then
       table.insert(recent_files, filepath)
       seen_files[filepath] = true
     end
-    
+
     ::continue::
   end
-  
+
   return recent_files
 end
 
@@ -258,17 +262,15 @@ end
 ---@return nil
 function M:track_current_file()
   local current_file = vim.api.nvim_buf_get_name(0)
-  
+
   -- Only track real files (not empty buffers, help files, etc.)
-  if current_file == "" or 
-     vim.bo.buftype ~= "" or 
-     vim.bo.filetype == "help" then
+  if current_file == "" or vim.bo.buftype ~= "" or vim.bo.filetype == "help" then
     return
   end
-  
+
   -- Get absolute path
   local abs_path = vim.fn.fnamemodify(current_file, ":p")
-  
+
   -- Remove if already exists (we'll add it to the end)
   for i = #self.state.session_files, 1, -1 do
     if self.state.session_files[i] == abs_path then
@@ -276,10 +278,10 @@ function M:track_current_file()
       break
     end
   end
-  
+
   -- Add to end (most recent)
   table.insert(self.state.session_files, abs_path)
-  
+
   -- Keep only last 20 session files
   if #self.state.session_files > 20 then
     table.remove(self.state.session_files, 1)
@@ -721,10 +723,13 @@ end
 function M:create_entries(locks)
   local entries = {}
 
-  for _, lock in ipairs(locks) do
-    local path = self:get_formatted_filepath(lock.filename)
-    local entry = string.format("  [%s] %s  ", lock.label, path)
-    table.insert(entries, entry)
+  if #locks > 0 then
+    table.insert(entries, "◎ LOCKS")
+    for _, lock in ipairs(locks) do
+      local path = self:get_formatted_filepath(lock.filename)
+      local entry = string.format("  [%s] %s  ", lock.label, path)
+      table.insert(entries, entry)
+    end
   end
 
   return entries
@@ -735,12 +740,15 @@ end
 function M:create_recent_entries()
   local entries = {}
 
-  for i, filename in ipairs(self.state.recent_files) do
-    local label = self.config.keys.recent[i]
-    if label then
-      local path = self:get_formatted_filepath(filename)
-      local entry = string.format("  [%s] %s  ", label, path)
-      table.insert(entries, entry)
+  if #self.state.recent_files > 0 then
+    table.insert(entries, "◉ RECENT")
+    for i, filename in ipairs(self.state.recent_files) do
+      local label = self.config.keys.recent[i]
+      if label then
+        local path = self:get_formatted_filepath(filename)
+        local entry = string.format("  [%s] %s  ", label, path)
+        table.insert(entries, entry)
+      end
     end
   end
 
@@ -789,9 +797,12 @@ function M:create_mini_radar()
     table.insert(all_entries, entry)
   end
 
-  -- Add separator and recent entries if we have recent files
+  -- Add recent entries if we have recent files
   if #self.state.recent_files > 0 then
-    table.insert(all_entries, "") -- Empty line separator
+    -- Add empty line separator only if we also have locks
+    if #self.state.locks > 0 then
+      table.insert(all_entries, "")
+    end
     local recent_entries = M:create_recent_entries()
     for _, entry in ipairs(recent_entries) do
       table.insert(all_entries, entry)
@@ -845,10 +856,33 @@ function M:highlight_active_lock()
     -1
   )
 
-  -- Highlight current file if it appears in the radar (locks or recent files)
+  -- Highlight section headers and current file
   for i, line in ipairs(lines) do
-    -- Skip empty separator lines
-    if line ~= "" and line:find(curr_formatted_filepath, 1, true) then
+    -- Highlight section headers
+    if line == "◎ LOCKS" then
+      vim.api.nvim_buf_set_extmark(
+        lock_board_bufid,
+        self.constants.ns_mini_radar,
+        i - 1,
+        0,
+        {
+          end_col = #line,
+          hl_group = "@keyword",
+        }
+      )
+    elseif line == "◉ RECENT" then
+      vim.api.nvim_buf_set_extmark(
+        lock_board_bufid,
+        self.constants.ns_mini_radar,
+        i - 1,
+        0,
+        {
+          end_col = #line,
+          hl_group = "@type",
+        }
+      )
+    -- Highlight current file if it appears in the radar (locks or recent files)
+    elseif line ~= "" and line:find(curr_formatted_filepath, 1, true) then
       vim.api.nvim_buf_set_extmark(
         lock_board_bufid,
         self.constants.ns_mini_radar,
@@ -859,7 +893,6 @@ function M:highlight_active_lock()
           hl_group = "@function",
         }
       )
-      break
     end
   end
 end
@@ -894,9 +927,12 @@ function M:update_mini_radar()
     table.insert(all_entries, entry)
   end
 
-  -- Add separator and recent entries if we have recent files
+  -- Add recent entries if we have recent files
   if #self.state.recent_files > 0 then
-    table.insert(all_entries, "") -- Empty line separator
+    -- Add empty line separator only if we also have locks
+    if #self.state.locks > 0 then
+      table.insert(all_entries, "")
+    end
     local recent_entries = M:create_recent_entries()
     for _, entry in ipairs(recent_entries) do
       table.insert(all_entries, entry)
@@ -922,7 +958,6 @@ function M.setup(opts)
   opts = opts or {}
   local merged_config = vim.tbl_deep_extend("force", M.config, opts)
   M.config = merged_config
-
 
   vim.keymap.set(
     "n",
