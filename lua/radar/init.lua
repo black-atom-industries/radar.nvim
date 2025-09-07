@@ -582,8 +582,9 @@ function M:lock(buf_nr)
 end
 
 ---@param label string
+---@param open_cmd? string Command to open file (edit, vsplit, split, tabedit)
 ---@return nil
-function M:open_lock(label)
+function M:open_lock(label, open_cmd)
   local lock = self.state.get_lock_from_label(tostring(label))
 
   if lock == nil then
@@ -593,8 +594,9 @@ function M:open_lock(label)
   M:ensure_mini_radar_exists()
 
   local path = vim.fn.fnameescape(lock.filename)
+  open_cmd = open_cmd or "edit"
 
-  vim.cmd.edit(path)
+  vim.cmd(open_cmd .. " " .. path)
 end
 
 ---@param path string
@@ -746,9 +748,25 @@ function M.setup(opts)
   end, { desc = "Close Mini Radar" })
 
   for _, label in ipairs(M.config.keys.locks) do
+    -- Regular open
     vim.keymap.set("n", M.config.keys.prefix .. label, function()
       M:open_lock(label)
     end, { desc = "Open " .. label .. " Lock" })
+    
+    -- Vertical split
+    vim.keymap.set("n", M.config.keys.prefix .. "v" .. label, function()
+      M:open_lock(label, "vsplit")
+    end, { desc = "Open " .. label .. " Lock in vertical split" })
+    
+    -- Horizontal split
+    vim.keymap.set("n", M.config.keys.prefix .. "s" .. label, function()
+      M:open_lock(label, "split")
+    end, { desc = "Open " .. label .. " Lock in horizontal split" })
+    
+    -- New tab
+    vim.keymap.set("n", M.config.keys.prefix .. "t" .. label, function()
+      M:open_lock(label, "tabedit")
+    end, { desc = "Open " .. label .. " Lock in new tab" })
   end
 
   -- Edit locks in floating window
