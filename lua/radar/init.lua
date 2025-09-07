@@ -8,6 +8,9 @@ M.constants = {
 ---@field prefix string
 ---@field lock string
 ---@field locks string[]
+---@field vertical string
+---@field horizontal string
+---@field tab string
 
 ---@class Radar.Config.Persist
 ---@field folder string
@@ -37,6 +40,10 @@ M.config = {
     prefix = "<space>",
     lock = ",<space>",
     locks = { "1", "2", "3", "4", "5", "6", "7", "8", "9" }, -- num row
+    -- Navigation modifiers
+    vertical = "v",
+    horizontal = "s",
+    tab = "t",
     -- Future radar features:
     -- modified = { "q", "w", "e", "r", "t" }, -- upper row
     -- recent = { "a", "s", "d", "f", "g" }, -- home row
@@ -253,7 +260,7 @@ function M:edit_locks()
     silent = true,
     desc = "Save and quit radar edit buffer",
   })
-  
+
   -- Navigation keymaps
   vim.api.nvim_buf_set_keymap(edit_buf, "n", "<CR>", "", {
     noremap = true,
@@ -263,7 +270,7 @@ function M:edit_locks()
       self:open_file_from_edit(edit_buf, "edit")
     end,
   })
-  
+
   vim.api.nvim_buf_set_keymap(edit_buf, "n", "<C-v>", "", {
     noremap = true,
     silent = true,
@@ -272,7 +279,7 @@ function M:edit_locks()
       self:open_file_from_edit(edit_buf, "vsplit")
     end,
   })
-  
+
   vim.api.nvim_buf_set_keymap(edit_buf, "n", "<C-s>", "", {
     noremap = true,
     silent = true,
@@ -281,7 +288,7 @@ function M:edit_locks()
       self:open_file_from_edit(edit_buf, "split")
     end,
   })
-  
+
   vim.api.nvim_buf_set_keymap(edit_buf, "n", "<C-x>", "", {
     noremap = true,
     silent = true,
@@ -290,7 +297,7 @@ function M:edit_locks()
       self:open_file_from_edit(edit_buf, "split")
     end,
   })
-  
+
   vim.api.nvim_buf_set_keymap(edit_buf, "n", "<C-t>", "", {
     noremap = true,
     silent = true,
@@ -385,35 +392,35 @@ function M:open_file_from_edit(edit_buf, open_cmd)
   local cursor = vim.api.nvim_win_get_cursor(self.state.edit_winid)
   local line_nr = cursor[1]
   local lines = vim.api.nvim_buf_get_lines(edit_buf, 0, -1, false)
-  
+
   if line_nr > #lines then
     vim.notify("Invalid line", vim.log.levels.WARN)
     return
   end
-  
+
   local line = lines[line_nr]
-  
+
   -- Skip empty lines
   if line:match("^%s*$") then
     vim.notify("Empty line - no file to open", vim.log.levels.WARN)
     return
   end
-  
+
   -- Save current state first
   self:save_edit_buffer(edit_buf)
-  
+
   -- Extract and expand filepath
   local filepath = line:match("^%s*(.-)%s*$")
   local full_path = vim.fn.expand(filepath)
-  
+
   if not vim.fn.filereadable(full_path) then
     vim.notify(string.format("File not found: %s", filepath), vim.log.levels.ERROR)
     return
   end
-  
+
   -- Clean up edit window
   self:cleanup_edit_mode()
-  
+
   -- Open the file
   local escaped_path = vim.fn.fnameescape(full_path)
   vim.cmd(open_cmd .. " " .. escaped_path)
@@ -649,10 +656,10 @@ function M:create_mini_radar()
 
   local win = vim.api.nvim_open_win(new_buf_id, false, win_opts)
   M.state.mini_radar_winid = win
-  
+
   -- Set window transparency
   vim.api.nvim_set_option_value("winblend", self.config.winblend, { win = win })
-  
+
   M:highlight_active_lock()
 end
 
@@ -717,7 +724,7 @@ function M:update_mini_radar()
   local entries = M:create_entries(self.state.locks)
 
   vim.api.nvim_buf_set_lines(mini_radar_bufid, 0, -1, false, entries)
-  
+
   local board_width = self:calculate_window_width()
   vim.api.nvim_win_set_config(self.state.mini_radar_winid, {
     relative = "editor",
@@ -752,21 +759,36 @@ function M.setup(opts)
     vim.keymap.set("n", M.config.keys.prefix .. label, function()
       M:open_lock(label)
     end, { desc = "Open " .. label .. " Lock" })
-    
+
     -- Vertical split
-    vim.keymap.set("n", M.config.keys.prefix .. "v" .. label, function()
-      M:open_lock(label, "vsplit")
-    end, { desc = "Open " .. label .. " Lock in vertical split" })
-    
+    vim.keymap.set(
+      "n",
+      M.config.keys.prefix .. M.config.keys.vertical .. label,
+      function()
+        M:open_lock(label, "vsplit")
+      end,
+      { desc = "Open " .. label .. " Lock in vertical split" }
+    )
+
     -- Horizontal split
-    vim.keymap.set("n", M.config.keys.prefix .. "s" .. label, function()
-      M:open_lock(label, "split")
-    end, { desc = "Open " .. label .. " Lock in horizontal split" })
-    
+    vim.keymap.set(
+      "n",
+      M.config.keys.prefix .. M.config.keys.horizontal .. label,
+      function()
+        M:open_lock(label, "split")
+      end,
+      { desc = "Open " .. label .. " Lock in horizontal split" }
+    )
+
     -- New tab
-    vim.keymap.set("n", M.config.keys.prefix .. "t" .. label, function()
-      M:open_lock(label, "tabedit")
-    end, { desc = "Open " .. label .. " Lock in new tab" })
+    vim.keymap.set(
+      "n",
+      M.config.keys.prefix .. M.config.keys.tab .. label,
+      function()
+        M:open_lock(label, "tabedit")
+      end,
+      { desc = "Open " .. label .. " Lock in new tab" }
+    )
   end
 
   -- Edit locks in floating window
