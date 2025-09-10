@@ -62,7 +62,7 @@ M.config = {
     width = 50,
     relative = "editor",
     anchor = "NW",
-    title = "◎ RADAR",
+    title = "󰐷  RADAR",
     title_pos = "left",
     style = "minimal",
     border = "solid",
@@ -719,7 +719,7 @@ function M:create_entries(locks)
   local entries = {}
 
   if #locks > 0 then
-    table.insert(entries, "◎ LOCKS")
+    table.insert(entries, "󰓾  LOCKED IN")
     for _, lock in ipairs(locks) do
       local path = self:get_formatted_filepath(lock.filename)
       local entry = string.format("  [%s] %s  ", lock.label, path)
@@ -736,7 +736,7 @@ function M:create_recent_entries()
   local entries = {}
 
   if #self.state.recent_files > 0 then
-    table.insert(entries, "◉ RECENT")
+    table.insert(entries, "  SURROUNDING")
     for i, filename in ipairs(self.state.recent_files) do
       local label = self.config.keys.recent[i]
       if label then
@@ -806,7 +806,7 @@ function M:create_mini_radar()
 
   -- If no content at all, show helpful message
   if #all_entries == 0 then
-    table.insert(all_entries, "◎ RADAR")
+    table.insert(all_entries, self.config.win.title)
     table.insert(all_entries, "  No files tracked yet")
     table.insert(all_entries, "  Use " .. self.config.keys.lock .. " to lock files")
   end
@@ -934,7 +934,7 @@ function M:update_mini_radar()
 
   -- If no content at all, show helpful message
   if #all_entries == 0 then
-    table.insert(all_entries, "◎ RADAR")
+    table.insert(all_entries, self.config.win.title)
     table.insert(all_entries, "  No files tracked yet")
     table.insert(all_entries, "  Use " .. self.config.keys.lock .. " to lock files")
   end
