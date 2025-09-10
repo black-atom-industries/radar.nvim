@@ -1,10 +1,17 @@
-## next
+## ROADMAP
 
-- [ ] Always show window (even if no locks yet)
-- [ ] Test cursor window workflow
-- [ ] Keep order of Recent list if contents remain the same
+- [ ] feat: New Plugin Structure
+- [ ] feat: `config.behaviour`: Hide mini radar when cursor collides - is under it
+- [ ] feat: `config.behaviour`: Open first lock on `VimEnter`
+- [ ] feat: `config.ui.mini.style`: `dynamic` | `static`
+- [ ] fix: z index (Currently is over float terms like lazygit)
+- [ ] fix: Keep order of Recent list if contents remain the same
   - Currently choosing a entry from the recents will put it in the a slot
-- [ ] Clean up code
+
+## 2025.09.10 - Wednesday
+
+- [x] Always show window (even if no locks yet)
+- [x] Better config
 
 ## 2025.09.07 - Saturday
 
