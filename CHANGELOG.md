@@ -1,9 +1,9 @@
-## [[2025.09.08 - Monday]]
+## next
 
+- [ ] Always show window (even if no locks yet)
 - [ ] Test cursor window workflow
 - [ ] Keep order of Recent list if contents remain the same
   - Currently choosing a entry from the recents will put it in the a slot
-- [ ] Always show recents (even if no hook)
 - [ ] Clean up code
 
 ## 2025.09.07 - Saturday

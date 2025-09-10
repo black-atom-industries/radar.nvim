@@ -628,10 +628,8 @@ function M:populate()
     end
   end
 
-  -- Create radar if we have locks (recent files will load after VimEnter)
-  if #self.state.locks > 0 then
-    M:create_mini_radar()
-  end
+  -- Always create radar (recent files will load after VimEnter)
+  M:create_mini_radar()
 end
 
 ---@param filename string
@@ -683,10 +681,7 @@ function M:lock(buf_nr)
   local filename = M:get_current_filename(buf_nr)
   M:toggle_lock(filename)
 
-  if #M.state.locks == 0 and M:does_mini_radar_exist() then
-    vim.api.nvim_win_close(M.state.mini_radar_winid, true)
-    M.state.mini_radar_winid = nil
-  elseif not M:does_mini_radar_exist() then
+  if not M:does_mini_radar_exist() then
     M:create_mini_radar()
   else
     M:update_mini_radar()
@@ -809,6 +804,13 @@ function M:create_mini_radar()
     end
   end
 
+  -- If no content at all, show helpful message
+  if #all_entries == 0 then
+    table.insert(all_entries, "◎ RADAR")
+    table.insert(all_entries, "  No files tracked yet")
+    table.insert(all_entries, "  Use " .. self.config.keys.lock .. " to lock files")
+  end
+
   local new_buf_id = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_lines(new_buf_id, 0, -1, false, all_entries)
 
@@ -902,16 +904,7 @@ function M:update_mini_radar()
   -- Update recent files
   self:update_recent_files()
 
-  -- Close window if no content
-  if
-    #self.state.locks == 0
-    and #self.state.recent_files == 0
-    and self:does_mini_radar_exist()
-  then
-    vim.api.nvim_win_close(self.state.mini_radar_winid, true)
-    self.state.mini_radar_winid = nil
-    return
-  end
+  -- Keep window open even when empty
 
   self:ensure_mini_radar_exists()
   local mini_radar_bufid = self:get_mini_radar_bufid()
@@ -937,6 +930,13 @@ function M:update_mini_radar()
     for _, entry in ipairs(recent_entries) do
       table.insert(all_entries, entry)
     end
+  end
+
+  -- If no content at all, show helpful message
+  if #all_entries == 0 then
+    table.insert(all_entries, "◎ RADAR")
+    table.insert(all_entries, "  No files tracked yet")
+    table.insert(all_entries, "  Use " .. self.config.keys.lock .. " to lock files")
   end
 
   vim.api.nvim_buf_set_lines(mini_radar_bufid, 0, -1, false, all_entries)
