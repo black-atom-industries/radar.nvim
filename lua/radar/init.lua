@@ -72,8 +72,8 @@ M.config = {
       },
       winblend = 25,
       path_format = ":p:.",
-      entry_format = "  [%s] %s  ",
-      separator = "",
+      entry_format = "   [%s] %s  ",
+      separator = " ",
       ---@type vim.api.keyset.win_config
       config = {
         width = 50,
@@ -820,10 +820,16 @@ function M:build_radar_entries()
     vim.list_extend(all_entries, recent_entries)
   end
 
+  -- Add separator at the beginning if we have any content
+  if #all_entries > 0 then
+    table.insert(all_entries, 1, self.config.ui.mini.separator)
+  end
+
   -- If no content at all, show helpful message
   if #all_entries == 0 then
     if self.config.ui.mini.sections.empty.show_title then
       table.insert(all_entries, self.config.ui.mini.config.title)
+      table.insert(all_entries, "")
     end
     if self.config.ui.mini.sections.empty.instructions then
       table.insert(all_entries, "  No files tracked yet")
