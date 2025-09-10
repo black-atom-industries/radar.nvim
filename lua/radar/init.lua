@@ -55,7 +55,7 @@ M.config = {
   path_format = ":p:.",
 
   -- Window transparency (0-100, where 0 is opaque and 100 is fully transparent)
-  winblend = 15,
+  winblend = 25,
 
   ---@type vim.api.keyset.win_config
   win = {
