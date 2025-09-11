@@ -1,0 +1,101 @@
+local state = require("radar.state")
+
+local M = {}
+
+---Get recent files filtered by current working directory and excluding locked files
+---@param radar_config table
+---@return string[]
+function M.get_files(radar_config)
+  local cwd = vim.uv.cwd()
+  if not cwd then
+    return {}
+  end
+
+  local recent_files = {}
+  local seen_files = {}
+  local locked_files = {}
+
+  -- Create lookup table for locked files (normalize to absolute paths)
+  for _, lock in ipairs(state.locks) do
+    local abs_path = vim.fn.fnamemodify(lock.filename, ":p")
+    locked_files[abs_path] = true
+  end
+
+  -- Add current session files first (most recent)
+  for i = #state.session_files, 1, -1 do
+    local filepath = state.session_files[i]
+
+    if not locked_files[filepath] and not seen_files[filepath] then
+      if vim.startswith(filepath, cwd) and vim.fn.filereadable(filepath) == 1 then
+        table.insert(recent_files, filepath)
+        seen_files[filepath] = true
+
+        if #recent_files >= #radar_config.keys.recent then
+          return recent_files
+        end
+      end
+    end
+  end
+
+  -- Fill remaining slots with vim.v.oldfiles
+  for _, filepath in ipairs(vim.v.oldfiles) do
+    -- Skip if already seen, locked, or if we're at capacity
+    if
+      seen_files[filepath]
+      or locked_files[filepath]
+      or #recent_files >= #radar_config.keys.recent
+    then
+      goto continue
+    end
+
+    -- Only include files from current working directory
+    if vim.startswith(filepath, cwd) and vim.fn.filereadable(filepath) == 1 then
+      table.insert(recent_files, filepath)
+      seen_files[filepath] = true
+    end
+
+    ::continue::
+  end
+
+  return recent_files
+end
+
+---Add current file to session tracking
+---@param radar_config table
+---@return nil
+function M.track_current_file(radar_config)
+  local current_file = vim.api.nvim_buf_get_name(0)
+
+  -- Only track real files (not empty buffers, help files, etc.)
+  if current_file == "" or vim.bo.buftype ~= "" or vim.bo.filetype == "help" then
+    return
+  end
+
+  -- Get absolute path
+  local abs_path = vim.fn.fnamemodify(current_file, ":p")
+
+  -- Remove if already exists (we'll add it to the end)
+  for i = #state.session_files, 1, -1 do
+    if state.session_files[i] == abs_path then
+      table.remove(state.session_files, i)
+      break
+    end
+  end
+
+  -- Add to end (most recent)
+  table.insert(state.session_files, abs_path)
+
+  -- Keep only last N session files
+  if #state.session_files > radar_config.behavior.max_session_files then
+    table.remove(state.session_files, 1)
+  end
+end
+
+---Update recent files in state
+---@param radar_config table
+---@return nil
+function M.update_state(radar_config)
+  state.recent_files = M.get_files(radar_config)
+end
+
+return M
