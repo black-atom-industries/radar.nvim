@@ -73,12 +73,10 @@ vim.api.nvim_create_autocmd("BufEnter", {
     recent.track_current_file(M.config)
     -- Update recent files to include current session files
     recent.update_state(M.config)
-    -- Update radar if it exists (this rebuilds content)
+    -- Update radar if it exists (this rebuilds content and applies highlights)
     if mini_radar.exists() then
       mini_radar.update(M.config)
     end
-    -- Highlight active file AFTER update (so it doesn't get destroyed)
-    mini_radar.highlight_active_file(M.config)
   end,
 })
 

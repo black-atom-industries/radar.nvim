@@ -96,9 +96,9 @@ function M.lock_current_buffer(
   M.toggle(filename, radar_config, persistence_module, mini_radar_module)
 
   if not mini_radar_module.exists() then
-    mini_radar_module.create()
+    mini_radar_module.create(radar_config)
   else
-    mini_radar_module.update()
+    mini_radar_module.update(radar_config)
   end
 end
 

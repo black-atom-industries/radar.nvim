@@ -153,24 +153,40 @@ function M.ensure_exists(radar_config)
   end
 end
 
----Highlight section headers
+---Apply all highlights in one simple pass
 ---@param radar_config table
 ---@return nil
-function M.highlight_sections(radar_config)
-  M.ensure_exists(radar_config)
-  local lock_board_bufid = M.get_bufid()
-
-  if lock_board_bufid == nil then
+function M.apply_highlights(radar_config)
+  local bufid = M.get_bufid()
+  if not bufid then
     return
   end
 
-  local lines = vim.api.nvim_buf_get_lines(lock_board_bufid, 0, -1, false)
+  local lines = vim.api.nvim_buf_get_lines(bufid, 0, -1, false)
 
-  -- Only highlight section headers
+  -- Get current file (might be empty)
+  local current_file = ""
+  local curr_filepath = vim.api.nvim_buf_get_name(vim.api.nvim_get_current_buf())
+  if curr_filepath ~= "" then
+    current_file = M.get_formatted_filepath(curr_filepath, radar_config)
+  end
+
+  -- Clear all highlights once
+  vim.api.nvim_buf_clear_namespace(
+    bufid,
+    config_module.constants.ns_mini_radar,
+    0,
+    -1
+  )
+
+  -- Apply all highlights in one pass
+  local current_section = nil
   for i, line in ipairs(lines) do
+    -- Section headers - always highlight
     if line == radar_config.ui.mini.sections.locks.header then
+      current_section = "locks"
       vim.api.nvim_buf_set_extmark(
-        lock_board_bufid,
+        bufid,
         config_module.constants.ns_mini_radar,
         i - 1,
         0,
@@ -180,8 +196,9 @@ function M.highlight_sections(radar_config)
         }
       )
     elseif line == radar_config.ui.mini.sections.recent.header then
+      current_section = "recent"
       vim.api.nvim_buf_set_extmark(
-        lock_board_bufid,
+        bufid,
         config_module.constants.ns_mini_radar,
         i - 1,
         0,
@@ -190,61 +207,14 @@ function M.highlight_sections(radar_config)
           hl_group = radar_config.ui.mini.sections.recent.header_hl,
         }
       )
-    end
-  end
-end
-
----Highlight active file only (clear active file highlights first)
----@param radar_config table
----@return nil
-function M.highlight_active_file(radar_config)
-  M.ensure_exists(radar_config)
-  local lock_board_bufid = M.get_bufid()
-
-  if lock_board_bufid == nil then
-    return
-  end
-
-  local lines = vim.api.nvim_buf_get_lines(lock_board_bufid, 0, -1, false)
-
-  local curr_filepath = vim.api.nvim_buf_get_name(vim.api.nvim_get_current_buf())
-  local curr_formatted_filepath =
-    M.get_formatted_filepath(curr_filepath, radar_config)
-
-  -- Abort on empty files
-  if curr_formatted_filepath == "" then
-    return
-  end
-
-
-  -- Clear only active file highlights (preserve section highlights)
-  -- We'll use a different approach: clear all and re-highlight both sections and active file
-  vim.api.nvim_buf_clear_namespace(
-    lock_board_bufid,
-    config_module.constants.ns_mini_radar,
-    0,
-    -1
-  )
-
-  -- Re-highlight sections
-  M.highlight_sections(radar_config)
-
-  -- Highlight current file if it appears in the radar
-  local current_section = nil
-  for i, line in ipairs(lines) do
-    -- Track which section we're in
-    if line == radar_config.ui.mini.sections.locks.header then
-      current_section = "locks"
-    elseif line == radar_config.ui.mini.sections.recent.header then
-      current_section = "recent"
-    -- Highlight current file if it appears in the radar (locks or recent files)
-    elseif line ~= "" and line:find(curr_formatted_filepath, 1, true) then
+    -- Active file - only if we have a current file
+    elseif current_file ~= "" and line:find(current_file, 1, true) then
       local entry_hl = current_section == "recent"
           and radar_config.ui.mini.sections.recent.entry_hl
         or radar_config.ui.mini.sections.locks.entry_hl
 
       vim.api.nvim_buf_set_extmark(
-        lock_board_bufid,
+        bufid,
         config_module.constants.ns_mini_radar,
         i - 1,
         0,
@@ -287,8 +257,8 @@ function M.create(radar_config)
     { win = win }
   )
 
-  -- Highlight sections immediately
-  M.highlight_sections(radar_config)
+  -- Apply all highlights
+  M.apply_highlights(radar_config)
 end
 
 ---Update mini radar window
@@ -317,8 +287,8 @@ function M.update(radar_config)
     row = 1,
     col = math.floor((vim.o.columns - board_width) - 2),
   })
-  -- Highlight sections immediately
-  M.highlight_sections(radar_config)
+  -- Apply all highlights
+  M.apply_highlights(radar_config)
 end
 
 return M
