@@ -61,7 +61,7 @@ M.default = {
           entry_hl = "@function",
         },
         recent = {
-          header = "󰽏  SURROUNDING",
+          header = "󰽏  NEAR",
           header_hl = "@type",
           entry_hl = "@function",
         },
