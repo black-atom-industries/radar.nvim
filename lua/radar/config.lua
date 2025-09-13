@@ -57,7 +57,7 @@ M.default = {
       sections = {
         locks = {
           header = "󰋱  LOCKED IN",
-          header_hl = "@keyword",
+          header_hl = "@tag.builtin",
           entry_hl = "@function",
         },
         recent = {
