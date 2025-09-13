@@ -92,10 +92,10 @@ function M.track_current_file(radar_config)
 end
 
 ---Update recent files in state
----@param radar_config table
+---@param config? Radar.Config
 ---@return nil
-function M.update_state(radar_config)
-  state.recent_files = M.get_files(radar_config)
+function M.update_state(config)
+  state.recent_files = M.get_files(config)
 end
 
 return M

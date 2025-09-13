@@ -262,7 +262,7 @@ function M.create(radar_config)
 end
 
 ---Update mini radar window
----@param radar_config table
+---@param radar_config Radar.Config
 ---@return nil
 function M.update(radar_config)
   -- Update recent files
