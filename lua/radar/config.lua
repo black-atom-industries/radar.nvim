@@ -54,6 +54,10 @@ M.default = {
 
   ui = {
     mini = {
+      position = "right", -- "left" or "right"
+      width = 40,
+      fixed_width = true,
+      title = "󰐷  RADAR",
       sections = {
         locks = {
           header = "󰋱  LOCKED IN",
@@ -70,22 +74,9 @@ M.default = {
           instructions = true,
         },
       },
-      winblend = 25,
       path_format = ":p:.",
       entry_format = "   [%s] %s  ",
       separator = " ",
-      ---@type vim.api.keyset.win_config
-      config = {
-        width = 50,
-        relative = "editor",
-        anchor = "NW",
-        title = "󰐷  RADAR",
-        title_pos = "left",
-        style = "minimal",
-        border = "solid",
-        focusable = false,
-        zindex = 100,
-      },
     },
     edit = {
       win_width_padding = 10,

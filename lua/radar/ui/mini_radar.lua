@@ -30,7 +30,7 @@ function M.calculate_window_width(radar_config)
   end
 
   -- Ensure minimum width and add padding
-  return math.max(max_width, radar_config.ui.mini.config.width)
+  return math.max(max_width, radar_config.ui.mini.width)
 end
 
 ---Format file path according to config
@@ -110,7 +110,7 @@ function M.build_radar_entries(radar_config)
   -- If no content at all, show helpful message
   if #all_entries == 0 then
     if radar_config.ui.mini.sections.empty.show_title then
-      table.insert(all_entries, radar_config.ui.mini.config.title)
+      table.insert(all_entries, radar_config.ui.mini.title)
       table.insert(all_entries, "")
     end
     if radar_config.ui.mini.sections.empty.instructions then
@@ -239,23 +239,34 @@ function M.create(radar_config)
   local new_buf_id = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_lines(new_buf_id, 0, -1, false, all_entries)
 
-  local board_width = M.calculate_window_width(radar_config)
-  local win_opts = vim.tbl_deep_extend("force", radar_config.ui.mini.config, {
-    width = board_width,
-    height = #all_entries,
-    row = 1,
-    col = math.floor((vim.o.columns - board_width) - 2),
-  })
+  -- Create sidebar window
+  local width = radar_config.ui.mini.fixed_width
+    and radar_config.ui.mini.width
+    or M.calculate_window_width(radar_config)
 
-  local win = vim.api.nvim_open_win(new_buf_id, false, win_opts)
+  -- Use vim.cmd for reliable sidebar creation
+  if radar_config.ui.mini.position == "left" then
+    vim.cmd("topleft " .. width .. "vsplit")
+  else
+    vim.cmd("botright " .. width .. "vsplit")
+  end
+
+  local win = vim.api.nvim_get_current_win()
+  vim.api.nvim_win_set_buf(win, new_buf_id)
+
+  -- Configure sidebar window options
+  vim.api.nvim_set_option_value("winfixwidth", true, { win = win })
+  vim.api.nvim_set_option_value("number", false, { win = win })
+  vim.api.nvim_set_option_value("relativenumber", false, { win = win })
+  vim.api.nvim_set_option_value("signcolumn", "no", { win = win })
+  vim.api.nvim_set_option_value("foldcolumn", "0", { win = win })
+  vim.api.nvim_set_option_value("wrap", false, { win = win })
+  vim.api.nvim_set_option_value("cursorline", false, { win = win })
+
+  -- Return to previous window
+  vim.cmd("wincmd p")
+
   state.mini_radar_winid = win
-
-  -- Set window transparency
-  vim.api.nvim_set_option_value(
-    "winblend",
-    radar_config.ui.mini.winblend,
-    { win = win }
-  )
 
   -- Apply all highlights
   M.apply_highlights(radar_config)
@@ -279,14 +290,13 @@ function M.update(radar_config)
 
   vim.api.nvim_buf_set_lines(mini_radar_bufid, 0, -1, false, all_entries)
 
-  local board_width = M.calculate_window_width(radar_config)
-  vim.api.nvim_win_set_config(state.mini_radar_winid, {
-    relative = "editor",
-    width = board_width,
-    height = #all_entries,
-    row = 1,
-    col = math.floor((vim.o.columns - board_width) - 2),
-  })
+  -- Only update width if not fixed
+  if not radar_config.ui.mini.fixed_width then
+    local board_width = M.calculate_window_width(radar_config)
+    vim.api.nvim_win_set_width(state.mini_radar_winid, board_width)
+  end
+  -- Sidebar height adjusts automatically with content
+
   -- Apply all highlights
   M.apply_highlights(radar_config)
 end

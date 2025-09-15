@@ -18,12 +18,6 @@ function M.register(config)
     end,
   })
 
-  vim.api.nvim_create_autocmd("VimResized", {
-    group = vim.api.nvim_create_augroup("radar.VimResized", { clear = true }),
-    callback = function()
-      mini_radar.update(config)
-    end,
-  })
 
   -- Autocmds
   vim.api.nvim_create_autocmd("BufEnter", {
