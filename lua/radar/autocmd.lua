@@ -18,7 +18,6 @@ function M.register(config)
     end,
   })
 
-
   -- Autocmds
   vim.api.nvim_create_autocmd("BufEnter", {
     group = vim.api.nvim_create_augroup("radar.BufEnter", { clear = true }),

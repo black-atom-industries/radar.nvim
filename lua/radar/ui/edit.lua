@@ -3,24 +3,14 @@ local persistence = require("radar.persistence")
 
 local M = {}
 
----Calculate optimal window width based on longest file path
+---Calculate optimal window width for edit window
 ---@param radar_config table
 ---@param mini_radar_module table
 ---@return integer
 local function calculate_window_width(radar_config, mini_radar_module)
-  local max_width = 0
-
-  -- Check locked files
-  for _, lock in ipairs(state.locks) do
-    local formatted_path =
-      mini_radar_module.get_formatted_filepath(lock.filename, radar_config)
-    local entry_text =
-      string.format(radar_config.ui.mini.entry_format, lock.label, formatted_path)
-    max_width = math.max(max_width, vim.fn.strdisplaywidth(entry_text))
-  end
-
-  -- Ensure minimum width and add padding
-  return math.max(max_width, radar_config.ui.mini.width)
+  -- For the edit window, we don't need to shorten paths since it's a separate floating window
+  -- Just return a reasonable width for editing
+  return radar_config.ui.mini.width + 20 -- Add some extra width for editing
 end
 
 ---Setup autocmds for edit buffer save and close handling

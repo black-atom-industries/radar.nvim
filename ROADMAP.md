@@ -1,5 +1,7 @@
 ## ROADMAP
 
+## Inbox
+
 - [ ] feat: New Plugin Structure
 - [ ] feat: `config.behaviour`: Hide mini radar when cursor collides - is under it
 - [ ] feat: `config.behaviour`: Open first lock on `VimEnter`
@@ -7,6 +9,15 @@
 - [ ] fix: z index (Currently is over float terms like lazygit)
 - [ ] fix: Keep order of Recent list if contents remain the same
   - Currently choosing a entry from the recents will put it in the a slot
+
+## 2025.09.15 - Monday
+
+- [ ] Make Window not focusable?
+
+## 2025.09.15 - Monday
+
+- [x] feat: try out sidebar
+- [x] feat: try out collision
 
 ## 2025.09.10 - Wednesday
 
