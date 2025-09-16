@@ -58,6 +58,7 @@ M.default = {
       width = 40,
       fixed_width = true,
       title = "󰐷  RADAR",
+      title_hl = "@constant",
       sections = {
         locks = {
           header = "󰋱  LOCKED IN",

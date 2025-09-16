@@ -102,9 +102,10 @@ function M.build_radar_entries(radar_config)
     vim.list_extend(all_entries, recent_entries)
   end
 
-  -- Add separator at the beginning if we have any content
+  -- Add header and separator at the beginning if we have any content
   if #all_entries > 0 then
     table.insert(all_entries, 1, radar_config.ui.mini.separator)
+    table.insert(all_entries, 1, radar_config.ui.mini.title)
   end
 
   -- If no content at all, show helpful message
@@ -182,8 +183,20 @@ function M.apply_highlights(radar_config)
   -- Apply all highlights in one pass
   local current_section = nil
   for i, line in ipairs(lines) do
+    -- Title header - always highlight
+    if line == radar_config.ui.mini.title then
+      vim.api.nvim_buf_set_extmark(
+        bufid,
+        config_module.constants.ns_mini_radar,
+        i - 1,
+        0,
+        {
+          end_col = #line,
+          hl_group = radar_config.ui.mini.title_hl,
+        }
+      )
     -- Section headers - always highlight
-    if line == radar_config.ui.mini.sections.locks.header then
+    elseif line == radar_config.ui.mini.sections.locks.header then
       current_section = "locks"
       vim.api.nvim_buf_set_extmark(
         bufid,
