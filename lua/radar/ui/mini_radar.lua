@@ -1,44 +1,33 @@
 local config_module = require("radar.config")
 local state = require("radar.state")
 local recent = require("radar.recent")
+local path_utils = require("radar.utils.path")
 
 local M = {}
 
----Calculate optimal window width based on longest file path
+---Get window width for floating window (fixed width since we shorten paths)
 ---@param radar_config table
 ---@return integer
 function M.calculate_window_width(radar_config)
-  local max_width = 0
-
-  -- Check locked files
-  for _, lock in ipairs(state.locks) do
-    local formatted_path = M.get_formatted_filepath(lock.filename, radar_config)
-    local entry_text =
-      string.format(radar_config.ui.mini.entry_format, lock.label, formatted_path)
-    max_width = math.max(max_width, vim.fn.strdisplaywidth(entry_text))
-  end
-
-  -- Check recent files
-  for i, filename in ipairs(state.recent_files) do
-    local label = radar_config.keys.recent[i]
-    if label then
-      local formatted_path = M.get_formatted_filepath(filename, radar_config)
-      local entry_text =
-        string.format(radar_config.ui.mini.entry_format, label, formatted_path)
-      max_width = math.max(max_width, vim.fn.strdisplaywidth(entry_text))
-    end
-  end
-
-  -- Ensure minimum width and add padding
-  return math.max(max_width, radar_config.ui.mini.config.width)
+  -- Since we're now shortening paths to fit the configured width,
+  -- we can just return the configured width
+  return radar_config.ui.mini.config.width
 end
 
----Format file path according to config
+---Format file path according to config, with optional shortening
 ---@param path string
 ---@param radar_config table
+---@param max_width integer? Maximum width for path display (if nil, no shortening)
+---@param label_width integer? Width taken by label (e.g., "[1] ")
 ---@return string
-function M.get_formatted_filepath(path, radar_config)
-  return vim.fn.fnamemodify(path, radar_config.ui.mini.path_format)
+function M.get_formatted_filepath(path, radar_config, max_width, label_width)
+  -- Use our path utility for formatting and shortening
+  return path_utils.format_and_shorten(
+    path,
+    radar_config.ui.mini.path_format,
+    max_width,
+    label_width
+  )
 end
 
 ---Create formatted entries for locks
@@ -51,7 +40,14 @@ function M.create_entries(locks, radar_config)
   if #locks > 0 then
     table.insert(entries, radar_config.ui.mini.sections.locks.header)
     for _, lock in ipairs(locks) do
-      local path = M.get_formatted_filepath(lock.filename, radar_config)
+      -- Calculate label width: "   [1] " = 7 chars for single char label
+      local label_width = 3 + 1 + #lock.label + 1 + 1 + 2 -- spaces + [label] + spaces
+      local path = M.get_formatted_filepath(
+        lock.filename,
+        radar_config,
+        radar_config.ui.mini.config.width,
+        label_width
+      )
       local entry =
         string.format(radar_config.ui.mini.entry_format, lock.label, path)
       table.insert(entries, entry)
@@ -72,7 +68,14 @@ function M.create_recent_entries(radar_config)
     for i, filename in ipairs(state.recent_files) do
       local label = radar_config.keys.recent[i]
       if label then
-        local path = M.get_formatted_filepath(filename, radar_config)
+        -- Calculate label width: "   [a] " = 7 chars for single char label
+        local label_width = 3 + 1 + #label + 1 + 1 + 2 -- spaces + [label] + spaces
+        local path = M.get_formatted_filepath(
+          filename,
+          radar_config,
+          radar_config.ui.mini.config.width,
+          label_width
+        )
         local entry = string.format(radar_config.ui.mini.entry_format, label, path)
         table.insert(entries, entry)
       end
@@ -164,11 +167,18 @@ function M.apply_highlights(radar_config)
 
   local lines = vim.api.nvim_buf_get_lines(bufid, 0, -1, false)
 
-  -- Get current file (might be empty)
+  -- Get current file (might be empty) - we need to match against the shortened paths
   local current_file = ""
   local curr_filepath = vim.api.nvim_buf_get_name(vim.api.nvim_get_current_buf())
   if curr_filepath ~= "" then
-    current_file = M.get_formatted_filepath(curr_filepath, radar_config)
+    -- Use a reasonable label width for comparison (7 chars for single char labels)
+    local label_width = 7
+    current_file = M.get_formatted_filepath(
+      curr_filepath,
+      radar_config,
+      radar_config.ui.mini.config.width,
+      label_width
+    )
   end
 
   -- Clear all highlights once
