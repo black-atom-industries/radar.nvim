@@ -93,7 +93,12 @@ function M.lock_current_buffer(
 )
   buf_nr = buf_nr or vim.api.nvim_get_current_buf()
   local filename = vim.api.nvim_buf_get_name(buf_nr)
-  M.toggle(filename, radar_config, persistence_module, mini_radar_module)
+
+  -- Normalize filename to match the format used in UI (relative to cwd)
+  local normalized_filename =
+    vim.fn.fnamemodify(filename, radar_config.ui.mini.path_format)
+
+  M.toggle(normalized_filename, radar_config, persistence_module, mini_radar_module)
 
   if not mini_radar_module.exists() then
     mini_radar_module.create(radar_config)
