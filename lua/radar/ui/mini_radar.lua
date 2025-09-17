@@ -277,6 +277,7 @@ function M.create(radar_config)
   vim.api.nvim_win_set_buf(win, new_buf_id)
 
   -- Configure sidebar window options
+  vim.api.nvim_set_option_value("winfixbuf", true, { win = win })
   vim.api.nvim_set_option_value("winfixwidth", true, { win = win })
   vim.api.nvim_set_option_value("number", false, { win = win })
   vim.api.nvim_set_option_value("relativenumber", false, { win = win })
