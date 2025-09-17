@@ -59,6 +59,40 @@ The plugin automatically shows a floating window with your pinned files and high
 
 Pins are automatically saved and restored per project and git branch, so switching between projects or branches maintains separate pin sets.
 
+## 🧪 Testing
+
+This plugin includes comprehensive tests using [mini.test](https://github.com/echasnovski/mini.test) with busted-style syntax.
+
+### Available Commands
+
+| Command | Description | Dependencies |
+|---------|-------------|--------------|
+| `make validate` | Validate test setup | None |
+| `make test` | Run all tests | None |
+| `make test-path` | Run only path utility tests | None |
+| `make test-watch` | Watch for changes and run tests | `entr` (`brew install entr`) |
+| `make lint` | Lint Lua files | `stylua` (`brew install stylua`) |
+| `make format` | Format Lua files | `stylua` (`brew install stylua`) |
+| `make clean` | Clean test artifacts | None |
+| `make help` | Show all available commands | None |
+
+### Test Coverage
+
+- **Path Shortening**: 18+ test cases covering width constraints, home directory replacement, ellipsis handling, and edge cases
+- **Smart Path Display**: Tests ensure long file paths fit within sidebar width while maintaining readability
+
+### Writing Tests
+
+Tests are located in `test/spec/` and use mini.test with busted emulation:
+
+```lua
+describe("my feature", function()
+  it("should work correctly", function()
+    MiniTest.expect.equality(result, expected)
+  end)
+end)
+```
+
 ## 🏗️ Architecture
 
 This is a **learning project** demonstrating:
