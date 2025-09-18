@@ -126,6 +126,72 @@ describe("path.shorten_path", function()
       MiniTest.expect.equality(starts_correctly, true)
     end)
   end)
+
+  describe("progressive shortening", function()
+    it("keeps more characters when space allows", function()
+      local path = "/node_modules/@radix-ui/react-dialog/dist/index.d.mts"
+      local result = shorten_path(path, 50)
+
+      -- Should show more than single letters for directories
+      MiniTest.expect.equality(result:match("node") ~= nil, true)
+      MiniTest.expect.equality(result:match("radix") ~= nil, true)
+      MiniTest.expect.equality(result:match("react") ~= nil, true)
+      MiniTest.expect.equality(result:match("index%.d%.mts$") ~= nil, true)
+    end)
+
+    it("progressively shortens when space is limited", function()
+      local path = "/very/long/directory/structure/with/many/levels/file.lua"
+
+      -- With more space (35 chars), should use 2+ character abbreviations
+      local result_35 = shorten_path(path, 35)
+      MiniTest.expect.equality(vim.fn.strdisplaywidth(result_35) <= 35, true)
+      MiniTest.expect.equality(result_35:match("file%.lua$") ~= nil, true)
+      local has_2char_dirs = result_35:match("/ve") ~= nil
+        or result_35:match("/lo") ~= nil
+        or result_35:match("/di") ~= nil
+      MiniTest.expect.equality(has_2char_dirs, true)
+
+      -- With less space (25 chars), falls back to single characters
+      local result_25 = shorten_path(path, 25)
+      MiniTest.expect.equality(vim.fn.strdisplaywidth(result_25) <= 25, true)
+      MiniTest.expect.equality(result_25:match("file%.lua$") ~= nil, true)
+    end)
+
+    it("handles short directory names efficiently", function()
+      local path = "/src/components/ui/Button.tsx"
+      local result = shorten_path(path, 30)
+
+      -- Short directories like 'src' and 'ui' should be kept as-is
+      MiniTest.expect.equality(result:match("src") ~= nil, true)
+      MiniTest.expect.equality(result:match("ui") ~= nil, true)
+      MiniTest.expect.equality(result:match("Button%.tsx$") ~= nil, true)
+    end)
+
+    it("handles dot directories correctly", function()
+      local path = "/home/user/.config/.local/share/file.txt"
+      local result = shorten_path(path, 30)
+
+      -- Should preserve dot prefix and show meaningful parts (actual result is .co/.lo)
+      MiniTest.expect.equality(
+        result:match("%.co") ~= nil or result:match("%.lo") ~= nil,
+        true
+      )
+      MiniTest.expect.equality(result:match("file%.txt$") ~= nil, true)
+    end)
+
+    it("falls back to ellipsis for extremely long paths", function()
+      local path =
+        "/extremely/long/path/that/cannot/possibly/fit/even/with/maximum/shortening/file.txt"
+      local result = shorten_path(path, 15)
+
+      -- Should use ellipsis when even shortened path is too long
+      MiniTest.expect.equality(vim.fn.strdisplaywidth(result) <= 15, true)
+      MiniTest.expect.equality(
+        result:match("%.%.%.") ~= nil or result:match("file%.txt") ~= nil,
+        true
+      )
+    end)
+  end)
 end)
 
 describe("path.format_and_shorten", function()

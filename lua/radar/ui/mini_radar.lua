@@ -1,18 +1,9 @@
 local config_module = require("radar.config")
 local state = require("radar.state")
 local recent = require("radar.recent")
-local path_utils = require("radar.utils.path")
+local collision = require("radar.collision")
 
 local M = {}
-
----Get window width for floating window (fixed width since we shorten paths)
----@param radar_config table
----@return integer
-function M.calculate_window_width(radar_config)
-  -- Since we're now shortening paths to fit the configured width,
-  -- we can just return the configured width
-  return radar_config.ui.mini.config.width
-end
 
 ---Format file path according to config, with optional shortening
 ---@param path string
@@ -22,6 +13,7 @@ end
 ---@return string
 function M.get_formatted_filepath(path, radar_config, max_width, label_width)
   -- Use our path utility for formatting and shortening
+  local path_utils = require("radar.utils.path")
   return path_utils.format_and_shorten(
     path,
     radar_config.ui.mini.path_format,
@@ -151,7 +143,7 @@ end
 ---@param radar_config table
 ---@return nil
 function M.ensure_exists(radar_config)
-  if not M.exists() then
+  if not M.exists() and not collision.is_hidden_for_collision() then
     M.create(radar_config)
   end
 end
@@ -167,18 +159,15 @@ function M.apply_highlights(radar_config)
 
   local lines = vim.api.nvim_buf_get_lines(bufid, 0, -1, false)
 
-  -- Get current file (might be empty) - we need to match against the shortened paths
-  local current_file = ""
+  -- Get current file path for highlighting comparison
   local curr_filepath = vim.api.nvim_buf_get_name(vim.api.nvim_get_current_buf())
+
+  -- Format current file path to match the format used in locks/recent files
+  -- Locks use the same format as the path_format configuration
+  local curr_filepath_formatted = ""
   if curr_filepath ~= "" then
-    -- Use a reasonable label width for comparison (7 chars for single char labels)
-    local label_width = 7
-    current_file = M.get_formatted_filepath(
-      curr_filepath,
-      radar_config,
-      radar_config.ui.mini.config.width,
-      label_width
-    )
+    curr_filepath_formatted =
+      vim.fn.fnamemodify(curr_filepath, radar_config.ui.mini.path_format)
   end
 
   -- Clear all highlights once
@@ -189,12 +178,15 @@ function M.apply_highlights(radar_config)
     -1
   )
 
-  -- Apply all highlights in one pass
+  -- Track which section we're in for proper highlighting
   local current_section = nil
+  local section_index = 0
+
   for i, line in ipairs(lines) do
-    -- Section headers - always highlight
+    -- Section headers - always highlight and reset section tracking
     if line == radar_config.ui.mini.sections.locks.header then
       current_section = "locks"
+      section_index = 0
       vim.api.nvim_buf_set_extmark(
         bufid,
         config_module.constants.ns_mini_radar,
@@ -207,6 +199,7 @@ function M.apply_highlights(radar_config)
       )
     elseif line == radar_config.ui.mini.sections.recent.header then
       current_section = "recent"
+      section_index = 0
       vim.api.nvim_buf_set_extmark(
         bufid,
         config_module.constants.ns_mini_radar,
@@ -217,22 +210,48 @@ function M.apply_highlights(radar_config)
           hl_group = radar_config.ui.mini.sections.recent.header_hl,
         }
       )
-    -- Active file - only if we have a current file
-    elseif current_file ~= "" and line:find(current_file, 1, true) then
-      local entry_hl = current_section == "recent"
-          and radar_config.ui.mini.sections.recent.entry_hl
-        or radar_config.ui.mini.sections.locks.entry_hl
+    elseif line == radar_config.ui.mini.separator then
+      -- Skip separator lines, don't change section or index
+    elseif line ~= "" and current_section and curr_filepath_formatted ~= "" then
+      -- This is a file entry line - increment index and check for match
+      section_index = section_index + 1
 
-      vim.api.nvim_buf_set_extmark(
-        bufid,
-        config_module.constants.ns_mini_radar,
-        i - 1,
-        0,
-        {
-          end_col = #line,
-          hl_group = entry_hl,
-        }
-      )
+      local actual_filepath = nil
+      if current_section == "locks" and state.locks[section_index] then
+        actual_filepath = state.locks[section_index].filename
+      elseif current_section == "recent" and state.recent_files[section_index] then
+        actual_filepath = state.recent_files[section_index]
+      end
+
+      -- Only highlight if this line represents the current file
+      -- Locks store relative paths, recent files store absolute paths
+      local matches = false
+      if actual_filepath then
+        if current_section == "locks" then
+          -- Locks use relative paths - compare with formatted current path
+          matches = actual_filepath == curr_filepath_formatted
+        elseif current_section == "recent" then
+          -- Recent files use absolute paths - compare with absolute current path
+          matches = actual_filepath == curr_filepath
+        end
+      end
+
+      if matches then
+        local entry_hl = current_section == "recent"
+            and radar_config.ui.mini.sections.recent.entry_hl
+          or radar_config.ui.mini.sections.locks.entry_hl
+
+        vim.api.nvim_buf_set_extmark(
+          bufid,
+          config_module.constants.ns_mini_radar,
+          i - 1,
+          0,
+          {
+            end_col = #line,
+            hl_group = entry_hl,
+          }
+        )
+      end
     end
   end
 end
@@ -249,7 +268,7 @@ function M.create(radar_config)
   local new_buf_id = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_lines(new_buf_id, 0, -1, false, all_entries)
 
-  local board_width = M.calculate_window_width(radar_config)
+  local board_width = radar_config.ui.mini.config.width
   local win_opts = vim.tbl_deep_extend("force", radar_config.ui.mini.config, {
     width = board_width,
     height = #all_entries,
@@ -289,7 +308,7 @@ function M.update(radar_config)
 
   vim.api.nvim_buf_set_lines(mini_radar_bufid, 0, -1, false, all_entries)
 
-  local board_width = M.calculate_window_width(radar_config)
+  local board_width = radar_config.ui.mini.config.width
   vim.api.nvim_win_set_config(state.mini_radar_winid, {
     relative = "editor",
     width = board_width,

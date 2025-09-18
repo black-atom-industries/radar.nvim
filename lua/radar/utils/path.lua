@@ -1,6 +1,22 @@
 local M = {}
 
----Shorten a file path to fit within a maximum width
+---Safely escape a string for pattern matching with fallback
+---@param str string
+---@return string
+local function safe_escape_pattern(str)
+  if not str or str == "" then
+    return ""
+  end
+  local success, escaped = pcall(vim.pesc, str)
+  if success then
+    return escaped
+  else
+    -- Fallback: manually escape pattern characters
+    return str:gsub("[%^%$%(%)%%%.%[%]%*%+%-%?]", "%%%1")
+  end
+end
+
+---Progressively shorten a file path to fit within a maximum width
 ---@param path string The full file path to shorten
 ---@param max_width integer Maximum display width allowed
 ---@param label_width integer? Width taken by label (e.g., "[1] " = 4 chars), defaults to 0
@@ -14,9 +30,9 @@ function M.shorten_path(path, max_width, label_width)
     return ""
   end
 
-  -- Replace home directory with ~
+  -- Replace home directory with ~ (with safe pattern escaping)
   local home = vim.fn.expand("~")
-  local display_path = path:gsub("^" .. vim.pesc(home), "~")
+  local display_path = path:gsub("^" .. safe_escape_pattern(home), "~")
 
   -- If it fits, return as is
   if vim.fn.strdisplaywidth(display_path) <= available_width then
@@ -34,83 +50,77 @@ function M.shorten_path(path, max_width, label_width)
     return filename:sub(1, keep_chars) .. "..."
   end
 
-  -- Start with filename and work backwards adding components
-  local result = filename
-  local result_width = filename_width
+  -- Progressive shortening: try different shortening levels until it fits
+  local function try_build_path(min_chars)
+    local result_parts = {}
 
-  -- Try to add parent directories, shortened to single letters
-  for i = #components - 1, 1, -1 do
-    local component = components[i]
+    -- Always include filename as-is
+    result_parts[#components] = filename
 
-    -- Handle special cases
-    if component == "" then
-      -- Root or consecutive slashes
-      goto continue
-    elseif component == "~" then
-      -- Home directory - keep as is
-      local test_result = "~/" .. result
-      local test_width = vim.fn.strdisplaywidth(test_result)
-      if test_width <= available_width then
-        result = test_result
-        result_width = test_width
+    -- Build directory parts with minimum character count
+    for i = 1, #components - 1 do
+      local component = components[i]
+
+      if component == "" then
+        -- Skip empty components (root slashes, etc.)
+        result_parts[i] = ""
+      elseif component == "~" then
+        -- Home directory - keep as is
+        result_parts[i] = "~"
       else
-        -- Add ellipsis if we can't fit home
-        local ellipsis_result = ".../" .. result
-        if vim.fn.strdisplaywidth(ellipsis_result) <= available_width then
-          result = ellipsis_result
+        -- Smart shortening based on min_chars
+        if min_chars >= #component then
+          -- Keep full component if it's short enough
+          result_parts[i] = component
         else
-          -- Even with ellipsis we can't fit, truncate filename but preserve extension
-          local max_filename_chars = available_width - 3 -- Reserve for "..."
-          if max_filename_chars > 0 then
-            result = "..." .. filename:sub(1, max_filename_chars)
-          else
-            result = filename:sub(1, available_width)
+          -- Shorten but keep meaningful prefix
+          local shortened = component:sub(1, math.max(min_chars, 1))
+          -- Special handling for dot files/directories
+          if component:sub(1, 1) == "." and min_chars >= 2 then
+            shortened = component:sub(1, math.min(min_chars, #component))
           end
+          result_parts[i] = shortened
         end
-        break
-      end
-    else
-      -- Regular directory - shorten to first letter
-      local shortened = component:sub(1, 1)
-      local test_result = shortened .. "/" .. result
-      local test_width = vim.fn.strdisplaywidth(test_result)
-
-      if test_width <= available_width then
-        result = test_result
-        result_width = test_width
-      else
-        -- Can't fit more, add ellipsis
-        local ellipsis_result = ".../" .. result
-        if vim.fn.strdisplaywidth(ellipsis_result) <= available_width then
-          result = ellipsis_result
-        else
-          -- Even with ellipsis we can't fit, truncate filename but preserve extension
-          local max_filename_chars = available_width - 3 -- Reserve for "..."
-          if max_filename_chars > 0 then
-            result = "..." .. filename:sub(1, max_filename_chars)
-          else
-            result = filename:sub(1, available_width)
-          end
-        end
-        break
       end
     end
 
-    ::continue::
+    -- Join and clean up the path
+    local result = table.concat(result_parts, "/")
+    -- Clean up multiple slashes
+    result = result:gsub("//+", "/")
+
+    return result
   end
 
-  -- Add leading slash if path was absolute and we didn't include home
-  if
-    display_path:sub(1, 1) == "/"
-    and result:sub(1, 1) ~= "/"
-    and result:sub(1, 1) ~= "~"
-  then
-    if vim.fn.strdisplaywidth("/" .. result) <= available_width then
-      result = "/" .. result
+  -- Try different levels of shortening
+  local shortening_levels = { 8, 6, 4, 3, 2, 1 }
+
+  for _, min_chars in ipairs(shortening_levels) do
+    local candidate = try_build_path(min_chars)
+    if vim.fn.strdisplaywidth(candidate) <= available_width then
+      return candidate
     end
   end
 
-  return result
+  -- Last resort: use ellipsis if even single characters don't fit
+  local single_char_path = try_build_path(1)
+  if vim.fn.strdisplaywidth(single_char_path) <= available_width then
+    return single_char_path
+  end
+
+  -- If still too long, use ellipsis + filename
+  local ellipsis_result = ".../" .. filename
+  if vim.fn.strdisplaywidth(ellipsis_result) <= available_width then
+    return ellipsis_result
+  end
+
+  -- Final fallback: truncate filename with ellipsis
+  local max_filename_chars = available_width - 3 -- Reserve for "..."
+  if max_filename_chars > 0 then
+    return filename:sub(1, max_filename_chars) .. "..."
+  else
+    return filename:sub(1, available_width)
+  end
 end
 
 ---Format a file path according to vim's path modifiers, then shorten if needed

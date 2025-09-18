@@ -97,6 +97,8 @@ M.default = {
 
   behavior = {
     always_show = true,
+    hide_on_collision = true,
+    collision_padding = 2,
     deduplicate = true,
     max_session_files = 20,
     defer_persist_ms = 500,

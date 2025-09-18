@@ -12,6 +12,8 @@ local M = {
   edit_winid = nil,
   ---@type integer?
   edit_bufid = nil,
+  ---@type boolean
+  hidden_for_collision = false,
 }
 
 ---Get lock by field value
