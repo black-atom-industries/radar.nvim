@@ -1,11 +1,8 @@
 local config = require("radar.config")
-local state = require("radar.state")
-local persistence = require("radar.persistence")
-local locks = require("radar.locks")
-local mini_radar = require("radar.ui.mini_radar")
-local edit = require("radar.ui.edit")
-local navigation = require("radar.navigation")
+local keys = require("radar.keys")
 local autocmd = require("radar.autocmd")
+local persistence = require("radar.persistence")
+local mini_radar = require("radar.ui.mini_radar")
 
 local M = {}
 
@@ -16,55 +13,11 @@ M.config = config.default
 ---@return nil
 function M.setup(opts)
   opts = opts or {}
-  local merged_config = vim.tbl_deep_extend("force", M.config, opts)
-  M.config = merged_config
+  M.config = vim.tbl_deep_extend("force", M.config, opts)
 
-  autocmd.register(M.config)
-
-  -- Lock current buffer keymap
-  vim.keymap.set("n", M.config.keys.lock, function()
-    locks.lock_current_buffer(nil, M.config, persistence, mini_radar)
-  end, { desc = "Lock the current buffer" })
-
-  -- Close mini radar keymap
-  vim.keymap.set("n", ";q", function()
-    if
-      state.mini_radar_winid
-      and vim.api.nvim_win_is_valid(state.mini_radar_winid)
-    then
-      vim.api.nvim_win_close(state.mini_radar_winid, true)
-      state.mini_radar_winid = nil
-    end
-  end, { desc = "Close Mini Radar" })
-
-  -- Register lock keymaps
-  navigation.register_file_keymaps(
-    M.config.keys.locks,
-    navigation.open_lock,
-    "Lock",
-    M.config,
-    mini_radar
-  )
-
-  -- Register recent files keymaps
-  navigation.register_file_keymaps(
-    M.config.keys.recent,
-    navigation.open_recent,
-    "Recent File",
-    M.config,
-    mini_radar
-  )
-
-  -- Edit locks in floating window
-  vim.keymap.set("n", M.config.keys.prefix .. "e", function()
-    edit.edit_locks(M.config, mini_radar)
-  end, { desc = "Edit radar locks" })
-
-  -- Populate initial state
+  autocmd.setup(M.config)
+  keys.setup(M.config)
   persistence.populate(M.config, mini_radar)
-
-  -- Make module globally available for debugging
-  _G.Radar = M
 end
 
 return M

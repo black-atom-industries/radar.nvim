@@ -14,13 +14,12 @@ local function calculate_window_width(radar_config, mini_radar_module)
   for _, lock in ipairs(state.locks) do
     local formatted_path =
       mini_radar_module.get_formatted_filepath(lock.filename, radar_config)
-    local entry_text =
-      string.format(radar_config.ui.mini.entry_format, lock.label, formatted_path)
+    local entry_text = string.format("   [%s] %s  ", lock.label, formatted_path)
     max_width = math.max(max_width, vim.fn.strdisplaywidth(entry_text))
   end
 
   -- Ensure minimum width and add padding
-  return math.max(max_width, radar_config.ui.mini.config.width)
+  return math.max(max_width, radar_config.width)
 end
 
 ---Setup autocmds for edit buffer save and close handling
@@ -191,10 +190,10 @@ function M.edit_locks(radar_config, mini_radar_module)
   -- Open floating window
   local calculated_width = calculate_window_width(radar_config, mini_radar_module)
   local win_width = math.max(
-    radar_config.ui.edit.min_width,
-    calculated_width + radar_config.ui.edit.win_width_padding
+    radar_config.edit_min_width,
+    calculated_width + radar_config.edit_width_padding
   )
-  local win_height = math.min(#lines + 2, radar_config.ui.edit.max_height)
+  local win_height = math.min(#lines + 2, radar_config.edit_max_height)
   local win_opts = {
     relative = "editor",
     width = win_width,

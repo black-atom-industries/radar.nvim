@@ -66,7 +66,7 @@ end
 ---@param radar_config table
 ---@return string
 function M.get_data_file_path(radar_config)
-  return radar_config.persist.folder .. "/" .. radar_config.persist.filename
+  return radar_config.persist_path
 end
 
 ---Load persistence data from file
@@ -110,7 +110,7 @@ function M.persist(radar_config)
     })
   end
 
-  vim.fn.mkdir(radar_config.persist.folder, "p")
+  vim.fn.mkdir(vim.fn.fnamemodify(radar_config.persist_path, ":h"), "p")
   M.write(M.get_data_file_path(radar_config), data)
   return data
 end

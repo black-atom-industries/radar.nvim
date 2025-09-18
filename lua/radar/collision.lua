@@ -20,11 +20,11 @@ function M.check_collision(radar_config)
   local cursor_col = vim.fn.screencol()
 
   -- Calculate where the window would be positioned (always top-right)
-  local board_width = radar_config.ui.mini.config.width
+  local board_width = radar_config.width
   local window_col = math.floor((vim.o.columns - board_width) - 2)
 
   -- Add collision padding
-  local collision_padding = radar_config.behavior.collision_padding or 0
+  local collision_padding = radar_config.collision_padding or 0
   local min_col = window_col - collision_padding
   local max_col = window_col + board_width + collision_padding
 
@@ -38,7 +38,7 @@ end
 ---@param radar_config table
 function M.update_visibility(radar_config)
   -- Skip if collision detection is disabled
-  if not radar_config.behavior.hide_on_collision then
+  if not radar_config.hide_on_collision then
     return
   end
 

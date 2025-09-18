@@ -16,7 +16,7 @@ function M.get_formatted_filepath(path, radar_config, max_width, label_width)
   local path_utils = require("radar.utils.path")
   return path_utils.format_and_shorten(
     path,
-    radar_config.ui.mini.path_format,
+    radar_config.path_format,
     max_width,
     label_width
   )
@@ -30,18 +30,17 @@ function M.create_entries(locks, radar_config)
   local entries = {}
 
   if #locks > 0 then
-    table.insert(entries, radar_config.ui.mini.sections.locks.header)
+    table.insert(entries, radar_config.locks_header)
     for _, lock in ipairs(locks) do
       -- Calculate label width: "   [1] " = 7 chars for single char label
       local label_width = 3 + 1 + #lock.label + 1 + 1 + 2 -- spaces + [label] + spaces
       local path = M.get_formatted_filepath(
         lock.filename,
         radar_config,
-        radar_config.ui.mini.config.width,
+        radar_config.width,
         label_width
       )
-      local entry =
-        string.format(radar_config.ui.mini.entry_format, lock.label, path)
+      local entry = string.format("   [%s] %s  ", lock.label, path)
       table.insert(entries, entry)
     end
   end
@@ -56,7 +55,7 @@ function M.create_recent_entries(radar_config)
   local entries = {}
 
   if #state.recent_files > 0 then
-    table.insert(entries, radar_config.ui.mini.sections.recent.header)
+    table.insert(entries, radar_config.recent_header)
     for i, filename in ipairs(state.recent_files) do
       local label = radar_config.keys.recent[i]
       if label then
@@ -65,10 +64,10 @@ function M.create_recent_entries(radar_config)
         local path = M.get_formatted_filepath(
           filename,
           radar_config,
-          radar_config.ui.mini.config.width,
+          radar_config.width,
           label_width
         )
-        local entry = string.format(radar_config.ui.mini.entry_format, label, path)
+        local entry = string.format("   [%s] %s  ", label, path)
         table.insert(entries, entry)
       end
     end
@@ -91,7 +90,7 @@ function M.build_radar_entries(radar_config)
   if #state.recent_files > 0 then
     -- Add empty line separator only if we also have locks
     if #state.locks > 0 then
-      table.insert(all_entries, radar_config.ui.mini.separator)
+      table.insert(all_entries, " ")
     end
     local recent_entries = M.create_recent_entries(radar_config)
     vim.list_extend(all_entries, recent_entries)
@@ -99,22 +98,15 @@ function M.build_radar_entries(radar_config)
 
   -- Add separator at the beginning if we have any content
   if #all_entries > 0 then
-    table.insert(all_entries, 1, radar_config.ui.mini.separator)
+    table.insert(all_entries, 1, " ")
   end
 
   -- If no content at all, show helpful message
-  if #all_entries == 0 then
-    if radar_config.ui.mini.sections.empty.show_title then
-      table.insert(all_entries, radar_config.ui.mini.config.title)
-      table.insert(all_entries, "")
-    end
-    if radar_config.ui.mini.sections.empty.instructions then
-      table.insert(all_entries, "  No files tracked yet")
-      table.insert(
-        all_entries,
-        "  Use " .. radar_config.keys.lock .. " to lock files"
-      )
-    end
+  if #all_entries == 0 and radar_config.show_empty_message then
+    table.insert(all_entries, radar_config.title)
+    table.insert(all_entries, "")
+    table.insert(all_entries, "  No files tracked yet")
+    table.insert(all_entries, "  Use " .. radar_config.keys.lock .. " to lock files")
   end
 
   return all_entries
@@ -167,7 +159,7 @@ function M.apply_highlights(radar_config)
   local curr_filepath_formatted = ""
   if curr_filepath ~= "" then
     curr_filepath_formatted =
-      vim.fn.fnamemodify(curr_filepath, radar_config.ui.mini.path_format)
+      vim.fn.fnamemodify(curr_filepath, radar_config.path_format)
   end
 
   -- Clear all highlights once
@@ -184,7 +176,7 @@ function M.apply_highlights(radar_config)
 
   for i, line in ipairs(lines) do
     -- Section headers - always highlight and reset section tracking
-    if line == radar_config.ui.mini.sections.locks.header then
+    if line == radar_config.locks_header then
       current_section = "locks"
       section_index = 0
       vim.api.nvim_buf_set_extmark(
@@ -194,10 +186,10 @@ function M.apply_highlights(radar_config)
         0,
         {
           end_col = #line,
-          hl_group = radar_config.ui.mini.sections.locks.header_hl,
+          hl_group = "@tag.builtin",
         }
       )
-    elseif line == radar_config.ui.mini.sections.recent.header then
+    elseif line == radar_config.recent_header then
       current_section = "recent"
       section_index = 0
       vim.api.nvim_buf_set_extmark(
@@ -207,10 +199,10 @@ function M.apply_highlights(radar_config)
         0,
         {
           end_col = #line,
-          hl_group = radar_config.ui.mini.sections.recent.header_hl,
+          hl_group = "@type",
         }
       )
-    elseif line == radar_config.ui.mini.separator then
+    elseif line == " " then
       -- Skip separator lines, don't change section or index
     elseif line ~= "" and current_section and curr_filepath_formatted ~= "" then
       -- This is a file entry line - increment index and check for match
@@ -237,9 +229,7 @@ function M.apply_highlights(radar_config)
       end
 
       if matches then
-        local entry_hl = current_section == "recent"
-            and radar_config.ui.mini.sections.recent.entry_hl
-          or radar_config.ui.mini.sections.locks.entry_hl
+        local entry_hl = "@function" -- Both locks and recent use same highlight
 
         vim.api.nvim_buf_set_extmark(
           bufid,
@@ -268,13 +258,21 @@ function M.create(radar_config)
   local new_buf_id = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_lines(new_buf_id, 0, -1, false, all_entries)
 
-  local board_width = radar_config.ui.mini.config.width
-  local win_opts = vim.tbl_deep_extend("force", radar_config.ui.mini.config, {
+  local board_width = radar_config.width
+  local win_opts = {
     width = board_width,
     height = #all_entries,
     row = 1,
     col = math.floor((vim.o.columns - board_width) - 2),
-  })
+    relative = "editor",
+    anchor = "NW",
+    title = radar_config.title,
+    title_pos = "left",
+    style = "minimal",
+    border = "solid",
+    focusable = false,
+    zindex = 100,
+  }
 
   local win = vim.api.nvim_open_win(new_buf_id, false, win_opts)
   state.mini_radar_winid = win
@@ -282,7 +280,7 @@ function M.create(radar_config)
   -- Set window transparency
   vim.api.nvim_set_option_value(
     "winblend",
-    radar_config.ui.mini.winblend,
+    radar_config.winblend,
     { win = win }
   )
 
@@ -308,7 +306,7 @@ function M.update(radar_config)
 
   vim.api.nvim_buf_set_lines(mini_radar_bufid, 0, -1, false, all_entries)
 
-  local board_width = radar_config.ui.mini.config.width
+  local board_width = radar_config.width
   vim.api.nvim_win_set_config(state.mini_radar_winid, {
     relative = "editor",
     width = board_width,

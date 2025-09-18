@@ -6,7 +6,7 @@ local collision = require("radar.collision")
 local M = {}
 
 ---@param config Radar.Config
-function M.register(config)
+function M.setup(config)
   vim.api.nvim_create_autocmd("VimEnter", {
     group = vim.api.nvim_create_augroup("radar.VimEnter", { clear = true }),
     callback = function()

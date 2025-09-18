@@ -41,73 +41,37 @@ M.default = {
   keys = {
     prefix = "<space>",
     lock = ",<space>",
-    locks = { "1", "2", "3", "4", "5", "6", "7", "8", "9" }, -- num row
-    recent = { "a", "s", "d", "f", "g" }, -- home row
-    modified = { "q", "w", "e", "r", "t" }, -- upper row
-    pr_files = { "z", "x", "c", "v", "b" }, -- bottom row
-
-    -- Navigation modifiers
+    locks = { "1", "2", "3", "4", "5", "6", "7", "8", "9" },
+    recent = { "a", "s", "d", "f", "g" },
     vertical = "<C-v>",
     horizontal = "<C-s>",
     tab = "<C-t>",
   },
 
-  ui = {
-    mini = {
-      sections = {
-        locks = {
-          header = "󰋱  LOCKED IN",
-          header_hl = "@tag.builtin",
-          entry_hl = "@function",
-        },
-        recent = {
-          header = "󰽏  NEAR",
-          header_hl = "@type",
-          entry_hl = "@function",
-        },
-        empty = {
-          show_title = true,
-          instructions = true,
-        },
-      },
-      winblend = 25,
-      path_format = ":p:.",
-      entry_format = "   [%s] %s  ",
-      separator = " ",
-      ---@type vim.api.keyset.win_config
-      config = {
-        width = 50,
-        relative = "editor",
-        anchor = "NW",
-        title = "󰐷  RADAR",
-        title_pos = "left",
-        style = "minimal",
-        border = "solid",
-        focusable = false,
-        zindex = 100,
-      },
-    },
-    edit = {
-      win_width_padding = 10,
-      max_height = 20,
-      min_width = 60,
-    },
-    full = {}, -- Future full radar config
-  },
+  -- UI Settings
+  width = 50,
+  winblend = 25,
+  path_format = ":p:.",
+  show_empty_message = true,
 
-  behavior = {
-    always_show = true,
-    hide_on_collision = true,
-    collision_padding = 2,
-    deduplicate = true,
-    max_session_files = 20,
-    defer_persist_ms = 500,
-  },
+  -- Headers and styling
+  locks_header = "󰋱  LOCKED IN",
+  recent_header = "󰽏  NEAR",
+  title = "󰐷  RADAR",
 
-  persist = {
-    folder = vim.fs.joinpath(vim.fn.stdpath("data"), "radar"),
-    filename = "data.json",
-  },
+  -- Edit window
+  edit_width_padding = 10,
+  edit_max_height = 20,
+  edit_min_width = 60,
+
+  -- Behavior
+  max_session_files = 20,
+  defer_persist_ms = 500,
+  hide_on_collision = true,
+  collision_padding = 2,
+
+  -- Persistence
+  persist_path = vim.fs.joinpath(vim.fn.stdpath("data"), "radar", "data.json"),
 }
 
 return M

@@ -74,7 +74,7 @@ function M.toggle(filename, radar_config, persistence_module, mini_radar_module)
 
   vim.defer_fn(function()
     persistence_module.persist(radar_config)
-  end, radar_config.behavior.defer_persist_ms)
+  end, radar_config.defer_persist_ms)
 
   return lock
 end
@@ -96,7 +96,7 @@ function M.lock_current_buffer(
 
   -- Normalize filename to match the format used in UI (relative to cwd)
   local normalized_filename =
-    vim.fn.fnamemodify(filename, radar_config.ui.mini.path_format)
+    vim.fn.fnamemodify(filename, radar_config.path_format)
 
   M.toggle(normalized_filename, radar_config, persistence_module, mini_radar_module)
 
