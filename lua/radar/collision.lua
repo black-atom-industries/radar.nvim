@@ -1,5 +1,3 @@
-local state = require("radar.state")
-
 local M = {}
 
 ---Helper function to handle operation failures with notification
@@ -45,6 +43,7 @@ function M.update_visibility(radar_config)
   local has_collision = M.check_collision(radar_config)
 
   -- If collision state changed, update visibility
+  local state = require("radar.state")
   if has_collision and not state.hidden_for_collision then
     -- Hide window due to collision
     if
@@ -72,6 +71,7 @@ end
 ---Check if window is currently hidden due to collision
 ---@return boolean
 function M.is_hidden_for_collision()
+  local state = require("radar.state")
   return state.hidden_for_collision or false
 end
 

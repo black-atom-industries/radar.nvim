@@ -1,6 +1,3 @@
-local state = require("radar.state")
-local persistence = require("radar.persistence")
-
 local M = {}
 
 ---Calculate optimal window width based on longest file path
@@ -10,6 +7,7 @@ local M = {}
 local function calculate_window_width(radar_config, mini_radar_module)
   local max_width = 0
 
+  local state = require("radar.state")
   -- Check locked files
   for _, lock in ipairs(state.locks) do
     local formatted_path =
@@ -93,6 +91,8 @@ function M.save_buffer(edit_buf, radar_config, mini_radar_module)
   end
 
   -- Update locks and persist
+  local state = require("radar.state")
+  local persistence = require("radar.persistence")
   state.locks = new_locks
   persistence.persist(radar_config)
   mini_radar_module.update(radar_config)
@@ -109,6 +109,7 @@ end
 ---@param mini_radar_module table
 ---@return nil
 function M.open_file_from_edit(edit_buf, open_cmd, radar_config, mini_radar_module)
+  local state = require("radar.state")
   local cursor = vim.api.nvim_win_get_cursor(state.edit_winid)
   local line_nr = cursor[1]
   local lines = vim.api.nvim_buf_get_lines(edit_buf, 0, -1, false)
@@ -149,6 +150,7 @@ end
 ---Cleanup edit mode state
 ---@return nil
 function M.cleanup()
+  local state = require("radar.state")
   if state.edit_winid and vim.api.nvim_win_is_valid(state.edit_winid) then
     vim.api.nvim_win_close(state.edit_winid, true)
   end
@@ -162,6 +164,7 @@ end
 ---@param mini_radar_module table
 ---@return nil
 function M.edit_locks(radar_config, mini_radar_module)
+  local state = require("radar.state")
   if #state.locks == 0 then
     vim.notify("No locks to edit", vim.log.levels.WARN)
     return

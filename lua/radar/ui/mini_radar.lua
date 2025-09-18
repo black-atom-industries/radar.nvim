@@ -1,8 +1,3 @@
-local config_module = require("radar.config")
-local state = require("radar.state")
-local recent = require("radar.recent")
-local collision = require("radar.collision")
-
 local M = {}
 
 ---Format file path according to config, with optional shortening
@@ -52,6 +47,7 @@ end
 ---@param radar_config table
 ---@return string[]
 function M.create_recent_entries(radar_config)
+  local state = require("radar.state")
   local entries = {}
 
   if #state.recent_files > 0 then
@@ -80,6 +76,7 @@ end
 ---@param radar_config table
 ---@return string[]
 function M.build_radar_entries(radar_config)
+  local state = require("radar.state")
   local all_entries = {}
 
   -- Add lock entries
@@ -115,6 +112,7 @@ end
 ---Get mini radar buffer ID
 ---@return integer?
 function M.get_bufid()
+  local state = require("radar.state")
   local win = state.mini_radar_winid
 
   if win ~= nil and vim.api.nvim_win_is_valid(win) then
@@ -127,6 +125,7 @@ end
 ---Check if mini radar exists
 ---@return boolean
 function M.exists()
+  local state = require("radar.state")
   return state.mini_radar_winid and vim.api.nvim_win_is_valid(state.mini_radar_winid)
     or false
 end
@@ -135,6 +134,7 @@ end
 ---@param radar_config table
 ---@return nil
 function M.ensure_exists(radar_config)
+  local collision = require("radar.collision")
   if not M.exists() and not collision.is_hidden_for_collision() then
     M.create(radar_config)
   end
@@ -163,6 +163,7 @@ function M.apply_highlights(radar_config)
   end
 
   -- Clear all highlights once
+  local config_module = require("radar.config")
   vim.api.nvim_buf_clear_namespace(
     bufid,
     config_module.constants.ns_mini_radar,
@@ -208,6 +209,7 @@ function M.apply_highlights(radar_config)
       -- This is a file entry line - increment index and check for match
       section_index = section_index + 1
 
+      local state = require("radar.state")
       local actual_filepath = nil
       if current_section == "locks" and state.locks[section_index] then
         actual_filepath = state.locks[section_index].filename
@@ -251,6 +253,7 @@ end
 ---@return nil
 function M.create(radar_config)
   -- Update recent files first
+  local recent = require("radar.recent")
   recent.update_state(radar_config)
 
   local all_entries = M.build_radar_entries(radar_config)
@@ -275,6 +278,7 @@ function M.create(radar_config)
   }
 
   local win = vim.api.nvim_open_win(new_buf_id, false, win_opts)
+  local state = require("radar.state")
   state.mini_radar_winid = win
 
   -- Set window transparency
@@ -293,6 +297,7 @@ end
 ---@return nil
 function M.update(radar_config)
   -- Update recent files
+  local recent = require("radar.recent")
   recent.update_state(radar_config)
 
   -- Keep window open even when empty
@@ -307,6 +312,7 @@ function M.update(radar_config)
   vim.api.nvim_buf_set_lines(mini_radar_bufid, 0, -1, false, all_entries)
 
   local board_width = radar_config.width
+  local state = require("radar.state")
   vim.api.nvim_win_set_config(state.mini_radar_winid, {
     relative = "editor",
     width = board_width,

@@ -1,5 +1,3 @@
-local state = require("radar.state")
-
 local M = {}
 
 ---Open a file with the given command, ensuring radar exists
@@ -28,6 +26,7 @@ end
 ---@param mini_radar_module table
 ---@return nil
 function M.open_lock(label, open_cmd, radar_config, mini_radar_module)
+  local state = require("radar.state")
   local lock = state.get_lock_from_label(tostring(label))
   if lock then
     M.open_file(lock.filename, open_cmd, radar_config, mini_radar_module)
@@ -41,6 +40,7 @@ end
 ---@param mini_radar_module table
 ---@return nil
 function M.open_recent(label, open_cmd, radar_config, mini_radar_module)
+  local state = require("radar.state")
   -- Find the recent file by label
   for i, recent_label in ipairs(radar_config.keys.recent) do
     if recent_label == label and state.recent_files[i] then

@@ -1,10 +1,3 @@
-local locks = require("radar.locks")
-local mini_radar = require("radar.ui.mini_radar")
-local edit = require("radar.ui.edit")
-local navigation = require("radar.navigation")
-local state = require("radar.state")
-local persistence = require("radar.persistence")
-
 local M = {}
 
 ---Setup all radar keymaps
@@ -13,11 +6,15 @@ local M = {}
 function M.setup(radar_config)
   -- Lock current buffer keymap
   vim.keymap.set("n", radar_config.keys.lock, function()
+    local locks = require("radar.locks")
+    local mini_radar = require("radar.ui.mini_radar")
+    local persistence = require("radar.persistence")
     locks.lock_current_buffer(nil, radar_config, persistence, mini_radar)
   end, { desc = "Lock the current buffer" })
 
   -- Close mini radar keymap
   vim.keymap.set("n", ";q", function()
+    local state = require("radar.state")
     if
       state.mini_radar_winid
       and vim.api.nvim_win_is_valid(state.mini_radar_winid)
@@ -28,6 +25,8 @@ function M.setup(radar_config)
   end, { desc = "Close Mini Radar" })
 
   -- Register lock keymaps
+  local navigation = require("radar.navigation")
+  local mini_radar = require("radar.ui.mini_radar")
   navigation.register_file_keymaps(
     radar_config.keys.locks,
     navigation.open_lock,
@@ -47,6 +46,8 @@ function M.setup(radar_config)
 
   -- Edit locks in floating window
   vim.keymap.set("n", radar_config.keys.prefix .. "e", function()
+    local edit = require("radar.ui.edit")
+    local mini_radar = require("radar.ui.mini_radar")
     edit.edit_locks(radar_config, mini_radar)
   end, { desc = "Edit radar locks" })
 end

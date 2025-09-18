@@ -1,5 +1,3 @@
-local state = require("radar.state")
-
 local M = {}
 
 ---Get recent files filtered by current working directory and excluding locked files
@@ -15,6 +13,7 @@ function M.get_files(radar_config)
   local seen_files = {}
   local locked_files = {}
 
+  local state = require("radar.state")
   -- Create lookup table for locked files (normalize to absolute paths)
   for _, lock in ipairs(state.locks) do
     local abs_path = vim.fn.fnamemodify(lock.filename, ":p")
@@ -74,6 +73,7 @@ function M.track_current_file(radar_config)
   -- Get absolute path
   local abs_path = vim.fn.fnamemodify(current_file, ":p")
 
+  local state = require("radar.state")
   -- Remove if already exists (we'll add it to the end)
   for i = #state.session_files, 1, -1 do
     if state.session_files[i] == abs_path then
@@ -95,6 +95,7 @@ end
 ---@param config? Radar.Config
 ---@return nil
 function M.update_state(config)
+  local state = require("radar.state")
   state.recent_files = M.get_files(config)
 end
 

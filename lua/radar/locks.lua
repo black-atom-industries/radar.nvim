@@ -1,11 +1,10 @@
-local state = require("radar.state")
-
 local M = {}
 
 ---Get next unused lock label
 ---@param radar_config table
 ---@return string
 function M.get_next_unused_label(radar_config)
+  local state = require("radar.state")
   local used_labels = {}
   for _, lock in ipairs(state.locks) do
     table.insert(used_labels, lock.label)
@@ -33,6 +32,7 @@ function M.add(filename, radar_config)
     filename = filename,
   }
 
+  local state = require("radar.state")
   table.insert(state.locks, lock)
   return lock
 end
@@ -44,6 +44,7 @@ function M.remove(filename)
   ---@type Radar.Lock
   local removed_lock
 
+  local state = require("radar.state")
   for i, lock in ipairs(state.locks) do
     if lock.filename == filename then
       removed_lock = lock
@@ -62,6 +63,7 @@ end
 ---@param mini_radar_module table
 ---@return Radar.Lock
 function M.toggle(filename, radar_config, persistence_module, mini_radar_module)
+  local state = require("radar.state")
   local exists = state.get_lock_from_filename(filename)
 
   local lock

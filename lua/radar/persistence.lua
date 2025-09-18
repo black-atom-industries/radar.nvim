@@ -1,6 +1,3 @@
-local config = require("radar.config")
-local state = require("radar.state")
-
 local M = {}
 
 ---Write table to file as JSON
@@ -92,6 +89,7 @@ function M.persist(radar_config)
   local persisted_data = M.load(radar_config)
   local data
 
+  local state = require("radar.state")
   if persisted_data == nil then
     data = {
       [project_path] = {
@@ -128,6 +126,7 @@ function M.populate(radar_config, mini_radar_module)
     local locks = vim.tbl_get(data, project_path, git_branch, "locks")
 
     if locks ~= nil then
+      local state = require("radar.state")
       state.locks = locks
     end
   end

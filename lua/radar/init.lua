@@ -1,12 +1,6 @@
-local config = require("radar.config")
-local keys = require("radar.keys")
-local autocmd = require("radar.autocmd")
-local persistence = require("radar.persistence")
-local mini_radar = require("radar.ui.mini_radar")
-
 local M = {}
 
-M.config = config.default
+M.config = require("radar.config").default
 
 ---Setup function called by lazy.nvim or manual setup
 ---@param opts? Radar.Config
@@ -15,9 +9,9 @@ function M.setup(opts)
   opts = opts or {}
   M.config = vim.tbl_deep_extend("force", M.config, opts)
 
-  autocmd.setup(M.config)
-  keys.setup(M.config)
-  persistence.populate(M.config, mini_radar)
+  require("radar.autocmd").setup(M.config)
+  require("radar.keys").setup(M.config)
+  require("radar.persistence").populate(M.config, require("radar.ui.mini_radar"))
 end
 
 return M
