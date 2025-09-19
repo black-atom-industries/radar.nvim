@@ -2,7 +2,7 @@ local M = {}
 
 ---Open a file with the given command, ensuring radar exists
 ---@param filepath string? File path to open
----@param open_cmd? string Command to open file (edit, vsplit, split, tabedit)
+---@param open_cmd? string Command to open file (edit, vsplit, split, tabedit, float)
 ---@param radar_config table
 ---@param mini_radar_module table
 ---@return nil
@@ -16,12 +16,61 @@ function M.open_file(filepath, open_cmd, radar_config, mini_radar_module)
   local path = vim.fn.fnameescape(filepath)
   open_cmd = open_cmd or "edit"
 
-  vim.cmd(open_cmd .. " " .. path)
+  if open_cmd == "float" then
+    -- Create floating window for file editing
+    local buf = vim.api.nvim_create_buf(false, false)
+
+    -- Read file into the new buffer without changing main window
+    if vim.fn.filereadable(vim.fn.expand(filepath)) == 1 then
+      local lines = vim.fn.readfile(vim.fn.expand(filepath))
+      vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+      vim.api.nvim_buf_set_name(buf, filepath)
+      vim.api.nvim_set_option_value("modified", false, { buf = buf })
+      vim.api.nvim_set_option_value(
+        "filetype",
+        vim.filetype.match({ filename = filepath }) or "",
+        { buf = buf }
+      )
+    end
+
+    -- Start with base config and calculate dimensions
+    local win_opts = vim.tbl_deep_extend("force", {}, radar_config.float_editor)
+
+    -- Calculate actual pixel dimensions from ratios
+    local width = math.floor(vim.o.columns * win_opts.width)
+    local height = math.floor(vim.o.lines * win_opts.height)
+
+    -- Center the window
+    local row = math.floor((vim.o.lines - height) / 2)
+    local col = math.floor((vim.o.columns - width) / 2)
+
+    -- Override with calculated values and add title
+    win_opts.width = width
+    win_opts.height = height
+    win_opts.row = row
+    win_opts.col = col
+    win_opts.title = " " .. vim.fn.fnamemodify(filepath, ":.") .. " "
+
+    local win = vim.api.nvim_open_win(buf, true, win_opts)
+
+    -- Add keymap to save and close the floating window
+    vim.api.nvim_buf_set_keymap(buf, "n", "q", "", {
+      noremap = true,
+      silent = true,
+      desc = "Save and close floating window",
+      callback = function()
+        vim.cmd("write")
+        vim.api.nvim_win_close(win, true)
+      end,
+    })
+  else
+    vim.cmd(open_cmd .. " " .. path)
+  end
 end
 
 ---Open lock by label
 ---@param label string
----@param open_cmd? string Command to open file (edit, vsplit, split, tabedit)
+---@param open_cmd? string Command to open file (edit, vsplit, split, tabedit, float)
 ---@param radar_config table
 ---@param mini_radar_module table
 ---@return nil
@@ -35,7 +84,7 @@ end
 
 ---Open recent file by label
 ---@param label string
----@param open_cmd? string Command to open file (edit, vsplit, split, tabedit)
+---@param open_cmd? string Command to open file (edit, vsplit, split, tabedit, float)
 ---@param radar_config table
 ---@param mini_radar_module table
 ---@return nil
@@ -88,7 +137,15 @@ function M.register_file_keymaps(
     vim.keymap.set("n", prefix .. radar_config.keys.tab .. label, function()
       open_fn(label, "tabedit", radar_config, mini_radar_module)
     end, { desc = "Open " .. label .. " " .. desc_prefix .. " in new tab" })
+
+    -- Float window
+    vim.keymap.set("n", prefix .. radar_config.keys.float .. label, function()
+      open_fn(label, "float", radar_config, mini_radar_module)
+    end, {
+      desc = "Open " .. label .. " " .. desc_prefix .. " in floating window",
+    })
   end
 end
 
 return M
+

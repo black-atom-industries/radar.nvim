@@ -46,6 +46,7 @@ M.default = {
     vertical = "<C-v>",
     horizontal = "<C-s>",
     tab = "<C-t>",
+    float = "<C-f>",
   },
 
   -- UI Settings
@@ -63,6 +64,17 @@ M.default = {
   edit_width_padding = 10,
   edit_max_height = 20,
   edit_min_width = 60,
+
+  -- Float editor window
+  float_editor = {
+    relative = "editor",
+    width = 0.8,  -- ratio of screen width
+    height = 0.7, -- ratio of screen height
+    border = "solid",
+    title_pos = "center",
+    style = "", -- empty string means no style (normal editor)
+    zindex = 50,
+  },
 
   -- Behavior
   max_session_files = 20,

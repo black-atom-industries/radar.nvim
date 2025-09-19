@@ -104,7 +104,7 @@ end
 
 ---Open file from edit window line and cleanup
 ---@param edit_buf integer
----@param open_cmd string Command to open file (edit, vsplit, split, tabedit)
+---@param open_cmd string Command to open file (edit, vsplit, split, tabedit, float)
 ---@param radar_config table
 ---@param mini_radar_module table
 ---@return nil
@@ -142,9 +142,9 @@ function M.open_file_from_edit(edit_buf, open_cmd, radar_config, mini_radar_modu
   -- Clean up edit window
   M.cleanup()
 
-  -- Open the file
-  local escaped_path = vim.fn.fnameescape(full_path)
-  vim.cmd(open_cmd .. " " .. escaped_path)
+  -- Open the file using navigation module
+  local navigation = require("radar.navigation")
+  navigation.open_file(full_path, open_cmd, radar_config, mini_radar_module)
 end
 
 ---Cleanup edit mode state
@@ -256,6 +256,15 @@ function M.edit_locks(radar_config, mini_radar_module)
     desc = "Open file in new tab",
     callback = function()
       M.open_file_from_edit(edit_buf, "tabedit", radar_config, mini_radar_module)
+    end,
+  })
+
+  vim.api.nvim_buf_set_keymap(edit_buf, "n", "<C-f>", "", {
+    noremap = true,
+    silent = true,
+    desc = "Open file in floating window",
+    callback = function()
+      M.open_file_from_edit(edit_buf, "float", radar_config, mini_radar_module)
     end,
   })
 end
