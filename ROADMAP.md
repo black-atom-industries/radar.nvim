@@ -1,12 +1,19 @@
 ## ROADMAP
 
-- [ ] feat: New Plugin Structure
-- [ ] feat: `config.behaviour`: Hide mini radar when cursor collides - is under it
 - [ ] feat: `config.behaviour`: Open first lock on `VimEnter`
+- [ ] feat: Option to open target in floating window
 - [ ] feat: `config.ui.mini.style`: `dynamic` | `static`
 - [ ] fix: z index (Currently is over float terms like lazygit)
 - [ ] fix: Keep order of Recent list if contents remain the same
   - Currently choosing a entry from the recents will put it in the a slot
+
+## 2025.09.20 - Saturday
+
+- [ ] feat: New Plugin Structure
+
+## 2025.09.18 - Thursday
+
+- [x] feat: `config.behaviour`: Hide mini radar when cursor collides - is under it
 
 ## 2025.09.10 - Wednesday
 
