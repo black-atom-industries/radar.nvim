@@ -100,8 +100,6 @@ function M.build_radar_entries(radar_config)
 
   -- If no content at all, show helpful message
   if #all_entries == 0 and radar_config.show_empty_message then
-    table.insert(all_entries, radar_config.title)
-    table.insert(all_entries, "")
     table.insert(all_entries, "  No files tracked yet")
     table.insert(all_entries, "  Use " .. radar_config.keys.lock .. " to lock files")
   end
