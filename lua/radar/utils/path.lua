@@ -1,21 +1,5 @@
 local M = {}
 
----Safely escape a string for pattern matching with fallback
----@param str string
----@return string
-local function safe_escape_pattern(str)
-  if not str or str == "" then
-    return ""
-  end
-  local success, escaped = pcall(vim.pesc, str)
-  if success then
-    return escaped
-  else
-    -- Fallback: manually escape pattern characters
-    return str:gsub("[%^%$%(%)%%%.%[%]%*%+%-%?]", "%%%1")
-  end
-end
-
 ---Progressively shorten a file path to fit within a maximum width
 ---@param path string The full file path to shorten
 ---@param max_width integer Maximum display width allowed
@@ -30,9 +14,12 @@ function M.shorten_path(path, max_width, label_width)
     return ""
   end
 
-  -- Replace home directory with ~ (with safe pattern escaping)
-  local home = vim.fn.expand("~")
-  local display_path = path:gsub("^" .. safe_escape_pattern(home), "~")
+  -- Replace home directory with ~ using vim's built-in modifier
+  -- Only apply :~ to absolute paths to preserve relative paths
+  local display_path = path
+  if vim.startswith(path, "/") or vim.startswith(path, "\\") then
+    display_path = vim.fn.fnamemodify(path, ":~")
+  end
 
   -- If it fits, return as is
   if vim.fn.strdisplaywidth(display_path) <= available_width then

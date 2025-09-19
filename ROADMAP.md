@@ -11,6 +11,10 @@
 
 - [ ] feat: New Plugin Structure
 
+## 2025.09.19 - Friday
+
+- [x] refactor: Simplify path shortening to use vim.fn.fnamemodify(':~')
+
 ## 2025.09.18 - Thursday
 
 - [x] feat: `config.behaviour`: Hide mini radar when cursor collides - is under it
