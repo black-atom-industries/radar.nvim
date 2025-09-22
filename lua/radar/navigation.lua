@@ -60,8 +60,14 @@ function M.open_file(filepath, open_cmd, radar_config, mini_radar_module)
       silent = true,
       desc = "Save and close floating window",
       callback = function()
-        vim.cmd("write")
-        vim.api.nvim_win_close(win, true)
+        -- Save file if modified, using write! to overwrite
+        if vim.api.nvim_get_option_value("modified", { buf = buf }) then
+          vim.cmd("write!")
+        end
+        -- Close the window
+        if vim.api.nvim_win_is_valid(win) then
+          vim.api.nvim_win_close(win, true)
+        end
       end,
     })
   else
