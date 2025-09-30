@@ -80,7 +80,7 @@ M.default = {
   max_session_files = 20,
   defer_persist_ms = 500,
   hide_on_collision = true,
-  collision_padding = 2,
+  collision_padding = 50,
 
   -- Persistence
   persist_path = vim.fs.joinpath(vim.fn.stdpath("data"), "radar", "data.json"),
