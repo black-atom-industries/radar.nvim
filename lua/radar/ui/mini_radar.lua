@@ -2,8 +2,8 @@ local M = {}
 
 ---Format file path according to config, with optional shortening
 ---@param path string
----@param radar_config table
----@param max_width integer? Maximum width for path display (if nil, no shortening)
+---@param radar_config Radar.Config
+---@param max_width integer|number|nil Maximum width for path display (if nil, no shortening)
 ---@param label_width integer? Width taken by label (e.g., "[1] ")
 ---@return string
 function M.get_formatted_filepath(path, radar_config, max_width, label_width)
@@ -11,7 +11,7 @@ function M.get_formatted_filepath(path, radar_config, max_width, label_width)
   local path_utils = require("radar.utils.path")
   return path_utils.format_and_shorten(
     path,
-    radar_config.path_format,
+    radar_config.appearance.path_format,
     max_width,
     label_width
   )
@@ -19,20 +19,20 @@ end
 
 ---Create formatted entries for locks
 ---@param locks Radar.Lock[]
----@param radar_config table
+---@param radar_config Radar.Config
 ---@return string[]
 function M.create_entries(locks, radar_config)
   local entries = {}
 
   if #locks > 0 then
-    table.insert(entries, radar_config.locks_header)
+    table.insert(entries, radar_config.appearance.headers.locks)
     for _, lock in ipairs(locks) do
       -- Calculate label width: "   [1] " = 7 chars for single char label
       local label_width = 3 + 1 + #lock.label + 1 + 1 + 2 -- spaces + [label] + spaces
       local path = M.get_formatted_filepath(
         lock.filename,
         radar_config,
-        radar_config.width,
+        radar_config.windows.float.radar_window.config.width,
         label_width
       )
       local entry = string.format("   [%s] %s  ", lock.label, path)
@@ -44,14 +44,14 @@ function M.create_entries(locks, radar_config)
 end
 
 ---Create formatted entries for recent files
----@param radar_config table
+---@param radar_config Radar.Config
 ---@return string[]
 function M.create_recent_entries(radar_config)
   local state = require("radar.state")
   local entries = {}
 
   if #state.recent_files > 0 then
-    table.insert(entries, radar_config.recent_header)
+    table.insert(entries, radar_config.appearance.headers.recent)
     for i, filename in ipairs(state.recent_files) do
       local label = radar_config.keys.recent[i]
       if label then
@@ -60,7 +60,7 @@ function M.create_recent_entries(radar_config)
         local path = M.get_formatted_filepath(
           filename,
           radar_config,
-          radar_config.width,
+          radar_config.windows.float.radar_window.config.width,
           label_width
         )
         local entry = string.format("   [%s] %s  ", label, path)
@@ -73,7 +73,7 @@ function M.create_recent_entries(radar_config)
 end
 
 ---Build all radar entries with proper sectioning and empty state
----@param radar_config table
+---@param radar_config Radar.Config
 ---@return string[]
 function M.build_radar_entries(radar_config)
   local state = require("radar.state")
@@ -99,7 +99,7 @@ function M.build_radar_entries(radar_config)
   end
 
   -- If no content at all, show helpful message
-  if #all_entries == 0 and radar_config.show_empty_message then
+  if #all_entries == 0 and radar_config.behavior.show_empty_message then
     table.insert(all_entries, "  No files tracked yet")
     table.insert(all_entries, "  Use " .. radar_config.keys.lock .. " to lock files")
   end
@@ -129,7 +129,7 @@ function M.exists()
 end
 
 ---Ensure mini radar exists, create if needed
----@param radar_config table
+---@param radar_config Radar.Config
 ---@return nil
 function M.ensure_exists(radar_config)
   local collision = require("radar.collision")
@@ -139,7 +139,7 @@ function M.ensure_exists(radar_config)
 end
 
 ---Apply all highlights in one simple pass
----@param radar_config table
+---@param radar_config Radar.Config
 ---@return nil
 function M.apply_highlights(radar_config)
   local bufid = M.get_bufid()
@@ -157,7 +157,7 @@ function M.apply_highlights(radar_config)
   local curr_filepath_formatted = ""
   if curr_filepath ~= "" then
     curr_filepath_formatted =
-      vim.fn.fnamemodify(curr_filepath, radar_config.path_format)
+      vim.fn.fnamemodify(curr_filepath, radar_config.appearance.path_format)
   end
 
   -- Clear all highlights once
@@ -175,7 +175,7 @@ function M.apply_highlights(radar_config)
 
   for i, line in ipairs(lines) do
     -- Section headers - always highlight and reset section tracking
-    if line == radar_config.locks_header then
+    if line == radar_config.appearance.headers.locks then
       current_section = "locks"
       section_index = 0
       vim.api.nvim_buf_set_extmark(
@@ -188,7 +188,7 @@ function M.apply_highlights(radar_config)
           hl_group = "@tag.builtin",
         }
       )
-    elseif line == radar_config.recent_header then
+    elseif line == radar_config.appearance.headers.recent then
       current_section = "recent"
       section_index = 0
       vim.api.nvim_buf_set_extmark(
@@ -201,9 +201,12 @@ function M.apply_highlights(radar_config)
           hl_group = "@type",
         }
       )
-    elseif line == " " then
-      -- Skip separator lines, don't change section or index
-    elseif line ~= "" and current_section and curr_filepath_formatted ~= "" then
+    elseif
+      line ~= ""
+      and line ~= " "
+      and current_section
+      and curr_filepath_formatted ~= ""
+    then
       -- This is a file entry line - increment index and check for match
       section_index = section_index + 1
 
@@ -247,7 +250,7 @@ function M.apply_highlights(radar_config)
 end
 
 ---Create mini radar window
----@param radar_config table
+---@param radar_config Radar.Config
 ---@return nil
 function M.create(radar_config)
   -- Update recent files first
@@ -259,7 +262,7 @@ function M.create(radar_config)
   local new_buf_id = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_lines(new_buf_id, 0, -1, false, all_entries)
 
-  local board_width = radar_config.width
+  local board_width = radar_config.windows.float.radar_window.config.width
   local win_opts = {
     width = board_width,
     height = #all_entries,
@@ -267,7 +270,7 @@ function M.create(radar_config)
     col = math.floor((vim.o.columns - board_width) - 2),
     relative = "editor",
     anchor = "NW",
-    title = radar_config.title,
+    title = radar_config.windows.float.radar_window.config.title,
     title_pos = "left",
     style = "minimal",
     border = "solid",
@@ -282,7 +285,7 @@ function M.create(radar_config)
   -- Set window transparency
   vim.api.nvim_set_option_value(
     "winblend",
-    radar_config.winblend,
+    radar_config.windows.float.radar_window.winblend,
     { win = win }
   )
 
@@ -309,7 +312,7 @@ function M.update(radar_config)
 
   vim.api.nvim_buf_set_lines(mini_radar_bufid, 0, -1, false, all_entries)
 
-  local board_width = radar_config.width
+  local board_width = radar_config.windows.float.radar_window.config.width
   local state = require("radar.state")
   vim.api.nvim_win_set_config(state.mini_radar_winid, {
     relative = "editor",

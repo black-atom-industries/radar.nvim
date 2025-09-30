@@ -1,0 +1,25 @@
+---
+name: vim
+base: lua51
+lua_versions:
+  - lua51
+  - luajit
+
+globals:
+  vim:
+    any: true
+
+  jit:
+    any: true
+
+  describe:
+    any: true
+
+  it:
+    any: true
+
+  before_each:
+    any: true
+
+  MiniTest:
+    any: true

@@ -1,7 +1,7 @@
 local M = {}
 
 ---Setup all radar keymaps
----@param radar_config table
+---@param radar_config Radar.Config
 ---@return nil
 function M.setup(radar_config)
   -- Lock current buffer keymap
@@ -46,9 +46,7 @@ function M.setup(radar_config)
 
   -- Edit locks in floating window
   vim.keymap.set("n", radar_config.keys.prefix .. "e", function()
-    local edit = require("radar.ui.edit")
-    local mini_radar = require("radar.ui.mini_radar")
-    edit.edit_locks(radar_config, mini_radar)
+    require("radar.ui.edit").edit_locks(radar_config, mini_radar)
   end, { desc = "Edit radar locks" })
 end
 

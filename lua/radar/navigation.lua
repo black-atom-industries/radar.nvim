@@ -3,7 +3,7 @@ local M = {}
 ---Open a file with the given command, ensuring radar exists
 ---@param filepath string? File path to open
 ---@param open_cmd? string Command to open file (edit, vsplit, split, tabedit, float)
----@param radar_config table
+---@param radar_config Radar.Config
 ---@param mini_radar_module table
 ---@return nil
 function M.open_file(filepath, open_cmd, radar_config, mini_radar_module)
@@ -34,7 +34,8 @@ function M.open_file(filepath, open_cmd, radar_config, mini_radar_module)
     end
 
     -- Start with base config and calculate dimensions
-    local win_opts = vim.tbl_deep_extend("force", {}, radar_config.float_editor)
+    local win_opts =
+      vim.tbl_deep_extend("force", {}, radar_config.windows.file_window.config)
 
     -- Calculate actual pixel dimensions from ratios
     local width = math.floor(vim.o.columns * win_opts.width)
@@ -71,7 +72,7 @@ end
 ---Open lock by label
 ---@param label string
 ---@param open_cmd? string Command to open file (edit, vsplit, split, tabedit, float)
----@param radar_config table
+---@param radar_config Radar.Config
 ---@param mini_radar_module table
 ---@return nil
 function M.open_lock(label, open_cmd, radar_config, mini_radar_module)
@@ -85,7 +86,7 @@ end
 ---Open recent file by label
 ---@param label string
 ---@param open_cmd? string Command to open file (edit, vsplit, split, tabedit, float)
----@param radar_config table
+---@param radar_config Radar.Config
 ---@param mini_radar_module table
 ---@return nil
 function M.open_recent(label, open_cmd, radar_config, mini_radar_module)
@@ -103,7 +104,7 @@ end
 ---@param labels string[] Array of labels
 ---@param open_fn function Function to open files by label
 ---@param desc_prefix string Description prefix for keymap descriptions
----@param radar_config table
+---@param radar_config Radar.Config
 ---@param mini_radar_module table
 ---@return nil
 function M.register_file_keymaps(
@@ -148,4 +149,3 @@ function M.register_file_keymaps(
 end
 
 return M
-

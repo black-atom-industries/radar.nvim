@@ -60,14 +60,14 @@ function M.get_git_branch()
 end
 
 ---Get data file path
----@param radar_config table
+---@param radar_config Radar.Config
 ---@return string
 function M.get_data_file_path(radar_config)
-  return radar_config.persist_path
+  return radar_config.persist.path
 end
 
 ---Load persistence data from file
----@param radar_config table
+---@param radar_config Radar.Config
 ---@return Radar.PersistenceData?
 function M.load(radar_config)
   local file_path = M.get_data_file_path(radar_config)
@@ -80,7 +80,7 @@ function M.load(radar_config)
 end
 
 ---Persist current state to file
----@param radar_config table
+---@param radar_config Radar.Config
 ---@return Radar.PersistenceData
 function M.persist(radar_config)
   local project_path = M.get_project_path()
@@ -108,13 +108,13 @@ function M.persist(radar_config)
     })
   end
 
-  vim.fn.mkdir(vim.fn.fnamemodify(radar_config.persist_path, ":h"), "p")
+  vim.fn.mkdir(vim.fn.fnamemodify(radar_config.persist.path, ":h"), "p")
   M.write(M.get_data_file_path(radar_config), data)
   return data
 end
 
 ---Populate state from persisted data
----@param radar_config table
+---@param radar_config Radar.Config
 ---@param mini_radar_module table
 ---@return nil
 function M.populate(radar_config, mini_radar_module)

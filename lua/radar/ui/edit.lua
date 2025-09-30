@@ -1,7 +1,7 @@
 local M = {}
 
 ---Calculate optimal window width based on longest file path
----@param radar_config table
+---@param radar_config Radar.Config
 ---@param mini_radar_module table
 ---@return integer
 local function calculate_window_width(radar_config, mini_radar_module)
@@ -17,12 +17,12 @@ local function calculate_window_width(radar_config, mini_radar_module)
   end
 
   -- Ensure minimum width and add padding
-  return math.max(max_width, radar_config.width)
+  return math.max(max_width, radar_config.windows.float.radar_window.config.width)
 end
 
 ---Setup autocmds for edit buffer save and close handling
 ---@param edit_buf integer
----@param radar_config table
+---@param radar_config Radar.Config
 ---@param mini_radar_module table
 ---@return nil
 local function setup_edit_autocmds(edit_buf, radar_config, mini_radar_module)
@@ -49,7 +49,7 @@ end
 
 ---Parse and save changes from edit buffer
 ---@param edit_buf integer
----@param radar_config table
+---@param radar_config Radar.Config
 ---@param mini_radar_module table
 ---@return nil
 function M.save_buffer(edit_buf, radar_config, mini_radar_module)
@@ -105,7 +105,7 @@ end
 ---Open file from edit window line and cleanup
 ---@param edit_buf integer
 ---@param open_cmd string Command to open file (edit, vsplit, split, tabedit, float)
----@param radar_config table
+---@param radar_config Radar.Config
 ---@param mini_radar_module table
 ---@return nil
 function M.open_file_from_edit(edit_buf, open_cmd, radar_config, mini_radar_module)
@@ -160,7 +160,7 @@ function M.cleanup()
 end
 
 ---Create editable buffer for managing locks
----@param radar_config table
+---@param radar_config Radar.Config
 ---@param mini_radar_module table
 ---@return nil
 function M.edit_locks(radar_config, mini_radar_module)
@@ -193,10 +193,11 @@ function M.edit_locks(radar_config, mini_radar_module)
   -- Open floating window
   local calculated_width = calculate_window_width(radar_config, mini_radar_module)
   local win_width = math.max(
-    radar_config.edit_min_width,
-    calculated_width + radar_config.edit_width_padding
+    radar_config.windows.float.edit_window.min_width,
+    calculated_width + radar_config.windows.float.edit_window.width_padding
   )
-  local win_height = math.min(#lines + 2, radar_config.edit_max_height)
+  local win_height =
+    math.min(#lines + 2, radar_config.windows.float.edit_window.max_height)
   local win_opts = {
     relative = "editor",
     width = win_width,

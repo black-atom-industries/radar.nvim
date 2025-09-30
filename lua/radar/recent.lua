@@ -1,7 +1,7 @@
 local M = {}
 
 ---Get recent files filtered by current working directory and excluding locked files
----@param radar_config table
+---@param radar_config Radar.Config
 ---@return string[]
 function M.get_files(radar_config)
   local cwd = vim.uv.cwd()
@@ -60,7 +60,7 @@ function M.get_files(radar_config)
 end
 
 ---Add current file to session tracking
----@param radar_config table
+---@param radar_config Radar.Config
 ---@return nil
 function M.track_current_file(radar_config)
   local current_file = vim.api.nvim_buf_get_name(0)
@@ -86,7 +86,7 @@ function M.track_current_file(radar_config)
   table.insert(state.session_files, abs_path)
 
   -- Keep only last N session files
-  if #state.session_files > radar_config.max_session_files then
+  if #state.session_files > radar_config.behavior.max_recent_files then
     table.remove(state.session_files, 1)
   end
 end
@@ -95,6 +95,9 @@ end
 ---@param config? Radar.Config
 ---@return nil
 function M.update_state(config)
+  if not config then
+    return
+  end
   local state = require("radar.state")
   state.recent_files = M.get_files(config)
 end

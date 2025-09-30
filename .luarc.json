@@ -1,0 +1,49 @@
+{
+  "$schema": "https://raw.githubusercontent.com/LuaLS/vscode-lua/master/setting/schema.json",
+  "runtime": {
+    "version": "LuaJIT",
+    "path": [
+      "lua/?.lua",
+      "lua/?/init.lua"
+    ]
+  },
+  "diagnostics": {
+    "globals": ["vim", "describe", "it", "MiniTest", "before_each", "after_each"],
+    "disable": [
+      "undefined-doc-name",
+      "redundant-parameter",
+      "param-type-mismatch",
+      "need-check-nil"
+    ],
+    "severity": {
+      "undefined-field": "Warning",
+      "missing-parameter": "Warning",
+      "redundant-value": "Warning",
+      "duplicate-set-field": "Hint"
+    }
+  },
+  "workspace": {
+    "library": [
+      "$VIMRUNTIME/lua",
+      "${3rd}/luv/library",
+      "${3rd}/luassert/library"
+    ],
+    "checkThirdParty": false,
+    "ignoreDir": [
+      ".git",
+      "node_modules"
+    ]
+  },
+  "completion": {
+    "callSnippet": "Replace"
+  },
+  "type": {
+    "castNumberToInteger": false
+  },
+  "format": {
+    "enable": false
+  },
+  "telemetry": {
+    "enable": false
+  }
+}

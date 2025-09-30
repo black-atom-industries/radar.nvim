@@ -1,6 +1,6 @@
 # Makefile for radar.nvim
 
-.PHONY: test test-watch test-path test-verbose lint clean help
+.PHONY: test test-watch test-path test-verbose lint typecheck selene clean help
 
 # Default target
 help:
@@ -11,6 +11,8 @@ help:
 	@echo "  test-verbose - Run tests with verbose output"
 	@echo "  validate    - Validate test setup"
 	@echo "  lint        - Run lua linting (requires stylua)"
+	@echo "  typecheck   - Run type checking (requires lua-language-server)"
+	@echo "  selene      - Run selene linter (requires selene)"
 	@echo "  format      - Format Lua files (requires stylua)"
 	@echo "  clean       - Clean test artifacts"
 	@echo "  help        - Show this help message"
@@ -55,6 +57,35 @@ lint:
 		stylua --check lua/ test/; \
 	else \
 		echo "Error: 'stylua' is not installed. Install with: brew install stylua"; \
+		exit 1; \
+	fi
+
+# Type check Lua files (requires lua-language-server)
+typecheck:
+	@if command -v lua-language-server >/dev/null 2>&1; then \
+		echo "Type checking Lua files..."; \
+		lua-language-server --check . --checklevel=Warning; \
+	else \
+		echo "Error: 'lua-language-server' is not installed."; \
+		echo ""; \
+		echo "To enable type checking, install lua-language-server:"; \
+		echo "  brew install lua-language-server  # macOS"; \
+		echo "  See: https://luals.github.io/#install"; \
+		exit 1; \
+	fi
+
+# Lint with selene (requires selene)
+selene:
+	@if command -v selene >/dev/null 2>&1; then \
+		echo "Running selene linter..."; \
+		selene lua/; \
+	else \
+		echo "Error: 'selene' is not installed."; \
+		echo ""; \
+		echo "To enable selene linting, install selene:"; \
+		echo "  cargo install selene          # Rust/Cargo"; \
+		echo "  yay -S selene                 # Arch Linux"; \
+		echo "  See: https://github.com/Kampfkarren/selene"; \
 		exit 1; \
 	fi
 

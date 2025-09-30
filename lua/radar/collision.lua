@@ -2,7 +2,7 @@ local M = {}
 
 ---Helper function to handle operation failures with notification
 ---@param operation string Description of the operation that failed
----@param err string Error message
+---@param err any Error message
 local function handle_operation_error(operation, err)
   vim.notify(
     "radar.nvim: " .. operation .. ": " .. tostring(err),
@@ -11,18 +11,18 @@ local function handle_operation_error(operation, err)
 end
 
 ---Check if cursor position would collide with floating radar window
----@param radar_config table
+---@param radar_config Radar.Config
 ---@return boolean true if cursor is within window bounds
 function M.check_collision(radar_config)
   -- Get cursor screen position (works correctly with splits)
   local cursor_col = vim.fn.screencol()
 
   -- Calculate where the window would be positioned (always top-right)
-  local board_width = radar_config.width
+  local board_width = radar_config.windows.float.radar_window.config.width
   local window_col = math.floor((vim.o.columns - board_width) - 2)
 
   -- Add collision padding
-  local collision_padding = radar_config.collision_padding or 0
+  local collision_padding = radar_config.windows.float.collision_padding or 0
   local min_col = window_col - collision_padding
   local max_col = window_col + board_width + collision_padding
 
@@ -33,10 +33,10 @@ function M.check_collision(radar_config)
 end
 
 ---Update window visibility based on collision state
----@param radar_config table
+---@param radar_config Radar.Config
 function M.update_visibility(radar_config)
   -- Skip if collision detection is disabled
-  if not radar_config.hide_on_collision then
+  if not radar_config.windows.float.hide_on_collision then
     return
   end
 

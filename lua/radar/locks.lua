@@ -1,7 +1,7 @@
 local M = {}
 
 ---Get next unused lock label
----@param radar_config table
+---@param radar_config Radar.Config
 ---@return string
 function M.get_next_unused_label(radar_config)
   local state = require("radar.state")
@@ -21,7 +21,7 @@ end
 
 ---Add a lock for the given filename
 ---@param filename string
----@param radar_config table
+---@param radar_config Radar.Config
 ---@returns Radar.Lock
 function M.add(filename, radar_config)
   local next_free_lock_label = M.get_next_unused_label(radar_config)
@@ -58,11 +58,10 @@ end
 
 ---Toggle lock for given filename
 ---@param filename string
----@param radar_config table
+---@param radar_config Radar.Config
 ---@param persistence_module table
----@param mini_radar_module table
 ---@return Radar.Lock
-function M.toggle(filename, radar_config, persistence_module, mini_radar_module)
+function M.toggle(filename, radar_config, persistence_module)
   local state = require("radar.state")
   local exists = state.get_lock_from_filename(filename)
 
@@ -76,14 +75,14 @@ function M.toggle(filename, radar_config, persistence_module, mini_radar_module)
 
   vim.defer_fn(function()
     persistence_module.persist(radar_config)
-  end, radar_config.defer_persist_ms)
+  end, radar_config.persist.defer_ms)
 
   return lock
 end
 
 ---Lock current buffer
 ---@param buf_nr? integer
----@param radar_config table
+---@param radar_config Radar.Config
 ---@param persistence_module table
 ---@param mini_radar_module table
 ---@return nil
@@ -98,9 +97,9 @@ function M.lock_current_buffer(
 
   -- Normalize filename to match the format used in UI (relative to cwd)
   local normalized_filename =
-    vim.fn.fnamemodify(filename, radar_config.path_format)
+    vim.fn.fnamemodify(filename, radar_config.appearance.path_format)
 
-  M.toggle(normalized_filename, radar_config, persistence_module, mini_radar_module)
+  M.toggle(normalized_filename, radar_config, persistence_module)
 
   if not mini_radar_module.exists() then
     mini_radar_module.create(radar_config)

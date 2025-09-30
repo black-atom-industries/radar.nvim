@@ -6,15 +6,71 @@
 ---@field vertical string
 ---@field horizontal string
 ---@field tab string
+---@field float string
+
+---@class Radar.Config.Behavior
+---@field max_recent_files integer
+---@field show_empty_message boolean
+
+---@class Radar.Config.Appearance
+---@field path_format string
+---@field headers Radar.Config.Appearance.Headers
+
+---@class Radar.Config.Appearance.Headers
+---@field locks string
+---@field recent string
+
+---@class Radar.Config.WinConfig
+---@field relative? string
+---@field width? integer|number
+---@field height? integer|number
+---@field row? integer
+---@field col? integer
+---@field title? string
+---@field title_pos? string
+---@field border? string
+---@field style? string
+---@field zindex? integer
+---@field focusable? boolean
+---@field anchor? string
+
+---@class Radar.Config.Windows.FileWindow
+---@field config Radar.Config.WinConfig
+
+---@class Radar.Config.Windows.Float.RadarWindow
+---@field winblend integer
+---@field config Radar.Config.WinConfig
+
+---@class Radar.Config.Windows.Float.EditWindow
+---@field width_padding integer
+---@field max_height integer
+---@field min_width integer
+
+---@class Radar.Config.Windows.Float
+---@field hide_on_collision boolean
+---@field collision_padding integer
+---@field radar_window Radar.Config.Windows.Float.RadarWindow
+---@field edit_window Radar.Config.Windows.Float.EditWindow
+
+---@class Radar.Config.Windows.Sidebar
+---@field position "left"|"right"
+---@field width integer
+
+---@class Radar.Config.Windows
+---@field file_window Radar.Config.Windows.FileWindow
+---@field float Radar.Config.Windows.Float
+---@field sidebar Radar.Config.Windows.Sidebar
 
 ---@class Radar.Config.Persist
----@field folder string
----@field filename string
+---@field path string
+---@field defer_ms integer
 
 ---@class Radar.Config
+---@field mode "float"|"sidebar_left"|"sidebar_right"
 ---@field keys Radar.Config.Keys
----@field path_format string
----@field win vim.api.keyset.win_config
+---@field behavior Radar.Config.Behavior
+---@field appearance Radar.Config.Appearance
+---@field windows Radar.Config.Windows
 ---@field persist Radar.Config.Persist
 
 ---@class Radar.Lock
@@ -38,9 +94,11 @@ M.constants = {
 
 ---@class Radar.Config
 M.default = {
+  mode = "float", -- "float", "sidebar_left", "sidebar_right"
+
   keys = {
     prefix = "<space>",
-    lock = ",<space>",
+    lock = "<space>l",
     locks = { "1", "2", "3", "4", "5", "6", "7", "8", "9" },
     recent = { "a", "s", "d", "f", "g" },
     vertical = "<C-v>",
@@ -49,41 +107,64 @@ M.default = {
     float = "<C-f>",
   },
 
-  -- UI Settings
-  width = 50,
-  winblend = 25,
-  path_format = ":p:.",
-  show_empty_message = true,
-
-  -- Headers and styling
-  locks_header = "󰋱  LOCKED IN",
-  recent_header = "󰽏  NEAR",
-  title = "󰐷  RADAR",
-
-  -- Edit window
-  edit_width_padding = 10,
-  edit_max_height = 20,
-  edit_min_width = 60,
-
-  -- Float editor window
-  float_editor = {
-    relative = "editor",
-    width = 0.8,  -- ratio of screen width
-    height = 0.7, -- ratio of screen height
-    border = "solid",
-    title_pos = "center",
-    style = "", -- empty string means no style (normal editor)
-    zindex = 50,
+  behavior = {
+    max_recent_files = 20,
+    show_empty_message = true,
   },
 
-  -- Behavior
-  max_session_files = 20,
-  defer_persist_ms = 500,
-  hide_on_collision = true,
-  collision_padding = 50,
+  appearance = {
+    path_format = ":p:.",
+    headers = {
+      locks = "󰋱  LOCKED IN",
+      recent = "󰽏  NEAR",
+    },
+  },
 
-  -- Persistence
-  persist_path = vim.fs.joinpath(vim.fn.stdpath("data"), "radar", "data.json"),
+  windows = {
+    -- Global: file preview window (works in all modes)
+    file_window = {
+      config = {
+        relative = "editor",
+        width = 0.8, -- ratio of screen width
+        height = 0.7, -- ratio of screen height
+        border = "solid",
+        title_pos = "center",
+        style = "", -- empty string means no style (normal editor)
+        zindex = 50,
+      },
+    },
+
+    -- Float-specific windows and behavior
+    float = {
+      hide_on_collision = true,
+      collision_padding = 50,
+
+      radar_window = {
+        winblend = 25,
+        config = {
+          width = 50,
+          title = "󰐷  RADAR",
+        },
+      },
+
+      edit_window = {
+        width_padding = 10,
+        max_height = 20,
+        min_width = 60,
+      },
+    },
+
+    -- Sidebar-specific (future)
+    sidebar = {
+      position = "right",
+      width = 50,
+    },
+  },
+
+  persist = {
+    path = vim.fs.joinpath(vim.fn.stdpath("data"), "radar", "data.json"),
+    defer_ms = 500,
+  },
 }
 
 return M
