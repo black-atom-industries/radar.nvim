@@ -11,18 +11,18 @@ local function handle_operation_error(operation, err)
 end
 
 ---Check if cursor position would collide with floating radar window
----@param radar_config Radar.Config
+---@param config Radar.Config
 ---@return boolean true if cursor is within window bounds
-function M.check_collision(radar_config)
+function M.check_collision(config)
   -- Get cursor screen position (works correctly with splits)
   local cursor_col = vim.fn.screencol()
 
   -- Calculate where the window would be positioned (always top-right)
-  local board_width = radar_config.windows.float.radar_window.config.width
+  local board_width = config.windows.float.radar_window.config.width
   local window_col = math.floor((vim.o.columns - board_width) - 2)
 
   -- Add collision padding
-  local collision_padding = radar_config.windows.float.collision_padding or 0
+  local collision_padding = config.windows.float.collision_padding or 0
   local min_col = window_col - collision_padding
   local max_col = window_col + board_width + collision_padding
 
@@ -33,14 +33,14 @@ function M.check_collision(radar_config)
 end
 
 ---Update window visibility based on collision state
----@param radar_config Radar.Config
-function M.update_visibility(radar_config)
+---@param config Radar.Config
+function M.update_visibility(config)
   -- Skip if collision detection is disabled
-  if not radar_config.windows.float.hide_on_collision then
+  if not config.windows.float.hide_on_collision then
     return
   end
 
-  local has_collision = M.check_collision(radar_config)
+  local has_collision = M.check_collision(config)
 
   -- If collision state changed, update visibility
   local state = require("radar.state")
@@ -61,7 +61,7 @@ function M.update_visibility(radar_config)
     -- Show window again (collision resolved)
     local mini_radar = require("radar.ui.mini_radar")
     state.hidden_for_collision = false
-    local success, err = pcall(mini_radar.update, radar_config)
+    local success, err = pcall(mini_radar.update, config)
     if not success then
       handle_operation_error("Failed to show window after collision resolved", err)
     end

@@ -74,10 +74,7 @@ describe("config", function()
 
       MiniTest.expect.equality(type(cfg.behavior.max_recent_files), "number")
       MiniTest.expect.equality(type(cfg.persist.defer_ms), "number")
-      MiniTest.expect.equality(
-        type(cfg.windows.float.hide_on_collision),
-        "boolean"
-      )
+      MiniTest.expect.equality(type(cfg.windows.float.hide_on_collision), "boolean")
       MiniTest.expect.equality(type(cfg.windows.float.collision_padding), "number")
     end)
 

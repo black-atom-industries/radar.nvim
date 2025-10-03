@@ -60,17 +60,17 @@ function M.get_git_branch()
 end
 
 ---Get data file path
----@param radar_config Radar.Config
+---@param config Radar.Config
 ---@return string
-function M.get_data_file_path(radar_config)
-  return radar_config.persist.path
+function M.get_data_file_path(config)
+  return config.persist.path
 end
 
 ---Load persistence data from file
----@param radar_config Radar.Config
+---@param config Radar.Config
 ---@return Radar.PersistenceData?
-function M.load(radar_config)
-  local file_path = M.get_data_file_path(radar_config)
+function M.load(config)
+  local file_path = M.get_data_file_path(config)
   local is_readable = vim.fn.filereadable(file_path)
   if is_readable == 1 then
     return M.read(file_path)
@@ -80,13 +80,13 @@ function M.load(radar_config)
 end
 
 ---Persist current state to file
----@param radar_config Radar.Config
+---@param config Radar.Config
 ---@return Radar.PersistenceData
-function M.persist(radar_config)
+function M.persist(config)
   local project_path = M.get_project_path()
   local git_branch = M.get_git_branch()
 
-  local persisted_data = M.load(radar_config)
+  local persisted_data = M.load(config)
   local data
 
   local state = require("radar.state")
@@ -108,17 +108,17 @@ function M.persist(radar_config)
     })
   end
 
-  vim.fn.mkdir(vim.fn.fnamemodify(radar_config.persist.path, ":h"), "p")
-  M.write(M.get_data_file_path(radar_config), data)
+  vim.fn.mkdir(vim.fn.fnamemodify(config.persist.path, ":h"), "p")
+  M.write(M.get_data_file_path(config), data)
   return data
 end
 
 ---Populate state from persisted data
----@param radar_config Radar.Config
+---@param config Radar.Config
 ---@param mini_radar_module table
 ---@return nil
-function M.populate(radar_config, mini_radar_module)
-  local data = M.load(radar_config)
+function M.populate(config, mini_radar_module)
+  local data = M.load(config)
 
   if data ~= nil then
     local project_path = M.get_project_path()
@@ -132,7 +132,7 @@ function M.populate(radar_config, mini_radar_module)
   end
 
   -- Always create radar (recent files will load after VimEnter)
-  mini_radar_module.create(radar_config)
+  mini_radar_module.create(config)
 end
 
 return M
