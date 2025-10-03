@@ -20,26 +20,12 @@
 ---@field locks string
 ---@field recent string
 
----@class Radar.Config.WinConfig
----@field relative? string
----@field width? integer|number
----@field height? integer|number
----@field row? integer
----@field col? integer
----@field title? string
----@field title_pos? string
----@field border? string
----@field style? string
----@field zindex? integer
----@field focusable? boolean
----@field anchor? string
-
 ---@class Radar.Config.Windows.FileWindow
----@field config Radar.Config.WinConfig
+---@field config vim.api.keyset.win_config
 
 ---@class Radar.Config.Windows.Float.RadarWindow
 ---@field winblend integer
----@field config Radar.Config.WinConfig
+---@field config vim.api.keyset.win_config
 
 ---@class Radar.Config.Windows.Float.EditWindow
 ---@field width_padding integer
