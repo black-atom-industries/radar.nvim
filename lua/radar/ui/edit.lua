@@ -1,31 +1,31 @@
 local M = {}
 
 ---Calculate optimal window width based on longest file path
----@param config Radar.Config
+---@param radar_config Radar.Config
 ---@param mini_radar_module table
 ---@return integer
-local function calculate_window_width(config, mini_radar_module)
+local function calculate_window_width(radar_config, mini_radar_module)
   local max_width = 0
 
   local state = require("radar.state")
   -- Check locked files
   for _, lock in ipairs(state.locks) do
     local formatted_path =
-      mini_radar_module.get_formatted_filepath(lock.filename, config)
+      mini_radar_module.get_formatted_filepath(lock.filename, radar_config)
     local entry_text = string.format("   [%s] %s  ", lock.label, formatted_path)
     max_width = math.max(max_width, vim.fn.strdisplaywidth(entry_text))
   end
 
   -- Ensure minimum width and add padding
-  return math.max(max_width, config.windows.float.radar_window.config.width)
+  return math.max(max_width, radar_config.windows.float.radar.config.width)
 end
 
 ---Setup autocmds for edit buffer save and close handling
 ---@param edit_buf integer
----@param config Radar.Config
+---@param radar_config Radar.Config
 ---@param mini_radar_module table
 ---@return nil
-local function setup_edit_autocmds(edit_buf, config, mini_radar_module)
+local function setup_edit_autocmds(edit_buf, radar_config, mini_radar_module)
   local augroup = vim.api.nvim_create_augroup("radar.EditLocks", { clear = true })
 
   -- Handle buffer save (:w)
@@ -33,7 +33,7 @@ local function setup_edit_autocmds(edit_buf, config, mini_radar_module)
     group = augroup,
     buffer = edit_buf,
     callback = function()
-      M.save_buffer(edit_buf, config, mini_radar_module)
+      M.save_buffer(edit_buf, radar_config, mini_radar_module)
     end,
   })
 
@@ -49,10 +49,10 @@ end
 
 ---Parse and save changes from edit buffer
 ---@param edit_buf integer
----@param config Radar.Config
+---@param radar_config Radar.Config
 ---@param mini_radar_module table
 ---@return nil
-function M.save_buffer(edit_buf, config, mini_radar_module)
+function M.save_buffer(edit_buf, radar_config, mini_radar_module)
   local lines = vim.api.nvim_buf_get_lines(edit_buf, 0, -1, false)
   local new_locks = {}
   local errors = {}
@@ -75,7 +75,7 @@ function M.save_buffer(edit_buf, config, mini_radar_module)
 
     -- Create lock with label based on line position
     local new_lock = {
-      label = config.keys.locks[i] or tostring(i),
+      label = radar_config.keys.locks[i] or tostring(i),
       filename = full_path,
     }
 
@@ -94,8 +94,8 @@ function M.save_buffer(edit_buf, config, mini_radar_module)
   local state = require("radar.state")
   local persistence = require("radar.persistence")
   state.locks = new_locks
-  persistence.persist(config)
-  mini_radar_module.update(config)
+  persistence.persist(radar_config)
+  mini_radar_module.update(radar_config)
 
   -- Mark buffer as saved
   vim.api.nvim_set_option_value("modified", false, { buf = edit_buf })
@@ -105,10 +105,10 @@ end
 ---Open file from edit window line and cleanup
 ---@param edit_buf integer
 ---@param open_cmd string Command to open file (edit, vsplit, split, tabedit, float)
----@param config Radar.Config
+---@param radar_config Radar.Config
 ---@param mini_radar_module table
 ---@return nil
-function M.open_file_from_edit(edit_buf, open_cmd, config, mini_radar_module)
+function M.open_file_from_edit(edit_buf, open_cmd, radar_config, mini_radar_module)
   local state = require("radar.state")
   local cursor = vim.api.nvim_win_get_cursor(state.edit_winid)
   local line_nr = cursor[1]
@@ -128,7 +128,7 @@ function M.open_file_from_edit(edit_buf, open_cmd, config, mini_radar_module)
   end
 
   -- Save current state first
-  M.save_buffer(edit_buf, config, mini_radar_module)
+  M.save_buffer(edit_buf, radar_config, mini_radar_module)
 
   -- Extract and expand filepath
   local filepath = line:match("^%s*(.-)%s*$")
@@ -144,7 +144,7 @@ function M.open_file_from_edit(edit_buf, open_cmd, config, mini_radar_module)
 
   -- Open the file using navigation module
   local navigation = require("radar.navigation")
-  navigation.open_file(full_path, open_cmd, config, mini_radar_module)
+  navigation.open_file(full_path, open_cmd, radar_config, mini_radar_module)
 end
 
 ---Cleanup edit mode state
@@ -160,10 +160,10 @@ function M.cleanup()
 end
 
 ---Create editable buffer for managing locks
----@param config Radar.Config
+---@param radar_config Radar.Config
 ---@param mini_radar_module table
 ---@return nil
-function M.edit_locks(config, mini_radar_module)
+function M.edit_locks(radar_config, mini_radar_module)
   local state = require("radar.state")
   if #state.locks == 0 then
     vim.notify("No locks to edit", vim.log.levels.WARN)
@@ -184,20 +184,19 @@ function M.edit_locks(config, mini_radar_module)
   local lines = {}
   for _, lock in ipairs(state.locks) do
     local formatted_path =
-      mini_radar_module.get_formatted_filepath(lock.filename, config)
+      mini_radar_module.get_formatted_filepath(lock.filename, radar_config)
     table.insert(lines, formatted_path)
   end
 
   vim.api.nvim_buf_set_lines(edit_buf, 0, -1, false, lines)
 
   -- Open floating window
-  local calculated_width = calculate_window_width(config, mini_radar_module)
+  local calculated_width = calculate_window_width(radar_config, mini_radar_module)
   local win_width = math.max(
-    config.windows.float.edit_window.min_width,
-    calculated_width + config.windows.float.edit_window.width_padding
+    radar_config.windows.float.edit.min_width,
+    calculated_width + radar_config.windows.float.edit.width_padding
   )
-  local win_height =
-    math.min(#lines + 2, config.windows.float.edit_window.max_height)
+  local win_height = math.min(#lines + 2, radar_config.windows.float.edit.max_height)
   local win_opts = {
     relative = "editor",
     width = win_width,
@@ -214,7 +213,7 @@ function M.edit_locks(config, mini_radar_module)
   state.edit_winid = edit_win
 
   -- Set up buffer autocmds for save and close
-  setup_edit_autocmds(edit_buf, config, mini_radar_module)
+  setup_edit_autocmds(edit_buf, radar_config, mini_radar_module)
 
   -- Set up buffer-local keymaps
   vim.api.nvim_buf_set_keymap(edit_buf, "n", "q", "<cmd>w<bar>q<CR>", {
@@ -229,7 +228,7 @@ function M.edit_locks(config, mini_radar_module)
     silent = true,
     desc = "Open file under cursor",
     callback = function()
-      M.open_file_from_edit(edit_buf, "edit", config, mini_radar_module)
+      M.open_file_from_edit(edit_buf, "edit", radar_config, mini_radar_module)
     end,
   })
 
@@ -238,7 +237,7 @@ function M.edit_locks(config, mini_radar_module)
     silent = true,
     desc = "Open file in vertical split",
     callback = function()
-      M.open_file_from_edit(edit_buf, "vsplit", config, mini_radar_module)
+      M.open_file_from_edit(edit_buf, "vsplit", radar_config, mini_radar_module)
     end,
   })
 
@@ -247,7 +246,7 @@ function M.edit_locks(config, mini_radar_module)
     silent = true,
     desc = "Open file in horizontal split",
     callback = function()
-      M.open_file_from_edit(edit_buf, "split", config, mini_radar_module)
+      M.open_file_from_edit(edit_buf, "split", radar_config, mini_radar_module)
     end,
   })
 
@@ -256,7 +255,7 @@ function M.edit_locks(config, mini_radar_module)
     silent = true,
     desc = "Open file in new tab",
     callback = function()
-      M.open_file_from_edit(edit_buf, "tabedit", config, mini_radar_module)
+      M.open_file_from_edit(edit_buf, "tabedit", radar_config, mini_radar_module)
     end,
   })
 
@@ -265,7 +264,7 @@ function M.edit_locks(config, mini_radar_module)
     silent = true,
     desc = "Open file in floating window",
     callback = function()
-      M.open_file_from_edit(edit_buf, "float", config, mini_radar_module)
+      M.open_file_from_edit(edit_buf, "float", radar_config, mini_radar_module)
     end,
   })
 end

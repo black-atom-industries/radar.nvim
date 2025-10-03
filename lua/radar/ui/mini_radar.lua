@@ -32,7 +32,7 @@ function M.create_entries(locks, config)
       local path = M.get_formatted_filepath(
         lock.filename,
         config,
-        config.windows.float.radar_window.config.width,
+        config.windows.float.radar.config.width,
         label_width
       )
       local entry = string.format("   [%s] %s  ", lock.label, path)
@@ -60,7 +60,7 @@ function M.create_recent_entries(config)
         local path = M.get_formatted_filepath(
           filename,
           config,
-          config.windows.float.radar_window.config.width,
+          config.windows.float.radar.config.width,
           label_width
         )
         local entry = string.format("   [%s] %s  ", label, path)
@@ -262,7 +262,7 @@ function M.create(config)
   local new_buf_id = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_lines(new_buf_id, 0, -1, false, all_entries)
 
-  local board_width = config.windows.float.radar_window.config.width
+  local board_width = config.windows.float.radar.config.width
   local win_opts = {
     width = board_width,
     height = #all_entries,
@@ -270,7 +270,7 @@ function M.create(config)
     col = math.floor((vim.o.columns - board_width) - 2),
     relative = "editor",
     anchor = "NW",
-    title = config.windows.float.radar_window.config.title,
+    title = config.windows.float.radar.config.title,
     title_pos = "left",
     style = "minimal",
     border = "solid",
@@ -285,7 +285,7 @@ function M.create(config)
   -- Set window transparency
   vim.api.nvim_set_option_value(
     "winblend",
-    config.windows.float.radar_window.winblend,
+    config.windows.float.radar.winblend,
     { win = win }
   )
 
@@ -312,7 +312,7 @@ function M.update(config)
 
   vim.api.nvim_buf_set_lines(mini_radar_bufid, 0, -1, false, all_entries)
 
-  local board_width = config.windows.float.radar_window.config.width
+  local board_width = config.windows.float.radar.config.width
   local state = require("radar.state")
   vim.api.nvim_win_set_config(state.mini_radar_winid, {
     relative = "editor",

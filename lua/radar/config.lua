@@ -49,8 +49,8 @@
 ---@class Radar.Config.Windows.Float
 ---@field hide_on_collision boolean
 ---@field collision_padding integer
----@field radar_window Radar.Config.Windows.Float.RadarWindow
----@field edit_window Radar.Config.Windows.Float.EditWindow
+---@field radar Radar.Config.Windows.Float.RadarWindow
+---@field edit Radar.Config.Windows.Float.EditWindow
 
 ---@class Radar.Config.Windows.Sidebar
 ---@field position "left"|"right"
@@ -139,7 +139,7 @@ M.default = {
       hide_on_collision = true,
       collision_padding = 50,
 
-      radar_window = {
+      radar = {
         winblend = 25,
         config = {
           width = 50,
@@ -147,7 +147,7 @@ M.default = {
         },
       },
 
-      edit_window = {
+      edit = {
         width_padding = 10,
         max_height = 20,
         min_width = 60,

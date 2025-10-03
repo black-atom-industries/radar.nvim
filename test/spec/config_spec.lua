@@ -5,7 +5,7 @@ describe("config", function()
     it("has all required keys", function()
       MiniTest.expect.equality(type(config.default.keys), "table")
       MiniTest.expect.equality(
-        type(config.default.windows.float.radar_window.config.width),
+        type(config.default.windows.float.radar.config.width),
         "number"
       )
       MiniTest.expect.equality(
@@ -35,38 +35,20 @@ describe("config", function()
       local cfg = config.default
 
       -- Check UI settings
-      MiniTest.expect.equality(
-        type(cfg.windows.float.radar_window.config.width),
-        "number"
-      )
-      MiniTest.expect.equality(
-        type(cfg.windows.float.radar_window.winblend),
-        "number"
-      )
+      MiniTest.expect.equality(type(cfg.windows.float.radar.config.width), "number")
+      MiniTest.expect.equality(type(cfg.windows.float.radar.winblend), "number")
       MiniTest.expect.equality(type(cfg.appearance.path_format), "string")
       MiniTest.expect.equality(type(cfg.behavior.show_empty_message), "boolean")
 
       -- Check headers
       MiniTest.expect.equality(type(cfg.appearance.headers.locks), "string")
       MiniTest.expect.equality(type(cfg.appearance.headers.recent), "string")
-      MiniTest.expect.equality(
-        type(cfg.windows.float.radar_window.config.title),
-        "string"
-      )
+      MiniTest.expect.equality(type(cfg.windows.float.radar.config.title), "string")
 
       -- Check edit config
-      MiniTest.expect.equality(
-        type(cfg.windows.float.edit_window.width_padding),
-        "number"
-      )
-      MiniTest.expect.equality(
-        type(cfg.windows.float.edit_window.max_height),
-        "number"
-      )
-      MiniTest.expect.equality(
-        type(cfg.windows.float.edit_window.min_width),
-        "number"
-      )
+      MiniTest.expect.equality(type(cfg.windows.float.edit.width_padding), "number")
+      MiniTest.expect.equality(type(cfg.windows.float.edit.max_height), "number")
+      MiniTest.expect.equality(type(cfg.windows.float.edit.min_width), "number")
     end)
 
     it("has valid behavior configuration", function()
