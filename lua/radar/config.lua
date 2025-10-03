@@ -1,91 +1,3 @@
----@class Radar.Config.Keys
----@field prefix string
----@field lock string
----@field locks string[]
----@field recent string[]
----@field vertical string
----@field horizontal string
----@field tab string
----@field float string
-
----@class Radar.Config.Behavior
----@field max_recent_files integer
----@field show_empty_message boolean
-
----@class Radar.Config.Appearance
----@field path_format string
----@field headers Radar.Config.Appearance.Headers
-
----@class Radar.Config.Appearance.Headers
----@field locks string
----@field recent string
-
----@class Radar.Config.WinConfig
----@field relative? string
----@field width? integer|number
----@field height? integer|number
----@field row? integer
----@field col? integer
----@field title? string
----@field title_pos? string
----@field border? string
----@field style? string
----@field zindex? integer
----@field focusable? boolean
----@field anchor? string
-
----@class Radar.Config.Windows.FileWindow
----@field config Radar.Config.WinConfig
-
----@class Radar.Config.Windows.Float.RadarWindow
----@field winblend integer
----@field config Radar.Config.WinConfig
-
----@class Radar.Config.Windows.Float.EditWindow
----@field width_padding integer
----@field max_height integer
----@field min_width integer
-
----@class Radar.Config.Windows.Float
----@field hide_on_collision boolean
----@field collision_padding integer
----@field radar Radar.Config.Windows.Float.RadarWindow
----@field edit Radar.Config.Windows.Float.EditWindow
-
----@class Radar.Config.Windows.Sidebar
----@field position "left"|"right"
----@field width integer
-
----@class Radar.Config.Windows
----@field file_window Radar.Config.Windows.FileWindow
----@field float Radar.Config.Windows.Float
----@field sidebar Radar.Config.Windows.Sidebar
-
----@class Radar.Config.Persist
----@field path string
----@field defer_ms integer
-
----@class Radar.Config
----@field mode "float"|"sidebar_left"|"sidebar_right"
----@field keys Radar.Config.Keys
----@field behavior Radar.Config.Behavior
----@field appearance Radar.Config.Appearance
----@field windows Radar.Config.Windows
----@field persist Radar.Config.Persist
-
----@class Radar.Lock
----@field label string
----@field filename string
-
----@class Radar.ProjectData
----@field locks Radar.Lock[]
-
----@class Radar.BranchData
----@field [string] Radar.ProjectData
-
----@class Radar.PersistenceData
----@field [string] Radar.BranchData
-
 local M = {}
 
 M.constants = {
@@ -94,7 +6,7 @@ M.constants = {
 
 ---@class Radar.Config
 M.default = {
-  mode = "float", -- "float", "sidebar_left", "sidebar_right"
+  mode = "float_top_right",
 
   keys = {
     prefix = "<space>",
@@ -144,7 +56,6 @@ M.default = {
         ---@type vim.api.keyset.win_config
         config = {
           relative = "editor",
-          split = "right",
           anchor = "NW",
           width = 50,
           -- `height` gets calculated dynamically
