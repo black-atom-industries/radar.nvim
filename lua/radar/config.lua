@@ -141,9 +141,21 @@ M.default = {
 
       radar = {
         winblend = 25,
+        ---@type vim.api.keyset.win_config
         config = {
+          relative = "editor",
+          split = "right",
+          anchor = "NW",
           width = 50,
+          -- `height` gets calculated dynamically
+          row = 1,
+          col = math.floor((vim.o.columns - 50) - 2),
+          border = "solid",
+          style = "minimal",
           title = "󰐷  RADAR",
+          title_pos = "left",
+          focusable = false,
+          zindex = 100,
         },
       },
 

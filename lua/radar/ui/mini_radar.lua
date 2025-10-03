@@ -262,21 +262,9 @@ function M.create(config)
   local new_buf_id = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_lines(new_buf_id, 0, -1, false, all_entries)
 
-  local board_width = config.windows.float.radar.config.width
-  local win_opts = {
-    width = board_width,
+  local win_opts = vim.tbl_deep_extend("force", config.windows.float.radar.config, {
     height = #all_entries,
-    row = 1,
-    col = math.floor((vim.o.columns - board_width) - 2),
-    relative = "editor",
-    anchor = "NW",
-    title = config.windows.float.radar.config.title,
-    title_pos = "left",
-    style = "minimal",
-    border = "solid",
-    focusable = false,
-    zindex = 100,
-  }
+  })
 
   local win = vim.api.nvim_open_win(new_buf_id, false, win_opts)
   local state = require("radar.state")
@@ -312,14 +300,9 @@ function M.update(config)
 
   vim.api.nvim_buf_set_lines(mini_radar_bufid, 0, -1, false, all_entries)
 
-  local board_width = config.windows.float.radar.config.width
   local state = require("radar.state")
   vim.api.nvim_win_set_config(state.mini_radar_winid, {
-    relative = "editor",
-    width = board_width,
     height = #all_entries,
-    row = 1,
-    col = math.floor((vim.o.columns - board_width) - 2),
   })
   -- Apply all highlights
   M.apply_highlights(config)
