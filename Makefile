@@ -1,6 +1,6 @@
 # Makefile for radar.nvim
 
-.PHONY: test test-watch test-path test-verbose lint typecheck selene clean help
+.PHONY: test test-watch test-path test-verbose lint typecheck selene check clean help
 
 # Default target
 help:
@@ -10,6 +10,7 @@ help:
 	@echo "  test-watch  - Run tests in watch mode (requires entr)"
 	@echo "  test-verbose - Run tests with verbose output"
 	@echo "  validate    - Validate test setup"
+	@echo "  check       - Run all linters and formatters (lint, typecheck, selene)"
 	@echo "  lint        - Run lua linting (requires stylua)"
 	@echo "  typecheck   - Run type checking (requires lua-language-server)"
 	@echo "  selene      - Run selene linter (requires selene)"
@@ -98,6 +99,16 @@ format:
 		echo "Error: 'stylua' is not installed. Install with: brew install stylua"; \
 		exit 1; \
 	fi
+
+# Run all checks (linters and formatters)
+check:
+	@echo "Running all checks..."
+	@$(MAKE) --no-print-directory lint
+	@$(MAKE) --no-print-directory typecheck
+	@$(MAKE) --no-print-directory selene
+	@$(MAKE) --no-print-directory format
+	@echo ""
+	@echo "✓ All checks passed!"
 
 # Clean test artifacts
 clean:
