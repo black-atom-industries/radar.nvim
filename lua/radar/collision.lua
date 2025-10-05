@@ -18,7 +18,8 @@ function M.check_collision(config)
   local cursor_col = vim.fn.screencol()
 
   -- Calculate where the window would be positioned (always top-right)
-  local board_width = config.windows.float.radar.config.width
+  -- local board_width = config.windows.float.radar.config.width
+  local board_width = require("radar.win_presets").get(config.mode)(config, {}).width
   local window_col = math.floor((vim.o.columns - board_width) - 2)
 
   -- Add collision padding

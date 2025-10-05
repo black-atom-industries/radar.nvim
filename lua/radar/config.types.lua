@@ -14,9 +14,10 @@
 
 ---@class Radar.Config.Appearance
 ---@field path_format string
----@field headers Radar.Config.Appearance.Headers
+---@field titles Radar.Config.Appearance.Titles
 
----@class Radar.Config.Appearance.Headers
+---@class Radar.Config.Appearance.Titles
+---@field main string
 ---@field locks string
 ---@field recent string
 
@@ -51,8 +52,10 @@
 ---@field path string
 ---@field defer_ms integer
 
+---@alias Radar.Config.Mode "float_top_right"|"sidebar_left"|"sidebar_right"
+
 ---@class Radar.Config
----@field mode "float_top_right"|"sidebar_left"|"sidebar_right"
+---@field mode Radar.Config.Mode
 ---@field keys Radar.Config.Keys
 ---@field behavior Radar.Config.Behavior
 ---@field appearance Radar.Config.Appearance
@@ -100,7 +103,7 @@ M.default = {
 
   appearance = {
     path_format = ":p:.",
-    headers = {
+    titles = {
       locks = "󰋱  LOCKED IN",
       recent = "󰽏  NEAR",
     },

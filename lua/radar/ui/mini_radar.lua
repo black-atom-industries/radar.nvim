@@ -25,7 +25,7 @@ function M.create_entries(locks, config)
   local entries = {}
 
   if #locks > 0 then
-    table.insert(entries, config.appearance.headers.locks)
+    table.insert(entries, config.appearance.titles.locks)
     for _, lock in ipairs(locks) do
       -- Calculate label width: "   [1] " = 7 chars for single char label
       local label_width = 3 + 1 + #lock.label + 1 + 1 + 2 -- spaces + [label] + spaces
@@ -51,7 +51,7 @@ function M.create_recent_entries(config)
   local entries = {}
 
   if #state.recent_files > 0 then
-    table.insert(entries, config.appearance.headers.recent)
+    table.insert(entries, config.appearance.titles.recent)
     for i, filename in ipairs(state.recent_files) do
       local label = config.keys.recent[i]
       if label then
@@ -175,7 +175,7 @@ function M.apply_highlights(config)
 
   for i, line in ipairs(lines) do
     -- Section headers - always highlight and reset section tracking
-    if line == config.appearance.headers.locks then
+    if line == config.appearance.titles.locks then
       current_section = "locks"
       section_index = 0
       vim.api.nvim_buf_set_extmark(
@@ -188,7 +188,7 @@ function M.apply_highlights(config)
           hl_group = "@tag.builtin",
         }
       )
-    elseif line == config.appearance.headers.recent then
+    elseif line == config.appearance.titles.recent then
       current_section = "recent"
       section_index = 0
       vim.api.nvim_buf_set_extmark(
@@ -262,19 +262,20 @@ function M.create(config)
   local new_buf_id = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_lines(new_buf_id, 0, -1, false, all_entries)
 
-  local win_opts = vim.tbl_deep_extend("force", config.windows.float.radar.config, {
+  local win_opts = require("radar.win_presets").get(config.mode)(config, {
     height = #all_entries,
   })
 
-  local win = vim.api.nvim_open_win(new_buf_id, false, win_opts)
+  local new_win = vim.api.nvim_open_win(new_buf_id, false, win_opts)
+
   local state = require("radar.state")
-  state.mini_radar_winid = win
+  state.mini_radar_winid = new_win
 
   -- Set window transparency
   vim.api.nvim_set_option_value(
     "winblend",
     config.windows.float.radar.winblend,
-    { win = win }
+    { win = new_win }
   )
 
   -- Apply all highlights

@@ -26,7 +26,8 @@ M.default = {
 
   appearance = {
     path_format = ":p:.",
-    headers = {
+    titles = {
+      main = "󰐷  RADAR",
       locks = "󰋱  LOCKED IN",
       recent = "󰽏  NEAR",
     },

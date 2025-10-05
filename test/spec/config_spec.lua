@@ -41,8 +41,8 @@ describe("config", function()
       MiniTest.expect.equality(type(cfg.behavior.show_empty_message), "boolean")
 
       -- Check headers
-      MiniTest.expect.equality(type(cfg.appearance.headers.locks), "string")
-      MiniTest.expect.equality(type(cfg.appearance.headers.recent), "string")
+      MiniTest.expect.equality(type(cfg.appearance.titles.locks), "string")
+      MiniTest.expect.equality(type(cfg.appearance.titles.recent), "string")
       MiniTest.expect.equality(type(cfg.windows.float.radar.config.title), "string")
 
       -- Check edit config
