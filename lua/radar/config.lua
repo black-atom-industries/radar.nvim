@@ -40,7 +40,7 @@ M.constants = {
 M.default = {
   keys = {
     prefix = "<space>",
-    lock = ",<space>",
+    lock = "<space>l",
     locks = { "1", "2", "3", "4", "5", "6", "7", "8", "9" },
     recent = { "a", "s", "d", "f", "g" },
     vertical = "<C-v>",
@@ -68,7 +68,7 @@ M.default = {
   -- Float editor window
   float_editor = {
     relative = "editor",
-    width = 0.8,  -- ratio of screen width
+    width = 0.8, -- ratio of screen width
     height = 0.7, -- ratio of screen height
     border = "solid",
     title_pos = "center",
