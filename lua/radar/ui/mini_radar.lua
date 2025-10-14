@@ -377,7 +377,9 @@ function M.create(config)
   local keys = require("radar.keys")
   keys.setup_buffer_local_keymaps(new_buf_id, config)
 
-  local win_opts = require("radar.win_presets").get(config.mode)(config, {
+  -- Build window config directly from config with dynamic height and title
+  local win_opts = vim.tbl_deep_extend("force", config.windows.float.radar.config, {
+    title = config.appearance.titles.main,
     height = #all_entries,
   })
 
