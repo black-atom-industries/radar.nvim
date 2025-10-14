@@ -11,9 +11,8 @@ local function handle_operation_error(operation, err)
 end
 
 ---Check if cursor position would collide with floating radar window
----@param config Radar.Config
 ---@return boolean true if cursor is on same line as radar window
-function M.check_collision(config)
+function M.check_collision()
   local cursor_row = vim.fn.screenrow()
 
   -- Use stored window position (available even when window is hidden)
