@@ -57,7 +57,7 @@ M.default = {
     -- Float-specific windows and behavior
     float = {
       radar = {
-        winblend = 25,
+        winblend = 0,
         ---@type vim.api.keyset.win_config
         config = {
           relative = "cursor",
