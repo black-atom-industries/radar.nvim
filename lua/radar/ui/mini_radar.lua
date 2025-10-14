@@ -144,7 +144,7 @@ function M.build_radar_entries(config)
   -- If no content at all, show helpful message
   if #all_entries == 0 and config.behavior.show_empty_message then
     table.insert(all_entries, "  No files tracked yet")
-    table.insert(all_entries, "  Use " .. config.keys.lock .. " to lock files")
+    table.insert(all_entries, "  Press l to lock files")
   end
 
   return all_entries
@@ -175,9 +175,50 @@ end
 ---@param config Radar.Config
 ---@return nil
 function M.ensure_exists(config)
-  local collision = require("radar.collision")
-  if not M.exists() and not collision.is_hidden_for_collision() then
+  if not M.exists() then
     M.create(config)
+  end
+end
+
+---Toggle mini radar visibility
+---@param config Radar.Config
+---@return nil
+function M.toggle(config)
+  if M.exists() then
+    M.close()
+  else
+    M.open(config)
+  end
+end
+
+---Open mini radar and focus it
+---@param config Radar.Config
+---@return nil
+function M.open(config)
+  local state = require("radar.state")
+
+  -- Store the buffer we're opening from (for locking, etc.)
+  state.source_bufnr = vim.api.nvim_get_current_buf()
+
+  -- Capture the alternate file before focus changes
+  local alternative = require("radar.alternative")
+  state.source_alt_file = alternative.get_alternative_file()
+
+  if not M.exists() then
+    M.create(config)
+  else
+    -- Window exists, just focus it
+    vim.api.nvim_set_current_win(state.mini_radar_winid)
+  end
+end
+
+---Close mini radar window (keep buffer for later reopening)
+---@return nil
+function M.close()
+  local state = require("radar.state")
+  if state.mini_radar_winid and vim.api.nvim_win_is_valid(state.mini_radar_winid) then
+    vim.api.nvim_win_close(state.mini_radar_winid, false)
+    state.mini_radar_winid = nil
   end
 end
 
@@ -320,20 +361,30 @@ function M.create(config)
   local all_entries = M.build_radar_entries(config)
 
   local new_buf_id = vim.api.nvim_create_buf(false, true)
+
+  -- Set buffer options to prevent editing
+  vim.api.nvim_set_option_value("buftype", "nofile", { buf = new_buf_id })
+  vim.api.nvim_set_option_value("bufhidden", "hide", { buf = new_buf_id })
+  vim.api.nvim_set_option_value("swapfile", false, { buf = new_buf_id })
+  vim.api.nvim_set_option_value("modifiable", false, { buf = new_buf_id })
+
+  -- Temporarily make modifiable to set lines
+  vim.api.nvim_set_option_value("modifiable", true, { buf = new_buf_id })
   vim.api.nvim_buf_set_lines(new_buf_id, 0, -1, false, all_entries)
+  vim.api.nvim_set_option_value("modifiable", false, { buf = new_buf_id })
+
+  -- Set up buffer-local keymaps before opening window
+  local keys = require("radar.keys")
+  keys.setup_buffer_local_keymaps(new_buf_id, config)
 
   local win_opts = require("radar.win_presets").get(config.mode)(config, {
     height = #all_entries,
   })
 
-  local new_win = vim.api.nvim_open_win(new_buf_id, false, win_opts)
+  local new_win = vim.api.nvim_open_win(new_buf_id, true, win_opts)
 
   local state = require("radar.state")
   state.mini_radar_winid = new_win
-  ---@diagnostic disable-next-line: undefined-field
-  state.mini_radar_row = win_opts.row or 1
-  ---@diagnostic disable-next-line: undefined-field
-  state.mini_radar_height = win_opts.height or 1
 
   -- Set window transparency
   vim.api.nvim_set_option_value(
@@ -363,7 +414,10 @@ function M.update(config)
 
   local all_entries = M.build_radar_entries(config)
 
+  -- Temporarily make modifiable to update lines
+  vim.api.nvim_set_option_value("modifiable", true, { buf = mini_radar_bufid })
   vim.api.nvim_buf_set_lines(mini_radar_bufid, 0, -1, false, all_entries)
+  vim.api.nvim_set_option_value("modifiable", false, { buf = mini_radar_bufid })
 
   local state = require("radar.state")
   local new_height = #all_entries
@@ -371,10 +425,6 @@ function M.update(config)
     height = new_height,
   })
 
-  -- Get the actual window config after update to store position
-  local win_config = vim.api.nvim_win_get_config(state.mini_radar_winid)
-  state.mini_radar_row = win_config.row or 1
-  state.mini_radar_height = new_height
   -- Apply all highlights
   M.apply_highlights(config)
 end

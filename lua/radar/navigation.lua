@@ -11,7 +11,8 @@ function M.open_file(filepath, open_cmd, config, mini_radar_module)
     return
   end
 
-  mini_radar_module.ensure_exists(config)
+  -- Close radar first, so file opens in the previous window
+  mini_radar_module.close()
 
   local path = vim.fn.fnameescape(filepath)
   open_cmd = open_cmd or "edit"
@@ -95,8 +96,9 @@ end
 ---@param mini_radar_module table
 ---@return nil
 function M.open_alternative(open_cmd, config, mini_radar_module)
-  local alternative = require("radar.alternative")
-  local alt_file = alternative.get_alternative_file()
+  local state = require("radar.state")
+  -- Use the alternate file captured when radar was opened
+  local alt_file = state.source_alt_file
   if alt_file then
     M.open_file(alt_file, open_cmd, config, mini_radar_module)
   end

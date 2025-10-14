@@ -10,7 +10,7 @@ M.default = {
 
   keys = {
     prefix = "<space>",
-    lock = "<space>l",
+    lock = "l",
     locks = { "1", "2", "3", "4", "5", "6", "7", "8", "9" },
     alternative = "o",
     recent = { "a", "s", "d", "f", "g" },
@@ -56,19 +56,16 @@ M.default = {
 
     -- Float-specific windows and behavior
     float = {
-      hide_on_collision = true,
-      collision_padding = 50,
-
       radar = {
         winblend = 25,
         ---@type vim.api.keyset.win_config
         config = {
-          relative = "editor",
+          relative = "cursor",
           anchor = "NW",
           width = 50,
           -- `height` gets calculated dynamically
           row = 1,
-          col = math.floor((vim.o.columns - 50) - 2),
+          col = 0,
           border = "solid",
           style = "minimal",
           title = "󰐷  RADAR",

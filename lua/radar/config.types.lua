@@ -36,8 +36,6 @@
 ---@field min_width integer
 
 ---@class Radar.Config.Windows.Float
----@field hide_on_collision boolean
----@field collision_padding integer
 ---@field radar Radar.Config.Windows.Float.RadarWindow
 ---@field edit Radar.Config.Windows.Float.EditWindow
 
@@ -130,9 +128,6 @@ M.default = {
 
     -- Float-specific windows and behavior
     float = {
-      hide_on_collision = true,
-      collision_padding = 50,
-
       radar = {
         winblend = 25,
         ---@type vim.api.keyset.win_config

@@ -12,12 +12,10 @@ local M = {
   edit_winid = nil,
   ---@type integer?
   edit_bufid = nil,
-  ---@type boolean
-  hidden_for_collision = false,
-  ---@type integer
-  mini_radar_row = 1,
-  ---@type integer
-  mini_radar_height = 1,
+  ---@type integer?
+  source_bufnr = nil,
+  ---@type string?
+  source_alt_file = nil,
 }
 
 ---Get lock by field value

@@ -29,23 +29,13 @@ function M.float_top_right(config, overrides)
   ---@diagnostic disable-next-line: undefined-field
   vim.validate("overrides.height", overrides.height, "number")
 
-  return vim.tbl_deep_extend("force", {
-    relative = "editor",
-    anchor = "NW",
-    row = 1,
-    col = math.floor((vim.o.columns - 50) - 2),
-
-    width = 50,
-    height = overrides.height, -- Gets dynamically set from outside
-
-    border = "solid",
-    style = "minimal",
+  -- Use config as source of truth, only override title and height dynamically
+  local win_config = vim.tbl_deep_extend("force", config.windows.float.radar.config, {
     title = config.appearance.titles.main,
-    title_pos = "left",
+    height = overrides.height,
+  })
 
-    focusable = false,
-    zindex = 10,
-  }, overrides)
+  return win_config
 end
 
 return M

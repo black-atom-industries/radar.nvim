@@ -130,9 +130,6 @@ function M.populate(config, mini_radar_module)
       state.locks = locks
     end
   end
-
-  -- Always create radar (recent files will load after VimEnter)
-  mini_radar_module.create(config)
 end
 
 return M

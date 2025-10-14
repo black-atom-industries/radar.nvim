@@ -88,7 +88,19 @@ end
 ---@return nil
 function M.lock_current_buffer(buf_nr, config, persistence_module, mini_radar_module)
   buf_nr = buf_nr or vim.api.nvim_get_current_buf()
+
+  -- Don't lock non-file buffers (like the radar window itself)
+  local buftype = vim.api.nvim_get_option_value("buftype", { buf = buf_nr })
+  if buftype ~= "" then
+    return
+  end
+
   local filename = vim.api.nvim_buf_get_name(buf_nr)
+
+  -- Don't lock empty or unnamed buffers
+  if filename == "" then
+    return
+  end
 
   -- Normalize filename to match the format used in UI (relative to cwd)
   local normalized_filename =

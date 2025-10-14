@@ -12,10 +12,9 @@ function M.setup(config)
       -- Update recent files now that vim.v.oldfiles is loaded
       local recent = require("radar.recent")
       local mini_radar = require("radar.ui.mini_radar")
-      local state = require("radar.state")
       recent.update_state(config)
-      -- Update the radar display if it exists, or create it if we now have content
-      if mini_radar.exists() or #state.recent_files > 0 then
+      -- Only update if radar is open
+      if mini_radar.exists() then
         mini_radar.update(config)
       end
     end,
@@ -25,7 +24,10 @@ function M.setup(config)
     group = autogrp("radar.VimResized", { clear = true }),
     callback = function()
       local mini_radar = require("radar.ui.mini_radar")
-      mini_radar.update(config)
+      -- Only update if radar is open
+      if mini_radar.exists() then
+        mini_radar.update(config)
+      end
     end,
   })
 
@@ -41,22 +43,6 @@ function M.setup(config)
       -- Update radar if it exists (this rebuilds content and applies highlights)
       if mini_radar.exists() then
         mini_radar.update(config)
-      end
-    end,
-  })
-
-  -- Collision detection on cursor movement (throttled for performance)
-  local last_collision_check = 0
-  local COLLISION_THROTTLE_MS = 50 -- Only check collision every 50ms
-
-  autocmd({ "CursorMoved", "CursorMovedI" }, {
-    group = autogrp("radar.CursorMoved", { clear = true }),
-    callback = function()
-      local now = vim.uv.hrtime() / 1000000 -- Convert nanoseconds to milliseconds
-      if now - last_collision_check >= COLLISION_THROTTLE_MS then
-        local collision = require("radar.collision")
-        collision.update_visibility(config)
-        last_collision_check = now
       end
     end,
   })
