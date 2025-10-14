@@ -278,6 +278,8 @@ function M.create(radar_config)
   local win = vim.api.nvim_open_win(new_buf_id, false, win_opts)
   local state = require("radar.state")
   state.mini_radar_winid = win
+  state.mini_radar_row = win_opts.row
+  state.mini_radar_height = win_opts.height
 
   -- Set window transparency
   vim.api.nvim_set_option_value(
@@ -311,13 +313,17 @@ function M.update(radar_config)
 
   local board_width = radar_config.width
   local state = require("radar.state")
+  local new_row = 1
+  local new_height = #all_entries
   vim.api.nvim_win_set_config(state.mini_radar_winid, {
     relative = "editor",
     width = board_width,
-    height = #all_entries,
-    row = 1,
+    height = new_height,
+    row = new_row,
     col = math.floor((vim.o.columns - board_width) - 2),
   })
+  state.mini_radar_row = new_row
+  state.mini_radar_height = new_height
   -- Apply all highlights
   M.apply_highlights(radar_config)
 end

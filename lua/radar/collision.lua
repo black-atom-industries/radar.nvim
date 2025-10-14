@@ -12,24 +12,21 @@ end
 
 ---Check if cursor position would collide with floating radar window
 ---@param radar_config table
----@return boolean true if cursor is within window bounds
+---@return boolean true if cursor is on same line as radar window
 function M.check_collision(radar_config)
-  -- Get cursor screen position (works correctly with splits)
-  local cursor_col = vim.fn.screencol()
+  local cursor_row = vim.fn.screenrow()
 
-  -- Calculate where the window would be positioned (always top-right)
-  local board_width = radar_config.width
-  local window_col = math.floor((vim.o.columns - board_width) - 2)
+  -- Use stored window position (available even when window is hidden)
+  local state = require("radar.state")
+  local win_row = state.mini_radar_row or 1
+  local content_height = state.mini_radar_height or 1
 
-  -- Add collision padding
-  local collision_padding = radar_config.collision_padding or 0
-  local min_col = window_col - collision_padding
-  local max_col = window_col + board_width + collision_padding
+  -- Account for border (top border + title = 1 row, bottom border = 1 row)
+  -- Actual window height on screen = content_height + 2
+  local actual_height = content_height + 2
 
-  -- Only check horizontal collision (cursor in the right area)
-  local collides = cursor_col >= min_col and cursor_col <= max_col
-
-  return collides
+  -- Check if cursor is within window's vertical range
+  return cursor_row >= win_row and cursor_row < win_row + actual_height
 end
 
 ---Update window visibility based on collision state
