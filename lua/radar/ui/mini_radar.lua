@@ -44,6 +44,39 @@ function M.create_entries(locks, config)
   return entries
 end
 
+---Create formatted entry for alternative file
+---@param config Radar.Config
+---@return string[]
+function M.create_alternative_entry(config)
+  local alternative = require("radar.alternative")
+  local entries = {}
+
+  table.insert(entries, config.appearance.titles.alternative)
+
+  local alt_file = alternative.get_alternative_file()
+  local label = config.keys.alternative
+
+  if alt_file then
+    -- Calculate label width: "   [o] " = 7 chars for single char label
+    local label_width = 3 + 1 + #label + 1 + 1 + 2 -- spaces + [label] + spaces
+    local path = M.get_formatted_filepath(
+      alt_file,
+      config,
+      ---@diagnostic disable-next-line: undefined-field
+      config.windows.float.radar.config.width,
+      label_width
+    )
+    local entry = string.format("   [%s] %s  ", label, path)
+    table.insert(entries, entry)
+  else
+    -- Show placeholder when no alternative file exists
+    local entry = string.format("   [%s] - No other file yet  ", label)
+    table.insert(entries, entry)
+  end
+
+  return entries
+end
+
 ---Create formatted entries for recent files
 ---@param config Radar.Config
 ---@return string[]
@@ -85,10 +118,18 @@ function M.build_radar_entries(config)
   local lock_entries = M.create_entries(state.locks, config)
   vim.list_extend(all_entries, lock_entries)
 
+  -- Add alternative file entry with separator (always present, shows placeholder if no alt file)
+  local alternative_entries = M.create_alternative_entry(config)
+  -- Add empty line separator if we have locks
+  if #state.locks > 0 then
+    table.insert(all_entries, " ")
+  end
+  vim.list_extend(all_entries, alternative_entries)
+
   -- Add recent entries with separator
   if #state.recent_files > 0 then
-    -- Add empty line separator only if we also have locks
-    if #state.locks > 0 then
+    -- Add empty line separator (we always have locks or alternative above)
+    if #state.locks > 0 or #alternative_entries > 0 then
       table.insert(all_entries, " ")
     end
     local recent_entries = M.create_recent_entries(config)
@@ -190,6 +231,19 @@ function M.apply_highlights(config)
           hl_group = "@tag.builtin",
         }
       )
+    elseif line == config.appearance.titles.alternative then
+      current_section = "alternative"
+      section_index = 0
+      vim.api.nvim_buf_set_extmark(
+        bufid,
+        config_module.constants.ns_mini_radar,
+        i - 1,
+        0,
+        {
+          end_col = #line,
+          hl_group = "@variable",
+        }
+      )
     elseif line == config.appearance.titles.recent then
       current_section = "recent"
       section_index = 0
@@ -216,19 +270,23 @@ function M.apply_highlights(config)
       local actual_filepath = nil
       if current_section == "locks" and state.locks[section_index] then
         actual_filepath = state.locks[section_index].filename
+      elseif current_section == "alternative" then
+        -- Alternative file is always section index 1
+        local alternative = require("radar.alternative")
+        actual_filepath = alternative.get_alternative_file()
       elseif current_section == "recent" and state.recent_files[section_index] then
         actual_filepath = state.recent_files[section_index]
       end
 
       -- Only highlight if this line represents the current file
-      -- Locks store relative paths, recent files store absolute paths
+      -- Locks store relative paths, alternative and recent files store absolute paths
       local matches = false
       if actual_filepath then
         if current_section == "locks" then
           -- Locks use relative paths - compare with formatted current path
           matches = actual_filepath == curr_filepath_formatted
-        elseif current_section == "recent" then
-          -- Recent files use absolute paths - compare with absolute current path
+        elseif current_section == "alternative" or current_section == "recent" then
+          -- Alternative and recent files use absolute paths - compare with absolute current path
           matches = actual_filepath == curr_filepath
         end
       end

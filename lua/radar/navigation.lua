@@ -89,6 +89,19 @@ function M.open_lock(label, open_cmd, config, mini_radar_module)
   end
 end
 
+---Open alternative file
+---@param open_cmd? string Command to open file (edit, vsplit, split, tabedit, float)
+---@param config Radar.Config
+---@param mini_radar_module table
+---@return nil
+function M.open_alternative(open_cmd, config, mini_radar_module)
+  local alternative = require("radar.alternative")
+  local alt_file = alternative.get_alternative_file()
+  if alt_file then
+    M.open_file(alt_file, open_cmd, config, mini_radar_module)
+  end
+end
+
 ---Open recent file by label
 ---@param label string
 ---@param open_cmd? string Command to open file (edit, vsplit, split, tabedit, float)

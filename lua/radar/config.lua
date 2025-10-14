@@ -12,6 +12,7 @@ M.default = {
     prefix = "<space>",
     lock = "<space>l",
     locks = { "1", "2", "3", "4", "5", "6", "7", "8", "9" },
+    alternative = "o",
     recent = { "a", "s", "d", "f", "g" },
     vertical = "<C-v>",
     horizontal = "<C-s>",
@@ -29,6 +30,7 @@ M.default = {
     titles = {
       main = "󰐷  RADAR",
       locks = "󰋱  LOCKED IN",
+      alternative = "  OTHER",
       recent = "󰽏  NEAR",
     },
   },

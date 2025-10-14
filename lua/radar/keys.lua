@@ -35,6 +35,35 @@ function M.setup(config)
     mini_radar
   )
 
+  -- Register alternative file keymaps
+  local alt_label = config.keys.alternative
+  local prefix = config.keys.prefix
+
+  -- Regular open
+  vim.keymap.set("n", prefix .. alt_label, function()
+    navigation.open_alternative(nil, config, mini_radar)
+  end, { desc = "Open alternative file" })
+
+  -- Vertical split
+  vim.keymap.set("n", prefix .. config.keys.vertical .. alt_label, function()
+    navigation.open_alternative("vsplit", config, mini_radar)
+  end, { desc = "Open alternative file in vertical split" })
+
+  -- Horizontal split
+  vim.keymap.set("n", prefix .. config.keys.horizontal .. alt_label, function()
+    navigation.open_alternative("split", config, mini_radar)
+  end, { desc = "Open alternative file in horizontal split" })
+
+  -- New tab
+  vim.keymap.set("n", prefix .. config.keys.tab .. alt_label, function()
+    navigation.open_alternative("tabedit", config, mini_radar)
+  end, { desc = "Open alternative file in new tab" })
+
+  -- Float window
+  vim.keymap.set("n", prefix .. config.keys.float .. alt_label, function()
+    navigation.open_alternative("float", config, mini_radar)
+  end, { desc = "Open alternative file in floating window" })
+
   -- Register recent files keymaps
   navigation.register_file_keymaps(
     config.keys.recent,

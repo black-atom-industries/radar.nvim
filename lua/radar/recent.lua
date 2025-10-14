@@ -1,6 +1,6 @@
 local M = {}
 
----Get recent files filtered by current working directory and excluding locked files
+---Get recent files filtered by current working directory and excluding locked files and alternative file
 ---@param config Radar.Config
 ---@return string[]
 function M.get_files(config)
@@ -11,20 +11,27 @@ function M.get_files(config)
 
   local recent_files = {}
   local seen_files = {}
-  local locked_files = {}
+  local excluded_files = {}
 
   local state = require("radar.state")
   -- Create lookup table for locked files (normalize to absolute paths)
   for _, lock in ipairs(state.locks) do
     local abs_path = vim.fn.fnamemodify(lock.filename, ":p")
-    locked_files[abs_path] = true
+    excluded_files[abs_path] = true
+  end
+
+  -- Exclude alternative file
+  local alternative = require("radar.alternative")
+  local alt_file = alternative.get_alternative_file()
+  if alt_file then
+    excluded_files[alt_file] = true
   end
 
   -- Add current session files first (most recent)
   for i = #state.session_files, 1, -1 do
     local filepath = state.session_files[i]
 
-    if not locked_files[filepath] and not seen_files[filepath] then
+    if not excluded_files[filepath] and not seen_files[filepath] then
       if vim.startswith(filepath, cwd) and vim.fn.filereadable(filepath) == 1 then
         table.insert(recent_files, filepath)
         seen_files[filepath] = true
@@ -38,10 +45,10 @@ function M.get_files(config)
 
   -- Fill remaining slots with vim.v.oldfiles
   for _, filepath in ipairs(vim.v.oldfiles) do
-    -- Skip if already seen, locked, or if we're at capacity
+    -- Skip if already seen, excluded, or if we're at capacity
     if
       seen_files[filepath]
-      or locked_files[filepath]
+      or excluded_files[filepath]
       or #recent_files >= #config.keys.recent
     then
       goto continue
