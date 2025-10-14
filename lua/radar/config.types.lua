@@ -46,7 +46,6 @@
 ---@class Radar.Config.Windows
 ---@field file_window Radar.Config.Windows.FileWindow
 ---@field float Radar.Config.Windows.Float
----@field sidebar Radar.Config.Windows.Sidebar
 
 ---@class Radar.Config.Persist
 ---@field path string

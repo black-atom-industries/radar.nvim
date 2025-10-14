@@ -81,12 +81,6 @@ M.default = {
         min_width = 60,
       },
     },
-
-    -- Sidebar-specific (future)
-    sidebar = {
-      position = "right",
-      width = 50,
-    },
   },
 }
 
