@@ -5,6 +5,7 @@ describe("config", function()
     it("has all required keys", function()
       MiniTest.expect.equality(type(config.default.keys), "table")
       MiniTest.expect.equality(
+        ---@diagnostic disable-next-line: undefined-field
         type(config.default.windows.float.radar.config.width),
         "number"
       )
@@ -35,6 +36,7 @@ describe("config", function()
       local cfg = config.default
 
       -- Check UI settings
+      ---@diagnostic disable-next-line: undefined-field
       MiniTest.expect.equality(type(cfg.windows.float.radar.config.width), "number")
       MiniTest.expect.equality(type(cfg.windows.float.radar.winblend), "number")
       MiniTest.expect.equality(type(cfg.appearance.path_format), "string")
@@ -43,6 +45,7 @@ describe("config", function()
       -- Check headers
       MiniTest.expect.equality(type(cfg.appearance.titles.locks), "string")
       MiniTest.expect.equality(type(cfg.appearance.titles.recent), "string")
+      ---@diagnostic disable-next-line: undefined-field
       MiniTest.expect.equality(type(cfg.windows.float.radar.config.title), "string")
 
       -- Check edit config

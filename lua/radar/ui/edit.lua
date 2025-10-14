@@ -17,6 +17,7 @@ local function calculate_window_width(radar_config, mini_radar_module)
   end
 
   -- Ensure minimum width and add padding
+  ---@diagnostic disable-next-line: undefined-field
   return math.max(max_width, radar_config.windows.float.radar.config.width)
 end
 

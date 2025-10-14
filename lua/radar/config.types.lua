@@ -104,6 +104,7 @@ M.default = {
   appearance = {
     path_format = ":p:.",
     titles = {
+      main = "󰐷  RADAR",
       locks = "󰋱  LOCKED IN",
       recent = "󰽏  NEAR",
     },

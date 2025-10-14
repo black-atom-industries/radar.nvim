@@ -21,11 +21,12 @@ end
 
 -- The height property of `overrides` must always be set!
 ---@param config Radar.Config
----@param overrides vim.api.keyset.win_config
+---@param overrides {height: integer}
 ---@return vim.api.keyset.win_config
 function M.float_top_right(config, overrides)
   config = config or require("radar.config").default
   vim.validate("overrides", overrides, "table")
+  ---@diagnostic disable-next-line: undefined-field
   vim.validate("overrides.height", overrides.height, "number")
 
   return vim.tbl_deep_extend("force", {

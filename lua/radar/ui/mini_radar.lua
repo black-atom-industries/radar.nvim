@@ -32,6 +32,7 @@ function M.create_entries(locks, config)
       local path = M.get_formatted_filepath(
         lock.filename,
         config,
+        ---@diagnostic disable-next-line: undefined-field
         config.windows.float.radar.config.width,
         label_width
       )
@@ -60,6 +61,7 @@ function M.create_recent_entries(config)
         local path = M.get_formatted_filepath(
           filename,
           config,
+          ---@diagnostic disable-next-line: undefined-field
           config.windows.float.radar.config.width,
           label_width
         )
@@ -270,6 +272,10 @@ function M.create(config)
 
   local state = require("radar.state")
   state.mini_radar_winid = new_win
+  ---@diagnostic disable-next-line: undefined-field
+  state.mini_radar_row = win_opts.row or 1
+  ---@diagnostic disable-next-line: undefined-field
+  state.mini_radar_height = win_opts.height or 1
 
   -- Set window transparency
   vim.api.nvim_set_option_value(
@@ -302,9 +308,15 @@ function M.update(config)
   vim.api.nvim_buf_set_lines(mini_radar_bufid, 0, -1, false, all_entries)
 
   local state = require("radar.state")
+  local new_height = #all_entries
   vim.api.nvim_win_set_config(state.mini_radar_winid, {
-    height = #all_entries,
+    height = new_height,
   })
+
+  -- Get the actual window config after update to store position
+  local win_config = vim.api.nvim_win_get_config(state.mini_radar_winid)
+  state.mini_radar_row = win_config.row or 1
+  state.mini_radar_height = new_height
   -- Apply all highlights
   M.apply_highlights(config)
 end

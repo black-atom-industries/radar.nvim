@@ -5,7 +5,8 @@ function M.setup(config)
   local autocmd = vim.api.nvim_create_autocmd
   local autogrp = vim.api.nvim_create_augroup
 
-  autocmd("VimEnter", {
+  autocmd({ "VimEnter", "SessionLoadPost" }, {
+    nested = true,
     group = autogrp("radar.VimEnter", { clear = true }),
     callback = function()
       -- Update recent files now that vim.v.oldfiles is loaded

@@ -14,6 +14,10 @@ local M = {
   edit_bufid = nil,
   ---@type boolean
   hidden_for_collision = false,
+  ---@type integer
+  mini_radar_row = 1,
+  ---@type integer
+  mini_radar_height = 1,
 }
 
 ---Get lock by field value
