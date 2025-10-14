@@ -33,6 +33,11 @@ M.default = {
     },
   },
 
+  persist = {
+    path = vim.fs.joinpath(vim.fn.stdpath("data"), "radar", "data.json"),
+    defer_ms = 500,
+  },
+
   windows = {
     -- Global: file preview window (works in all modes)
     file_window = {
@@ -83,11 +88,6 @@ M.default = {
       position = "right",
       width = 50,
     },
-  },
-
-  persist = {
-    path = vim.fs.joinpath(vim.fn.stdpath("data"), "radar", "data.json"),
-    defer_ms = 500,
   },
 }
 
