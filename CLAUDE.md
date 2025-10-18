@@ -8,31 +8,70 @@ This is **Nik's learning project** for Neovim plugin development. The focus is o
 
 ### Evolution: pins.lua → radar.nvim
 
-- **Current State**: Fully functional file pinning system with sophisticated persistence and UI management
-- **Vision**: Comprehensive file navigation system inspired by fighter pilot radar displays
-- **Learning Focus**: Understanding Neovim API patterns, Lua module systems, and dynamic UI management
+- **Origin**: Started as a simple file pinning system (`pins.lua`)
+- **Current State**: Fully modular file navigation system with locks, recent files, alternative file support
+- **Vision**: Comprehensive file navigation inspired by fighter pilot radar displays
+- **Learning Focus**: Understanding Neovim API patterns, Lua module systems, dynamic UI management
 
 ## Architecture Overview
 
-### Current Implementation (Production Ready)
+### Current Modular Structure (Production Ready)
 
-All functionality lives in `lua/radar/init.lua` (430+ lines) - a monolithic but well-architected implementation that demonstrates:
-
-- **Context-Aware Persistence**: `{[project_path][git_branch] = {pins: [...]}}`
-- **Safe String Matching**: Uses `string.find(text, pattern, 1, true)` for literal matching (critical for special chars)
-- **Dynamic Highlighting**: Extmarks with `BufEnter` autocmd for automatic updates
-- **Robust Error Handling**: `vim.tbl_get()` for safe nested access, validation before operations
-
-### Future Modular Structure (Planned)
+The codebase has evolved into a clean modular architecture:
 
 ```
 lua/radar/
-├── init.lua      -- Entry point with setup()
-├── pins.lua      -- Current pins functionality
-├── recent.lua    -- Recent files logic (vim.v.oldfiles)
-├── ui.lua        -- Radar view rendering
-└── persistence.lua
+├── init.lua              -- Entry point with setup()
+├── config.lua            -- Default configuration values (single source of truth)
+├── config.types.lua      -- Type definitions only (no implementation)
+├── state.lua             -- Global state management
+├── locks.lua             -- File locking/pinning functionality
+├── recent.lua            -- Recent files logic (vim.v.oldfiles)
+├── alternative.lua       -- Alternative file switching (e.g., test ↔ impl)
+├── persistence.lua       -- Save/load locks per project+branch
+├── navigation.lua        -- File opening logic (vertical/horizontal/tab/float)
+├── keys.lua              -- Keybinding setup
+├── autocmd.lua           -- Autocommand setup
+├── api.lua               -- Public API functions
+├── window.lua            -- Window config resolution
+├── win_presets.lua       -- Window positioning presets (center, top_right, etc.)
+└── ui/
+    ├── mini_radar.lua    -- Mini radar floating window UI
+    └── edit.lua          -- Lock label editor UI
 ```
+
+### Key Architectural Patterns
+
+- **Context-Aware Persistence**: `{[project_path][git_branch] = {locks: [...]}}`
+- **Safe String Matching**: Uses `string.find(text, pattern, 1, true)` for literal matching (critical for special chars)
+- **Dynamic Highlighting**: Extmarks with `BufEnter` autocmd for automatic updates
+- **Robust Error Handling**: `vim.tbl_get()` for safe nested access, validation before operations
+- **Window Preset System**: String presets like `"center"` resolve to full window configs via `win_presets.lua`
+- **Type Safety**: Separate type definitions in `config.types.lua`, implementation in `config.lua`
+
+### Recent Architectural Decisions
+
+1. **Config Separation** (Latest)
+   - Split type definitions from implementation
+   - `config.types.lua` = types only (no values)
+   - `config.lua` = single source of truth for all values
+   - Resolved duplicate config bug where types file had different values
+
+2. **Window Preset System**
+   - Replaced hardcoded window configs with preset system
+   - Users can specify `"center"` instead of full table
+   - Presets available: center, cursor, top_right, bottom_center, full_height_sidebar
+   - Supports override syntax: `{ "preset_name", { width = 100 } }`
+
+3. **Modular Refactor**
+   - Evolved from monolithic `init.lua` to clean module separation
+   - Each concern (locks, recent, alternative, UI) in dedicated file
+   - Maintained backward compatibility through careful API design
+
+4. **Removed Mode Config**
+   - Eliminated `mode = "float_top_right"` from config
+   - Window positioning now handled purely through preset system
+   - Simpler mental model: window presets control positioning
 
 ## Key Technical Patterns
 
@@ -73,27 +112,50 @@ end, 500)
 
 **Why**: Batches rapid changes, prevents excessive I/O during active editing.
 
+### 5. Window Preset Resolution Pattern
+
+```lua
+-- Config can be a string preset or tuple with overrides
+config = "center"  -- Simple preset
+config = { "center", { width = 100, height = 20 } }  -- Preset + overrides
+
+-- Resolution happens in window.lua
+local win_opts = window.resolve_config(config, opts)
+```
+
+**Why**: Allows flexible configuration - simple presets for common cases, full customization when needed.
+
 ## Radar.nvim Vision & Spatial Design
 
 ### File Categories & Keybinding Layout
 
-From [docs/concept.md](docs/concept.md) - spatial keyboard layout for 24 instant-access files:
+From [docs/concept.md](docs/concept.md) - spatial keyboard layout for instant-access files:
 
 ```
-[1][2][3][4][5][6][7][8][9]  ← Pins (manually locked targets)
-[q][w][e][r][t]              ← Modified files (git status)
+[1][2][3][4][5][6][7][8][9]  ← Locks (manually locked targets)
 [a][s][d][f][g]              ← Recent files (vim.v.oldfiles)
-[z][x][c][v][b]              ← PR files (branch changes)
+o                             ← Alternative file (test ↔ impl)
 ```
 
-### Dual Navigation Modes
+**Currently Implemented:**
+- ✅ Locks (1-9 keys)
+- ✅ Recent files (a-g keys, filtered by cwd)
+- ✅ Alternative file (o key, detects test/impl pairs)
 
-- **Mini Radar**: Persistent floating window (pins only)
-- **Full Radar**: Comprehensive tactical display (all categories)
+**Future Extensions:**
+- Modified files (git status)
+- PR files (branch changes)
 
-### Deduplication Strategy
+### Navigation Modes
 
-Pinned files are filtered out of other sections - each file appears only once, prioritizing manual pins over automatic categorization.
+**Current:** Mini Radar only (persistent floating window)
+- Displays locks, recent files, and alternative file
+- Keybindings: `<space>1-9`, `<space>a-g`, `<space>o`
+- Line-based navigation: `<CR>`, `V`, `S`, `T`, `F` for different split modes
+
+**Future:** Full Radar
+- Comprehensive tactical display (all categories)
+- Enhanced navigation with arrow keys
 
 ## Development Patterns
 
@@ -117,65 +179,132 @@ end
 
 ### Learning Areas Successfully Mastered
 
-- **Extmarks System**: Namespace management, dynamic highlighting, safe clearing
-- **Floating Windows**: Configuration, positioning, content management
-- **Persistence**: JSON encoding/decoding with error handling
-- **Autocmd Management**: Group creation, callback functions, event handling
+- ✅ **Extmarks System**: Namespace management, dynamic highlighting, safe clearing
+- ✅ **Floating Windows**: Configuration, positioning, content management
+- ✅ **Persistence**: JSON encoding/decoding with error handling
+- ✅ **Autocmd Management**: Group creation, callback functions, event handling
+- ✅ **Modular Architecture**: Clean separation of concerns across multiple modules
+- ✅ **Type System**: Lua Language Server annotations with separate type definitions
+- ✅ **Window Presets**: Flexible configuration with preset resolution system
+- ✅ **Navigation System**: Multiple file opening modes (vertical/horizontal/tab/float)
 
-## Known Limitations & Future Work
+## Current State & Roadmap
 
-### Current Limitations
+### ✅ Implemented Features
 
-- **Non-git Folders**: Persistence system requires git branches for context
-- **Monolithic Structure**: All code in single file (by design for learning)
+- **Locks (Pins)**: Manual file pinning system with 1-9 keybindings
+- **Recent Files**: MRU list filtered by current working directory (a-g keys)
+- **Alternative Files**: Smart test ↔ implementation file switching (o key)
+- **Line Navigation**: Navigate within radar using `<CR>`, `V`, `S`, `T`, `F`
+- **Label Editing**: Customize lock labels via floating editor
+- **Context Persistence**: Saves locks per project + git branch
+- **Mini Radar UI**: Persistent floating window with dynamic highlighting
 
-### v1 Implementation Plan
+### 🚧 Known Limitations
 
-- **Recent Files**: Filter `vim.v.oldfiles` by current working directory
+- **Non-git Folders**: Persistence system requires git for branch context
+- **Single View Mode**: Only mini radar implemented (full radar planned)
+
+### 🎯 Future Work (v1+)
+
 - **Modified Files**: Git integration for uncommitted changes
 - **PR Files**: Branch-specific file changes
-- **Navigation Mode**: Arrow key navigation between radar sections
+- **Full Radar Mode**: Comprehensive view with arrow key navigation
+- **Non-git Support**: Fallback persistence strategy for non-git projects
 
 ## Configuration Architecture
 
-### Current Structure
+### Current Structure (lua/radar/config.lua)
 
 ```lua
-M.config = {
-    board = {        -- UI appearance and behavior
-        pin_labels = { "1", "2", ... },
-        win = { ... }  -- vim.api.keyset.win_config
+M.default = {
+  keys = {
+    prefix = "<space>",
+    lock = "l",
+    locks = { "1", "2", "3", "4", "5", "6", "7", "8", "9" },
+    alternative = "<space>",
+    recent = { "a", "s", "d", "f", "g" },
+    vertical = "<C-v>",
+    horizontal = "<C-s>",
+    tab = "<C-t>",
+    float = "<C-f>",
+    line = {
+      open = "<CR>",
+      vertical = "V",
+      horizontal = "S",
+      tab = "T",
+      float = "F",
     },
-    persist = {      -- Data persistence settings
-        path = vim.fs.joinpath(vim.fn.stdpath("data"), "pins")
+  },
+
+  behavior = {
+    max_recent_files = 20,
+    show_empty_message = true,
+  },
+
+  appearance = {
+    path_format = ":p:.",
+    titles = {
+      main = "󰐷  RADAR",
+      locks = "󰋱  LOCKED IN",
+      alternative = "  OTHER",
+      recent = "󰽏  NEAR",
     },
-    mappings = {     -- Keybinding configuration
-        pin = "<space><space>",
-        jump = "<space>"
-    }
+  },
+
+  persist = {
+    path = vim.fs.joinpath(vim.fn.stdpath("data"), "radar", "data.json"),
+    defer_ms = 500,
+  },
+
+  windows = {
+    float = {
+      radar = {
+        winblend = 0,
+        config = "center",  -- Can be preset string or { "preset", { overrides } }
+      },
+      edit = {
+        width_padding = 10,
+        max_height = 20,
+        min_width = 60,
+      },
+    },
+    file_window = {
+      config = {
+        "center",
+        {
+          width = math.floor(vim.o.columns * 0.8),
+          height = math.floor(vim.o.lines * 0.7),
+          zindex = 50,
+        },
+      },
+    },
+  },
 }
 ```
 
-### Future Configuration (from concept.md)
+### Type Definitions (lua/radar/config.types.lua)
 
-```lua
-require('radar').setup({
-    keys = { ... },        -- Spatial keyboard customization
-    behaviour = {          -- Deduplication, persistence settings
-        deduplicate = true,
-        persist_pins = true
-    },
-    appearance = {         -- Mini vs full radar configs
-        mini = { display = "static", preset = "float_top_right" }
-    }
-})
-```
+**IMPORTANT:** This file contains ONLY type annotations, no implementation. All actual values live in `config.lua`.
+
+Available window presets (defined in `win_presets.lua`):
+- `"center"` - Centered floating window
+- `"cursor"` - Window appears at cursor position
+- `"top_right"` - Top-right corner
+- `"bottom_center"` - Bottom center
+- `"full_height_sidebar"` - Full-height sidebar on right
 
 ## Important Files
 
 - **[.claude/CLAUDE_HANDOVER.md](.claude/CLAUDE_HANDOVER.md)**: Technical evolution notes and solved challenges
 - **[docs/concept.md](docs/concept.md)**: Comprehensive design vision and philosophy
-- **[lua/radar/init.lua](lua/radar/init.lua)**: Complete current implementation
+- **[lua/radar/init.lua](lua/radar/init.lua)**: Plugin entry point (calls setup on modules)
+- **[lua/radar/config.lua](lua/radar/config.lua)**: Single source of truth for configuration values
+- **[lua/radar/config.types.lua](lua/radar/config.types.lua)**: Type definitions only (no implementation)
+- **[lua/radar/ui/mini_radar.lua](lua/radar/ui/mini_radar.lua)**: Main UI rendering logic
+- **[lua/radar/locks.lua](lua/radar/locks.lua)**: Lock/pin management
+- **[lua/radar/recent.lua](lua/radar/recent.lua)**: Recent file tracking
+- **[lua/radar/alternative.lua](lua/radar/alternative.lua)**: Alternative file detection (test ↔ impl)
 
 ## Development Approach
 
