@@ -16,7 +16,6 @@ describe("state", function()
     state.mini_radar_winid = nil
     state.edit_winid = nil
     state.edit_bufid = nil
-    state.hidden_for_collision = false
   end
 
   describe("get_lock_by_field", function()
@@ -97,7 +96,6 @@ describe("state", function()
       MiniTest.expect.equality(state.mini_radar_winid, nil)
       MiniTest.expect.equality(state.edit_winid, nil)
       MiniTest.expect.equality(state.edit_bufid, nil)
-      MiniTest.expect.equality(type(state.hidden_for_collision), "boolean")
     end)
   end)
 end)
