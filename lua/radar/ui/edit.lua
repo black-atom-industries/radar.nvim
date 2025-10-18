@@ -60,29 +60,27 @@ function M.save_buffer(edit_buf, radar_config, mini_radar_module)
 
   for i, line in ipairs(lines) do
     -- Skip empty lines
-    if line:match("^%s*$") then
-      goto continue
+    if not line:match("^%s*$") then
+      -- Trim whitespace from filepath
+      local filepath = line:match("^%s*(.-)%s*$")
+
+      -- Validate filepath exists (expand to full path)
+      local full_path = vim.fn.expand(filepath)
+      if not vim.fn.filereadable(full_path) then
+        table.insert(
+          errors,
+          string.format("Line %d: File not found: %s", i, filepath)
+        )
+      else
+        -- Create lock with label based on line position
+        local new_lock = {
+          label = radar_config.keys.locks[i] or tostring(i),
+          filename = full_path,
+        }
+
+        table.insert(new_locks, new_lock)
+      end
     end
-
-    -- Trim whitespace from filepath
-    local filepath = line:match("^%s*(.-)%s*$")
-
-    -- Validate filepath exists (expand to full path)
-    local full_path = vim.fn.expand(filepath)
-    if not vim.fn.filereadable(full_path) then
-      table.insert(errors, string.format("Line %d: File not found: %s", i, filepath))
-      goto continue
-    end
-
-    -- Create lock with label based on line position
-    local new_lock = {
-      label = radar_config.keys.locks[i] or tostring(i),
-      filename = full_path,
-    }
-
-    table.insert(new_locks, new_lock)
-
-    ::continue::
   end
 
   -- Show errors if any

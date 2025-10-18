@@ -47,20 +47,16 @@ function M.get_files(config)
   for _, filepath in ipairs(vim.v.oldfiles) do
     -- Skip if already seen, excluded, or if we're at capacity
     if
-      seen_files[filepath]
-      or excluded_files[filepath]
-      or #recent_files >= #config.keys.recent
+      not seen_files[filepath]
+      and not excluded_files[filepath]
+      and #recent_files < #config.keys.recent
     then
-      goto continue
+      -- Only include files from current working directory
+      if vim.startswith(filepath, cwd) and vim.fn.filereadable(filepath) == 1 then
+        table.insert(recent_files, filepath)
+        seen_files[filepath] = true
+      end
     end
-
-    -- Only include files from current working directory
-    if vim.startswith(filepath, cwd) and vim.fn.filereadable(filepath) == 1 then
-      table.insert(recent_files, filepath)
-      seen_files[filepath] = true
-    end
-
-    ::continue::
   end
 
   return recent_files

@@ -115,9 +115,8 @@ end
 
 ---Populate state from persisted data
 ---@param config Radar.Config
----@param mini_radar_module table
 ---@return nil
-function M.populate(config, mini_radar_module)
+function M.populate(config)
   local data = M.load(config)
 
   if data ~= nil then
