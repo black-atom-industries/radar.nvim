@@ -6,8 +6,6 @@ M.constants = {
 
 ---@class Radar.Config
 M.default = {
-  mode = "float_top_right",
-
   keys = {
     prefix = "<space>",
     lock = "l",

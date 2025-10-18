@@ -61,10 +61,7 @@
 ---@field path string
 ---@field defer_ms integer
 
----@alias Radar.Config.Mode "float_top_right"|"sidebar_left"|"sidebar_right"
-
 ---@class Radar.Config
----@field mode Radar.Config.Mode
 ---@field keys Radar.Config.Keys
 ---@field behavior Radar.Config.Behavior
 ---@field appearance Radar.Config.Appearance
