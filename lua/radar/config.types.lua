@@ -1,3 +1,10 @@
+---@class Radar.Config.Keys.Line
+---@field open string
+---@field vertical string
+---@field horizontal string
+---@field tab string
+---@field float string
+
 ---@class Radar.Config.Keys
 ---@field prefix string
 ---@field lock string
@@ -8,6 +15,7 @@
 ---@field horizontal string
 ---@field tab string
 ---@field float string
+---@field line Radar.Config.Keys.Line
 
 ---@class Radar.Config.Behavior
 ---@field max_recent_files integer

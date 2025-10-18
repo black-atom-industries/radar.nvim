@@ -12,12 +12,19 @@ M.default = {
     prefix = "<space>",
     lock = "l",
     locks = { "1", "2", "3", "4", "5", "6", "7", "8", "9" },
-    alternative = "o",
+    alternative = "<space>",
     recent = { "a", "s", "d", "f", "g" },
     vertical = "<C-v>",
     horizontal = "<C-s>",
     tab = "<C-t>",
     float = "<C-f>",
+    line = {
+      open = "<CR>",
+      vertical = "V",
+      horizontal = "S",
+      tab = "T",
+      float = "F",
+    },
   },
 
   behavior = {
@@ -41,6 +48,31 @@ M.default = {
   },
 
   windows = {
+    float = {
+      radar = {
+        winblend = 0,
+        config = {
+          relative = "cursor",
+          anchor = "NW",
+          width = 75,
+          -- `height` gets calculated dynamically
+          row = 1,
+          col = 0,
+          border = "solid",
+          style = "minimal",
+          title = "󰐷  RADAR",
+          title_pos = "left",
+          focusable = true,
+          zindex = 100,
+        },
+      },
+      edit = {
+        width_padding = 10,
+        max_height = 20,
+        min_width = 60,
+      },
+    },
+
     -- Global: file preview window (works in all modes)
     file_window = {
       config = {
@@ -51,34 +83,6 @@ M.default = {
         title_pos = "center",
         style = "", -- empty string means no style (normal editor)
         zindex = 50,
-      },
-    },
-
-    -- Float-specific windows and behavior
-    float = {
-      radar = {
-        winblend = 0,
-        ---@type vim.api.keyset.win_config
-        config = {
-          relative = "cursor",
-          anchor = "NW",
-          width = 50,
-          -- `height` gets calculated dynamically
-          row = 1,
-          col = 0,
-          border = "solid",
-          style = "minimal",
-          title = "󰐷  RADAR",
-          title_pos = "left",
-          focusable = false,
-          zindex = 100,
-        },
-      },
-
-      edit = {
-        width_padding = 10,
-        max_height = 20,
-        min_width = 60,
       },
     },
   },

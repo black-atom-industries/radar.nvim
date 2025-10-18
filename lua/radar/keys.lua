@@ -30,6 +30,36 @@ function M.setup_buffer_local_keymaps(bufnr, config)
     mini_radar.close()
   end, vim.tbl_extend("force", opts_base, { desc = "Close Radar" }))
 
+  -- Line-based navigation - open file from current line
+  vim.keymap.set("n", config.keys.line.open, function()
+    navigation.open_file_from_line(nil, config, mini_radar)
+  end, vim.tbl_extend("force", opts_base, { desc = "Open file from line" }))
+
+  vim.keymap.set("n", config.keys.line.vertical, function()
+    navigation.open_file_from_line("vsplit", config, mini_radar)
+  end, vim.tbl_extend("force", opts_base, { desc = "Open file in vertical split" }))
+
+  vim.keymap.set(
+    "n",
+    config.keys.line.horizontal,
+    function()
+      navigation.open_file_from_line("split", config, mini_radar)
+    end,
+    vim.tbl_extend("force", opts_base, { desc = "Open file in horizontal split" })
+  )
+
+  vim.keymap.set("n", config.keys.line.tab, function()
+    navigation.open_file_from_line("tabedit", config, mini_radar)
+  end, vim.tbl_extend("force", opts_base, { desc = "Open file in new tab" }))
+
+  vim.keymap.set("n", config.keys.line.float, function()
+    navigation.open_file_from_line("float", config, mini_radar)
+  end, vim.tbl_extend(
+    "force",
+    opts_base,
+    { desc = "Open file in floating window" }
+  ))
+
   -- Lock current buffer (or source buffer if we're in radar)
   vim.keymap.set("n", config.keys.lock, function()
     local locks = require("radar.locks")
