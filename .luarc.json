@@ -21,10 +21,10 @@
       "redundant-value": "Warning",
       "duplicate-set-field": "Hint"
     }
-  },
+ },
   "workspace": {
     "library": [
-      "$VIMRUNTIME/lua",
+      "~/.local/share/bob/nightly/share/nvim/runtime/lua",
       "${3rd}/luv/library",
       "${3rd}/luassert/library"
     ],

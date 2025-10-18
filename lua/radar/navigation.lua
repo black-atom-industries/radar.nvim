@@ -69,30 +69,18 @@ function M.open_file(filepath, open_cmd, config, mini_radar_module)
   open_cmd = open_cmd or "edit"
 
   if open_cmd == "float" then
-    -- Start with base config and calculate dimensions
-    local win_opts =
-      vim.tbl_deep_extend("force", {}, config.windows.file_window.config)
-
-    -- Calculate actual pixel dimensions from ratios
-    local width = math.floor(vim.o.columns * win_opts.width)
-    local height = math.floor(vim.o.lines * win_opts.height)
-
-    -- Center the window
-    local row = math.floor((vim.o.lines - height) / 2)
-    local col = math.floor((vim.o.columns - width) / 2)
-
-    -- Override with calculated values and add title
-    win_opts.width = width
-    win_opts.height = height
-    win_opts.row = row
-    win_opts.col = col
-    win_opts.title = " " .. vim.fn.fnamemodify(filepath, ":.") .. " "
+    -- Resolve window config from preset
+    local window = require("radar.window")
+    local win_opts = window.resolve_config(config.windows.file_window.config, {
+      title = " " .. vim.fn.fnamemodify(filepath, ":.") .. " ",
+    })
 
     -- Create scratch buffer initially
     local buf = vim.api.nvim_create_buf(false, true)
     local win = vim.api.nvim_open_win(buf, true, win_opts)
 
     -- Now edit the file in the floating window (this triggers all autocmds, treesitter, etc.)
+    ---@diagnostic disable-next-line: undefined-field
     vim.cmd.edit(path)
 
     -- Get the actual buffer after editing
@@ -106,8 +94,10 @@ function M.open_file(filepath, open_cmd, config, mini_radar_module)
       callback = function()
         -- Save file if modified
         local current_buf = vim.api.nvim_win_get_buf(win)
-        if vim.api.nvim_buf_is_valid(current_buf)
-          and vim.api.nvim_get_option_value("modified", { buf = current_buf }) then
+        if
+          vim.api.nvim_buf_is_valid(current_buf)
+          and vim.api.nvim_get_option_value("modified", { buf = current_buf })
+        then
           vim.cmd("write")
         end
         -- Close the window

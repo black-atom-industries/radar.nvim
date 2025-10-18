@@ -156,7 +156,9 @@ function M.cleanup()
     vim.api.nvim_win_close(state.edit_winid, true)
   end
 
-  if state.mini_radar_winid and vim.api.nvim_win_is_valid(state.mini_radar_winid) then
+  if
+    state.mini_radar_winid and vim.api.nvim_win_is_valid(state.mini_radar_winid)
+  then
     vim.api.nvim_win_close(state.mini_radar_winid, true)
   end
 

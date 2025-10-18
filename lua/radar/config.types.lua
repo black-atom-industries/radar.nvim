@@ -1,3 +1,5 @@
+---@alias Radar.Config.WinPreset "center" | "cursor" | "top_right" | "bottom_center" | "full_height_sidebar"
+
 ---@class Radar.Config.Keys.Line
 ---@field open string
 ---@field vertical string
@@ -32,11 +34,11 @@
 ---@field recent string
 
 ---@class Radar.Config.Windows.FileWindow
----@field config vim.api.keyset.win_config
+---@field config Radar.Config.WinPreset | { [1]: Radar.Config.WinPreset, [2]: vim.api.keyset.win_config }
 
 ---@class Radar.Config.Windows.Float.RadarWindow
 ---@field winblend integer
----@field config vim.api.keyset.win_config
+---@field config Radar.Config.WinPreset | { [1]: Radar.Config.WinPreset, [2]: vim.api.keyset.win_config }
 
 ---@class Radar.Config.Windows.Float.EditWindow
 ---@field width_padding integer
@@ -102,6 +104,13 @@ M.default = {
     horizontal = "<C-s>",
     tab = "<C-t>",
     float = "<C-f>",
+    line = {
+      open = "<CR>",
+      vertical = "V",
+      horizontal = "S",
+      tab = "T",
+      float = "F",
+    },
   },
 
   behavior = {
@@ -123,13 +132,12 @@ M.default = {
     -- Global: file preview window (works in all modes)
     file_window = {
       config = {
-        relative = "editor",
-        width = 0.8, -- ratio of screen width
-        height = 0.7, -- ratio of screen height
-        border = "solid",
-        title_pos = "center",
-        style = "", -- empty string means no style (normal editor)
-        zindex = 50,
+        "center",
+        {
+          width = math.floor(vim.o.columns * 0.8),
+          height = math.floor(vim.o.lines * 0.7),
+          zindex = 50,
+        },
       },
     },
 

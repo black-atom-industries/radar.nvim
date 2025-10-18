@@ -216,7 +216,9 @@ end
 ---@return nil
 function M.close()
   local state = require("radar.state")
-  if state.mini_radar_winid and vim.api.nvim_win_is_valid(state.mini_radar_winid) then
+  if
+    state.mini_radar_winid and vim.api.nvim_win_is_valid(state.mini_radar_winid)
+  then
     vim.api.nvim_win_close(state.mini_radar_winid, false)
     state.mini_radar_winid = nil
   end
@@ -377,9 +379,9 @@ function M.create(config)
   local keys = require("radar.keys")
   keys.setup_buffer_local_keymaps(new_buf_id, config)
 
-  -- Build window config directly from config with dynamic height and title
-  local win_opts = vim.tbl_deep_extend("force", config.windows.float.radar.config, {
-    title = config.appearance.titles.main,
+  -- Resolve window config from preset
+  local window = require("radar.window")
+  local win_opts = window.resolve_config(config.windows.float.radar.config, {
     height = #all_entries,
   })
 

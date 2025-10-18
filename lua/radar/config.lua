@@ -51,20 +51,7 @@ M.default = {
     float = {
       radar = {
         winblend = 0,
-        config = {
-          relative = "cursor",
-          anchor = "NW",
-          width = 75,
-          -- `height` gets calculated dynamically
-          row = 1,
-          col = 0,
-          border = "solid",
-          style = "minimal",
-          title = "󰐷  RADAR",
-          title_pos = "left",
-          focusable = true,
-          zindex = 100,
-        },
+        config = "center",
       },
       edit = {
         width_padding = 10,
@@ -76,13 +63,12 @@ M.default = {
     -- Global: file preview window (works in all modes)
     file_window = {
       config = {
-        relative = "editor",
-        width = 0.8, -- ratio of screen width
-        height = 0.7, -- ratio of screen height
-        border = "solid",
-        title_pos = "center",
-        style = "", -- empty string means no style (normal editor)
-        zindex = 50,
+        "center",
+        {
+          width = math.floor(vim.o.columns * 0.8),
+          height = math.floor(vim.o.lines * 0.7),
+          zindex = 50,
+        },
       },
     },
   },
