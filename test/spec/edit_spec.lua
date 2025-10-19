@@ -18,10 +18,11 @@ describe("edit", function()
 
     -- Mock dependencies
     mock_mini_radar = {
-      get_formatted_filepath = function(path, config)
-        return vim.fn.fnamemodify(path, config.appearance.path_format or ":p:.")
+      get_formatted_filepath = function(path)
+        return vim.fn.fnamemodify(path, ":p:.")
       end,
       update = function() end,
+      close = function() end,
     }
 
     mock_persistence = {

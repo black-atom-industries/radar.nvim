@@ -32,11 +32,9 @@ M.default = {
   -- Main radar window
   radar = {
     win_preset = "center",
-    width = 75, -- Window width (used for path shortening)
     winblend = 0,
     max_recent_files = 20,
     show_empty_message = true,
-    path_format = ":p:.",
     titles = {
       main = "󰐷  RADAR",
       locks = "󰋱  LOCKED IN",

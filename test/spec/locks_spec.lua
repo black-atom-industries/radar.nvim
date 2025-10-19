@@ -184,10 +184,10 @@ describe("locks", function()
       locks.lock_current_buffer(nil, test_config, mock_persistence, mock_mini_radar)
 
       MiniTest.expect.equality(#state.locks, 1)
-      -- Should use normalized filename based on path_format
+      -- Should use normalized filename (relative to cwd)
       MiniTest.expect.equality(
         state.locks[1].filename,
-        vim.fn.fnamemodify("/test/path/file.lua", test_config.appearance.path_format)
+        vim.fn.fnamemodify("/test/path/file.lua", ":p:.")
       )
     end)
 

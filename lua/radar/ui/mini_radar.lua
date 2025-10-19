@@ -3,21 +3,11 @@ local M = {}
 -- Namespace for highlights
 local ns_mini_radar = vim.api.nvim_create_namespace("radar.win.mini")
 
----Format file path according to config, with optional shortening
+---Format file path to relative path from cwd
 ---@param path string
----@param config Radar.Config
----@param max_width integer|number|nil Maximum width for path display (if nil, no shortening)
----@param label_width integer? Width taken by label (e.g., "[1] ")
 ---@return string
-function M.get_formatted_filepath(path, config, max_width, label_width)
-  -- Use our path utility for formatting and shortening
-  local path_utils = require("radar.ui.path")
-  return path_utils.format_and_shorten(
-    path,
-    config.radar.path_format,
-    max_width,
-    label_width
-  )
+function M.get_formatted_filepath(path)
+  return vim.fn.fnamemodify(path, ":p:.")
 end
 
 ---Create formatted entries for locks
@@ -30,15 +20,7 @@ function M.create_entries(locks, config)
   if #locks > 0 then
     table.insert(entries, config.radar.titles.locks)
     for _, lock in ipairs(locks) do
-      -- Calculate label width: "   [1] " = 7 chars for single char label
-      local label_width = 3 + 1 + #lock.label + 1 + 1 + 2 -- spaces + [label] + spaces
-      local path = M.get_formatted_filepath(
-        lock.filename,
-        config,
-        ---@diagnostic disable-next-line: undefined-field
-        config.radar.width,
-        label_width
-      )
+      local path = M.get_formatted_filepath(lock.filename)
       local entry = string.format("   [%s] %s  ", lock.label, path)
       table.insert(entries, entry)
     end
@@ -60,15 +42,7 @@ function M.create_alternative_entry(config)
   local label = config.keys.alternative
 
   if alt_file then
-    -- Calculate label width: "   [o] " = 7 chars for single char label
-    local label_width = 3 + 1 + #label + 1 + 1 + 2 -- spaces + [label] + spaces
-    local path = M.get_formatted_filepath(
-      alt_file,
-      config,
-      ---@diagnostic disable-next-line: undefined-field
-      config.radar.width,
-      label_width
-    )
+    local path = M.get_formatted_filepath(alt_file)
     local entry = string.format("   [%s] %s  ", label, path)
     table.insert(entries, entry)
   else
@@ -92,15 +66,7 @@ function M.create_recent_entries(config)
     for i, filename in ipairs(state.recent_files) do
       local label = config.keys.recent[i]
       if label then
-        -- Calculate label width: "   [a] " = 7 chars for single char label
-        local label_width = 3 + 1 + #label + 1 + 1 + 2 -- spaces + [label] + spaces
-        local path = M.get_formatted_filepath(
-          filename,
-          config,
-          ---@diagnostic disable-next-line: undefined-field
-          config.radar.width,
-          label_width
-        )
+        local path = M.get_formatted_filepath(filename)
         local entry = string.format("   [%s] %s  ", label, path)
         table.insert(entries, entry)
       end
@@ -242,11 +208,9 @@ function M.apply_highlights(config)
   local curr_filepath = vim.api.nvim_buf_get_name(vim.api.nvim_get_current_buf())
 
   -- Format current file path to match the format used in locks/recent files
-  -- Locks use the same format as the path_format configuration
   local curr_filepath_formatted = ""
   if curr_filepath ~= "" then
-    curr_filepath_formatted =
-      vim.fn.fnamemodify(curr_filepath, config.radar.path_format)
+    curr_filepath_formatted = vim.fn.fnamemodify(curr_filepath, ":p:.")
   end
 
   -- Clear all highlights once

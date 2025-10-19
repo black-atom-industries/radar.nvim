@@ -31,11 +31,9 @@
 
 ---@class Radar.Config.Radar
 ---@field win_preset Radar.Config.WinPreset|string
----@field width integer
 ---@field winblend integer
 ---@field max_recent_files integer
 ---@field show_empty_message boolean
----@field path_format string
 ---@field titles Radar.Config.Titles
 
 ---@class Radar.Config.RadarEdit

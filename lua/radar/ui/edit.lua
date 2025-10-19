@@ -1,23 +1,20 @@
 local M = {}
 
 ---Calculate optimal window width based on longest file path
----@param radar_config Radar.Config
 ---@param mini_radar_module table
 ---@return integer
-local function calculate_window_width(radar_config, mini_radar_module)
-  local max_width = 0
+local function calculate_window_width(mini_radar_module)
+  local max_width = 60 -- Minimum width
 
   local state = require("radar.state")
   -- Check locked files
   for _, lock in ipairs(state.locks) do
-    local formatted_path =
-      mini_radar_module.get_formatted_filepath(lock.filename, radar_config)
+    local formatted_path = mini_radar_module.get_formatted_filepath(lock.filename)
     local entry_text = string.format("   [%s] %s  ", lock.label, formatted_path)
     max_width = math.max(max_width, vim.fn.strdisplaywidth(entry_text))
   end
 
-  -- Ensure minimum width and add padding
-  return math.max(max_width, radar_config.radar.width)
+  return max_width
 end
 
 ---Setup autocmds for edit buffer save and close handling
@@ -191,16 +188,15 @@ function M.edit_locks(radar_config, mini_radar_module)
   -- Create buffer lines: just the filepaths (labels assigned by line order)
   local lines = {}
   for _, lock in ipairs(state.locks) do
-    local formatted_path =
-      mini_radar_module.get_formatted_filepath(lock.filename, radar_config)
+    local formatted_path = mini_radar_module.get_formatted_filepath(lock.filename)
     table.insert(lines, formatted_path)
   end
 
   vim.api.nvim_buf_set_lines(edit_buf, 0, -1, false, lines)
 
   -- Open floating window with dynamic sizing
-  local calculated_width = calculate_window_width(radar_config, mini_radar_module)
-  local win_width = math.max(60, calculated_width + 10) -- min_width, padding
+  local calculated_width = calculate_window_width(mini_radar_module)
+  local win_width = calculated_width + 10 -- Add padding
   local win_height = math.min(#lines + 2, 20) -- max_height
 
   -- Resolve window config from preset with dynamic width/height
