@@ -103,8 +103,7 @@ function M.lock_current_buffer(buf_nr, config, persistence_module, mini_radar_mo
   end
 
   -- Normalize filename to match the format used in UI (relative to cwd)
-  local normalized_filename =
-    vim.fn.fnamemodify(filename, config.appearance.path_format)
+  local normalized_filename = vim.fn.fnamemodify(filename, config.radar.path_format)
 
   M.toggle(normalized_filename, config, persistence_module)
 

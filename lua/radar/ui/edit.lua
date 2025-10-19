@@ -17,8 +17,7 @@ local function calculate_window_width(radar_config, mini_radar_module)
   end
 
   -- Ensure minimum width and add padding
-  ---@diagnostic disable-next-line: undefined-field
-  return math.max(max_width, radar_config.windows.float.radar.config.width)
+  return math.max(max_width, radar_config.radar.width)
 end
 
 ---Setup autocmds for edit buffer save and close handling
@@ -199,21 +198,20 @@ function M.edit_locks(radar_config, mini_radar_module)
   -- Open floating window
   local calculated_width = calculate_window_width(radar_config, mini_radar_module)
   local win_width = math.max(
-    radar_config.windows.float.edit.min_width,
-    calculated_width + radar_config.windows.float.edit.width_padding
+    radar_config.radar_edit.min_width,
+    calculated_width + radar_config.radar_edit.width_padding
   )
-  local win_height = math.min(#lines + 2, radar_config.windows.float.edit.max_height)
-  local win_opts = {
-    relative = "editor",
-    width = win_width,
-    height = win_height,
-    row = math.floor((vim.o.lines - win_height) / 2),
-    col = math.floor((vim.o.columns - win_width) / 2),
-    style = "minimal",
-    border = "solid",
-    title = " Edit Locks ",
-    title_pos = "center",
-  }
+  local win_height = math.min(#lines + 2, radar_config.radar_edit.max_height)
+
+  -- Resolve window config from preset with dynamic width/height
+  local window = require("radar.window")
+  local win_opts =
+    window.resolve_config(radar_config, radar_config.radar_edit.win_preset, {
+      width = win_width,
+      height = win_height,
+      title = " Edit Locks ",
+      title_pos = "center",
+    })
 
   local edit_win = vim.api.nvim_open_win(edit_buf, true, win_opts)
   state.edit_winid = edit_win

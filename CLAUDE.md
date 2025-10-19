@@ -237,12 +237,21 @@ M.default = {
     },
   },
 
-  behavior = {
-    max_recent_files = 20,
-    show_empty_message = true,
+  persist = {
+    path = vim.fs.joinpath(vim.fn.stdpath("data"), "radar", "data.json"),
+    defer_ms = 500,
   },
 
-  appearance = {
+  -- Window presets - users can override or add custom presets
+  win_presets = {},
+
+  -- Main radar window
+  radar = {
+    win_preset = "center",
+    width = 75,
+    winblend = 0,
+    max_recent_files = 20,
+    show_empty_message = true,
     path_format = ":p:.",
     titles = {
       main = "󰐷  RADAR",
@@ -252,47 +261,72 @@ M.default = {
     },
   },
 
-  persist = {
-    path = vim.fs.joinpath(vim.fn.stdpath("data"), "radar", "data.json"),
-    defer_ms = 500,
+  -- Lock label editor window
+  radar_edit = {
+    win_preset = "cursor",
+    width_padding = 10,
+    max_height = 20,
+    min_width = 60,
   },
 
-  windows = {
-    float = {
-      radar = {
-        winblend = 0,
-        config = "center",  -- Can be preset string or { "preset", { overrides } }
-      },
-      edit = {
-        width_padding = 10,
-        max_height = 20,
-        min_width = 60,
-      },
-    },
-    file_window = {
-      config = {
-        "center",
-        {
-          width = math.floor(vim.o.columns * 0.8),
-          height = math.floor(vim.o.lines * 0.7),
-          zindex = 50,
-        },
-      },
-    },
+  -- File float window
+  file_float = {
+    win_preset = "center",
   },
 }
 ```
 
-### Type Definitions (lua/radar/config.types.lua)
+### Window Preset System
 
-**IMPORTANT:** This file contains ONLY type annotations, no implementation. All actual values live in `config.lua`.
+**Base presets** are defined in `lua/radar/window.lua` (implementation detail). Users can customize presets in the config:
 
-Available window presets (defined in `win_presets.lua`):
+**Simple override (table merge)**:
+```lua
+win_presets = {
+  center = { width = 100 }  -- Merges with base center preset
+}
+```
+
+**Advanced override (function)**:
+```lua
+win_presets = {
+  center = function(base_preset, config)
+    return vim.tbl_deep_extend("force", base_preset, {
+      width = 100,
+      title = "My Custom Title"
+    })
+  end
+}
+```
+
+**Add custom preset**:
+```lua
+win_presets = {
+  my_preset = function(base_preset, config)
+    return {
+      relative = "editor",
+      width = 50,
+      height = 20,
+      -- ... custom config
+    }
+  end
+}
+
+radar = {
+  win_preset = "my_preset"  -- Use your custom preset
+}
+```
+
+**Available base presets**:
 - `"center"` - Centered floating window
 - `"cursor"` - Window appears at cursor position
 - `"top_right"` - Top-right corner
 - `"bottom_center"` - Bottom center
 - `"full_height_sidebar"` - Full-height sidebar on right
+
+### Type Definitions (lua/radar/config.types.lua)
+
+**IMPORTANT:** This file contains ONLY type annotations, no implementation. All actual values live in `config.lua`.
 
 ## Important Files
 

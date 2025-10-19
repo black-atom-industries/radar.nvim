@@ -19,54 +19,41 @@
 ---@field float string
 ---@field line Radar.Config.Keys.Line
 
----@class Radar.Config.Behavior
----@field max_recent_files integer
----@field show_empty_message boolean
+---@class Radar.Config.Persist
+---@field path string
+---@field defer_ms integer
 
----@class Radar.Config.Appearance
----@field path_format string
----@field titles Radar.Config.Appearance.Titles
-
----@class Radar.Config.Appearance.Titles
+---@class Radar.Config.Titles
 ---@field main string
 ---@field locks string
 ---@field alternative string
 ---@field recent string
 
----@class Radar.Config.Windows.FileWindow
----@field config Radar.Config.WinPreset | { [1]: Radar.Config.WinPreset, [2]: vim.api.keyset.win_config }
-
----@class Radar.Config.Windows.Float.RadarWindow
+---@class Radar.Config.Radar
+---@field win_preset Radar.Config.WinPreset
+---@field width integer
 ---@field winblend integer
----@field config Radar.Config.WinPreset | { [1]: Radar.Config.WinPreset, [2]: vim.api.keyset.win_config }
+---@field max_recent_files integer
+---@field show_empty_message boolean
+---@field path_format string
+---@field titles Radar.Config.Titles
 
----@class Radar.Config.Windows.Float.EditWindow
+---@class Radar.Config.RadarEdit
+---@field win_preset Radar.Config.WinPreset
 ---@field width_padding integer
 ---@field max_height integer
 ---@field min_width integer
 
----@class Radar.Config.Windows.Float
----@field radar Radar.Config.Windows.Float.RadarWindow
----@field edit Radar.Config.Windows.Float.EditWindow
-
----@class Radar.Config.Windows.Sidebar
----@field position "left"|"right"
----@field width integer
-
----@class Radar.Config.Windows
----@field file_window Radar.Config.Windows.FileWindow
----@field float Radar.Config.Windows.Float
-
----@class Radar.Config.Persist
----@field path string
----@field defer_ms integer
+---@class Radar.Config.FileFloat
+---@field win_preset Radar.Config.WinPreset
 
 ---@class Radar.Config
 ---@field keys Radar.Config.Keys
----@field behavior Radar.Config.Behavior
----@field appearance Radar.Config.Appearance
----@field windows Radar.Config.Windows
 ---@field persist Radar.Config.Persist
+---@field win_presets table<string, table|fun(base_preset: vim.api.keyset.win_config, config: Radar.Config): vim.api.keyset.win_config>
+---@field radar Radar.Config.Radar
+---@field radar_edit Radar.Config.RadarEdit
+---@field file_float Radar.Config.FileFloat
 
 ---@class Radar.Lock
 ---@field label string

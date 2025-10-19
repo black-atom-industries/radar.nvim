@@ -89,7 +89,7 @@ function M.track_current_file(config)
   table.insert(state.session_files, abs_path)
 
   -- Keep only last N session files
-  if #state.session_files > config.behavior.max_recent_files then
+  if #state.session_files > config.radar.max_recent_files then
     table.remove(state.session_files, 1)
   end
 end

@@ -1,9 +1,5 @@
 local M = {}
 
-M.constants = {
-  ns_mini_radar = vim.api.nvim_create_namespace("radar.win.mini"),
-}
-
 ---@class Radar.Config
 M.default = {
   keys = {
@@ -25,50 +21,41 @@ M.default = {
     },
   },
 
-  behavior = {
-    max_recent_files = 20,
-    show_empty_message = true,
-  },
-
-  appearance = {
-    path_format = ":p:.",
-    titles = {
-      main = "󰐷  RADAR",
-      locks = "󰋱  LOCKED IN",
-      alternative = "  OTHER",
-      recent = "󰽏  NEAR",
-    },
-  },
-
   persist = {
     path = vim.fs.joinpath(vim.fn.stdpath("data"), "radar", "data.json"),
     defer_ms = 500,
   },
 
-  windows = {
-    float = {
-      radar = {
-        winblend = 0,
-        config = "center",
-      },
-      edit = {
-        width_padding = 10,
-        max_height = 20,
-        min_width = 60,
-      },
-    },
+  -- Window presets - users can override or add custom presets
+  win_presets = {},
 
-    -- Global: file preview window (works in all modes)
-    file_window = {
-      config = {
-        "center",
-        {
-          width = math.floor(vim.o.columns * 0.8),
-          height = math.floor(vim.o.lines * 0.7),
-          zindex = 50,
-        },
-      },
+  -- Main radar window
+  radar = {
+    win_preset = "center",
+    width = 75, -- Window width (used for path shortening)
+    winblend = 0,
+    max_recent_files = 20,
+    show_empty_message = true,
+    path_format = ":p:.",
+    titles = {
+      main = "󰐷  RADAR",
+      locks = "󰋱  LOCKED IN",
+      alternative = "  OTHER",
+      recent = "󰽏  NEAR",
     },
+  },
+
+  -- Lock label editor window
+  radar_edit = {
+    win_preset = "cursor",
+    width_padding = 10,
+    max_height = 20,
+    min_width = 60,
+  },
+
+  -- File float window
+  file_float = {
+    win_preset = "center",
   },
 }
 

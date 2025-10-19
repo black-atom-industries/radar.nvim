@@ -1,5 +1,8 @@
 local M = {}
 
+-- Namespace for highlights
+local ns_mini_radar = vim.api.nvim_create_namespace("radar.win.mini")
+
 ---Format file path according to config, with optional shortening
 ---@param path string
 ---@param config Radar.Config
@@ -11,7 +14,7 @@ function M.get_formatted_filepath(path, config, max_width, label_width)
   local path_utils = require("radar.ui.path")
   return path_utils.format_and_shorten(
     path,
-    config.appearance.path_format,
+    config.radar.path_format,
     max_width,
     label_width
   )
@@ -25,7 +28,7 @@ function M.create_entries(locks, config)
   local entries = {}
 
   if #locks > 0 then
-    table.insert(entries, config.appearance.titles.locks)
+    table.insert(entries, config.radar.titles.locks)
     for _, lock in ipairs(locks) do
       -- Calculate label width: "   [1] " = 7 chars for single char label
       local label_width = 3 + 1 + #lock.label + 1 + 1 + 2 -- spaces + [label] + spaces
@@ -33,7 +36,7 @@ function M.create_entries(locks, config)
         lock.filename,
         config,
         ---@diagnostic disable-next-line: undefined-field
-        config.windows.float.radar.config.width,
+        config.radar.width,
         label_width
       )
       local entry = string.format("   [%s] %s  ", lock.label, path)
@@ -51,7 +54,7 @@ function M.create_alternative_entry(config)
   local alternative = require("radar.alternative")
   local entries = {}
 
-  table.insert(entries, config.appearance.titles.alternative)
+  table.insert(entries, config.radar.titles.alternative)
 
   local alt_file = alternative.get_alternative_file()
   local label = config.keys.alternative
@@ -63,7 +66,7 @@ function M.create_alternative_entry(config)
       alt_file,
       config,
       ---@diagnostic disable-next-line: undefined-field
-      config.windows.float.radar.config.width,
+      config.radar.width,
       label_width
     )
     local entry = string.format("   [%s] %s  ", label, path)
@@ -85,7 +88,7 @@ function M.create_recent_entries(config)
   local entries = {}
 
   if #state.recent_files > 0 then
-    table.insert(entries, config.appearance.titles.recent)
+    table.insert(entries, config.radar.titles.recent)
     for i, filename in ipairs(state.recent_files) do
       local label = config.keys.recent[i]
       if label then
@@ -95,7 +98,7 @@ function M.create_recent_entries(config)
           filename,
           config,
           ---@diagnostic disable-next-line: undefined-field
-          config.windows.float.radar.config.width,
+          config.radar.width,
           label_width
         )
         local entry = string.format("   [%s] %s  ", label, path)
@@ -142,7 +145,7 @@ function M.build_radar_entries(config)
   end
 
   -- If no content at all, show helpful message
-  if #all_entries == 0 and config.behavior.show_empty_message then
+  if #all_entries == 0 and config.radar.show_empty_message then
     table.insert(all_entries, "  No files tracked yet")
     table.insert(all_entries, "  Press l to lock files")
   end
@@ -243,17 +246,11 @@ function M.apply_highlights(config)
   local curr_filepath_formatted = ""
   if curr_filepath ~= "" then
     curr_filepath_formatted =
-      vim.fn.fnamemodify(curr_filepath, config.appearance.path_format)
+      vim.fn.fnamemodify(curr_filepath, config.radar.path_format)
   end
 
   -- Clear all highlights once
-  local config_module = require("radar.config")
-  vim.api.nvim_buf_clear_namespace(
-    bufid,
-    config_module.constants.ns_mini_radar,
-    0,
-    -1
-  )
+  vim.api.nvim_buf_clear_namespace(bufid, ns_mini_radar, 0, -1)
 
   -- Track which section we're in for proper highlighting
   local current_section = nil
@@ -261,45 +258,27 @@ function M.apply_highlights(config)
 
   for i, line in ipairs(lines) do
     -- Section headers - always highlight and reset section tracking
-    if line == config.appearance.titles.locks then
+    if line == config.radar.titles.locks then
       current_section = "locks"
       section_index = 0
-      vim.api.nvim_buf_set_extmark(
-        bufid,
-        config_module.constants.ns_mini_radar,
-        i - 1,
-        0,
-        {
-          end_col = #line,
-          hl_group = "@tag.builtin",
-        }
-      )
-    elseif line == config.appearance.titles.alternative then
+      vim.api.nvim_buf_set_extmark(bufid, ns_mini_radar, i - 1, 0, {
+        end_col = #line,
+        hl_group = "@tag.builtin",
+      })
+    elseif line == config.radar.titles.alternative then
       current_section = "alternative"
       section_index = 0
-      vim.api.nvim_buf_set_extmark(
-        bufid,
-        config_module.constants.ns_mini_radar,
-        i - 1,
-        0,
-        {
-          end_col = #line,
-          hl_group = "@variable",
-        }
-      )
-    elseif line == config.appearance.titles.recent then
+      vim.api.nvim_buf_set_extmark(bufid, ns_mini_radar, i - 1, 0, {
+        end_col = #line,
+        hl_group = "@variable",
+      })
+    elseif line == config.radar.titles.recent then
       current_section = "recent"
       section_index = 0
-      vim.api.nvim_buf_set_extmark(
-        bufid,
-        config_module.constants.ns_mini_radar,
-        i - 1,
-        0,
-        {
-          end_col = #line,
-          hl_group = "@type",
-        }
-      )
+      vim.api.nvim_buf_set_extmark(bufid, ns_mini_radar, i - 1, 0, {
+        end_col = #line,
+        hl_group = "@type",
+      })
     elseif
       line ~= ""
       and line ~= " "
@@ -337,16 +316,10 @@ function M.apply_highlights(config)
       if matches then
         local entry_hl = "@function" -- Both locks and recent use same highlight
 
-        vim.api.nvim_buf_set_extmark(
-          bufid,
-          config_module.constants.ns_mini_radar,
-          i - 1,
-          0,
-          {
-            end_col = #line,
-            hl_group = entry_hl,
-          }
-        )
+        vim.api.nvim_buf_set_extmark(bufid, ns_mini_radar, i - 1, 0, {
+          end_col = #line,
+          hl_group = entry_hl,
+        })
       end
     end
   end
@@ -381,7 +354,7 @@ function M.create(config)
 
   -- Resolve window config from preset
   local window = require("radar.window")
-  local win_opts = window.resolve_config(config.windows.float.radar.config, {
+  local win_opts = window.resolve_config(config, config.radar.win_preset, {
     height = #all_entries,
   })
 
@@ -391,11 +364,7 @@ function M.create(config)
   state.mini_radar_winid = new_win
 
   -- Set window transparency
-  vim.api.nvim_set_option_value(
-    "winblend",
-    config.windows.float.radar.winblend,
-    { win = new_win }
-  )
+  vim.api.nvim_set_option_value("winblend", config.radar.winblend, { win = new_win })
 
   -- Apply all highlights
   M.apply_highlights(config)

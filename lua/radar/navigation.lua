@@ -20,13 +20,13 @@ function M.get_file_from_line(config)
 
   for i, line in ipairs(lines) do
     -- Section headers - reset section tracking
-    if line == config.appearance.titles.locks then
+    if line == config.radar.titles.locks then
       current_section = "locks"
       section_index = 0
-    elseif line == config.appearance.titles.alternative then
+    elseif line == config.radar.titles.alternative then
       current_section = "alternative"
       section_index = 0
-    elseif line == config.appearance.titles.recent then
+    elseif line == config.radar.titles.recent then
       current_section = "recent"
       section_index = 0
     elseif line ~= "" and line ~= " " and current_section then
@@ -71,7 +71,7 @@ function M.open_file(filepath, open_cmd, config, mini_radar_module)
   if open_cmd == "float" then
     -- Resolve window config from preset
     local window = require("radar.window")
-    local win_opts = window.resolve_config(config.windows.file_window.config, {
+    local win_opts = window.resolve_config(config, config.file_float.win_preset, {
       title = " " .. vim.fn.fnamemodify(filepath, ":.") .. " ",
     })
 
