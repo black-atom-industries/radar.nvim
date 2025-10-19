@@ -33,11 +33,13 @@ local function calculate_grid_layout(config)
   local total_height = config.radar.grid_size.height
 
   -- Layout constants
-  local ALTERNATIVE_HEIGHT = 3
-  local column_width = math.floor(total_width / 2)
+  local ALTERNATIVE_HEIGHT = 1 -- Just one line of content (title is in border)
+  local VERTICAL_GAP = 3 -- Gap between alternative and locks/recent
+  local HORIZONTAL_GAP = 4 -- Gap between locks and recent
+  local column_width = math.floor((total_width - HORIZONTAL_GAP) / 2)
 
-  -- Calculate main content height (below alternative, no hints)
-  local content_height = total_height - ALTERNATIVE_HEIGHT
+  -- Calculate main content height (below alternative, with gap)
+  local content_height = total_height - ALTERNATIVE_HEIGHT - VERTICAL_GAP
 
   return {
     origin = origin,
@@ -50,15 +52,15 @@ local function calculate_grid_layout(config)
       height = ALTERNATIVE_HEIGHT,
     },
     locks = {
-      row = origin.row + ALTERNATIVE_HEIGHT,
+      row = origin.row + ALTERNATIVE_HEIGHT + VERTICAL_GAP,
       col = origin.col,
       width = column_width,
       height = content_height,
     },
     recent = {
-      row = origin.row + ALTERNATIVE_HEIGHT,
-      col = origin.col + column_width,
-      width = total_width - column_width, -- Handle odd widths
+      row = origin.row + ALTERNATIVE_HEIGHT + VERTICAL_GAP,
+      col = origin.col + column_width + HORIZONTAL_GAP,
+      width = total_width - column_width - HORIZONTAL_GAP, -- Handle odd widths and gap
       height = content_height,
     },
   }
