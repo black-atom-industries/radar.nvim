@@ -175,6 +175,9 @@ function M.edit_locks(radar_config, mini_radar_module)
     return
   end
 
+  -- Close radar window before opening edit window
+  mini_radar_module.close()
+
   -- Create editable buffer
   local edit_buf = vim.api.nvim_create_buf(false, false)
   state.edit_bufid = edit_buf
