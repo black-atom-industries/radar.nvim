@@ -38,7 +38,7 @@ M.default = {
     titles = {
       main = "󰐷  RADAR",
       locks = "󰋱  LOCKED IN",
-      alternative = "  OTHER",
+      alternative = "  OTHER",
       recent = "󰽏  NEAR",
     },
     win_opts = {
