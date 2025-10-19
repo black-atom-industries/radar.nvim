@@ -23,14 +23,22 @@
 ---@field path string
 ---@field defer_ms integer
 
+---@class Radar.Config.GridSize
+---@field width integer Grid total width
+---@field height integer Grid total height
+
+---@alias Radar.Config.Position "center" | "top_left" | "top_right" | "bottom_left" | "bottom_right"
+
 ---@class Radar.Config.Titles
 ---@field main string
 ---@field locks string
 ---@field alternative string
 ---@field recent string
+---@field hints string
 
 ---@class Radar.Config.Radar
----@field win_preset Radar.Config.WinPreset|string
+---@field grid_size Radar.Config.GridSize
+---@field position Radar.Config.Position
 ---@field winblend integer
 ---@field max_recent_files integer
 ---@field show_empty_message boolean
