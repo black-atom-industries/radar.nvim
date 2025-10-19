@@ -50,7 +50,7 @@
 ---@class Radar.Config
 ---@field keys Radar.Config.Keys
 ---@field persist Radar.Config.Persist
----@field win_presets table<string, table|fun(base_preset: vim.api.keyset.win_config, config: Radar.Config): vim.api.keyset.win_config>
+---@field win_presets table<string, table|fun(config: Radar.Config): vim.api.keyset.win_config>
 ---@field radar Radar.Config.Radar
 ---@field radar_edit Radar.Config.RadarEdit
 ---@field file_float Radar.Config.FileFloat

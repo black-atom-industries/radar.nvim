@@ -81,7 +81,7 @@ This spatial keyboard layout gives you instant access to **24 files** without mo
   opts = {
     -- Create custom preset
     win_presets = {
-      my_preset = function(base_preset, config)
+      my_preset = function(config)
         return {
           relative = "editor",
           width = 80,
@@ -91,6 +91,9 @@ This spatial keyboard layout gives you instant access to **24 files** without mo
           border = "rounded",
           style = "minimal",
           title = config.radar.titles.main,
+          title_pos = "left",
+          focusable = true,
+          zindex = 100,
         }
       end
     },

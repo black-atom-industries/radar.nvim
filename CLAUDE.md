@@ -287,27 +287,22 @@ win_presets = {
 }
 ```
 
-**Advanced override (function)**:
+**Custom preset (function)**:
 ```lua
 win_presets = {
-  center = function(base_preset, config)
-    return vim.tbl_deep_extend("force", base_preset, {
-      width = 100,
-      title = "My Custom Title"
-    })
-  end
-}
-```
-
-**Add custom preset**:
-```lua
-win_presets = {
-  my_preset = function(base_preset, config)
+  my_preset = function(config)
     return {
       relative = "editor",
-      width = 50,
+      width = 100,
       height = 20,
-      -- ... custom config
+      row = math.floor((vim.o.lines - 20) / 2),
+      col = math.floor((vim.o.columns - 100) / 2),
+      border = "rounded",
+      style = "minimal",
+      title = config.radar.titles.main,
+      title_pos = "center",
+      focusable = true,
+      zindex = 100,
     }
   end
 }

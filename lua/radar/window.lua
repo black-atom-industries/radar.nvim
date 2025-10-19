@@ -122,10 +122,9 @@ function M.resolve_config(config, preset_name, runtime_opts)
     return vim.tbl_deep_extend("force", base_config, user_preset, runtime_opts)
   end
 
-  -- If user provided a function override, call it with base preset
+  -- If user provided a function, they have full responsibility
   if type(user_preset) == "function" then
-    local base_config = base_preset_fn and base_preset_fn(config) or {}
-    local user_config = user_preset(base_config, config)
+    local user_config = user_preset(config)
     return vim.tbl_deep_extend("force", user_config, runtime_opts)
   end
 
