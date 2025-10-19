@@ -30,7 +30,7 @@
 ---@field recent string
 
 ---@class Radar.Config.Radar
----@field win_preset Radar.Config.WinPreset
+---@field win_preset Radar.Config.WinPreset|string
 ---@field width integer
 ---@field winblend integer
 ---@field max_recent_files integer
@@ -39,15 +39,15 @@
 ---@field titles Radar.Config.Titles
 
 ---@class Radar.Config.RadarEdit
----@field win_preset Radar.Config.WinPreset
+---@field win_preset Radar.Config.WinPreset|string
 
 ---@class Radar.Config.FileFloat
----@field win_preset Radar.Config.WinPreset
+---@field win_preset Radar.Config.WinPreset|string
 
 ---@class Radar.Config
 ---@field keys Radar.Config.Keys
 ---@field persist Radar.Config.Persist
----@field win_presets table<string, table|fun(config: Radar.Config): vim.api.keyset.win_config>
+---@field win_presets table<Radar.Config.WinPreset|string, table|fun(config: Radar.Config): vim.api.keyset.win_config>
 ---@field radar Radar.Config.Radar
 ---@field radar_edit Radar.Config.RadarEdit
 ---@field file_float Radar.Config.FileFloat
