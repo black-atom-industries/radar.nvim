@@ -63,7 +63,7 @@ end
 ---@return Radar.Lock
 function M.toggle(filename, config, persistence_module)
   local state = require("radar.state")
-  local exists = state.get_lock_from_filename(filename)
+  local exists = state.get_lock_by_field("filename", filename)
 
   local lock
 

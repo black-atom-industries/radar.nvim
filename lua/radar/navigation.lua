@@ -119,7 +119,7 @@ end
 ---@return nil
 function M.open_lock(label, open_cmd, config, mini_radar_module)
   local state = require("radar.state")
-  local lock = state.get_lock_from_label(tostring(label))
+  local lock = state.get_lock_by_field("label", tostring(label))
   if lock then
     M.open_file(lock.filename, open_cmd, config, mini_radar_module)
   end
@@ -153,54 +153,6 @@ function M.open_recent(label, open_cmd, config, mini_radar_module)
       M.open_file(state.recent_files[i], open_cmd, config, mini_radar_module)
       return
     end
-  end
-end
-
----Register keymaps for a collection of file labels
----@param labels string[] Array of labels
----@param open_fn function Function to open files by label
----@param desc_prefix string Description prefix for keymap descriptions
----@param config Radar.Config
----@param mini_radar_module table
----@return nil
-function M.register_file_keymaps(
-  labels,
-  open_fn,
-  desc_prefix,
-  config,
-  mini_radar_module
-)
-  for _, label in ipairs(labels) do
-    local prefix = config.keys.prefix
-
-    -- Regular open
-    vim.keymap.set("n", prefix .. label, function()
-      open_fn(label, nil, config, mini_radar_module)
-    end, { desc = "Open " .. label .. " " .. desc_prefix })
-
-    -- Vertical split
-    vim.keymap.set("n", prefix .. config.keys.vertical .. label, function()
-      open_fn(label, "vsplit", config, mini_radar_module)
-    end, { desc = "Open " .. label .. " " .. desc_prefix .. " in vertical split" })
-
-    -- Horizontal split
-    vim.keymap.set("n", prefix .. config.keys.horizontal .. label, function()
-      open_fn(label, "split", config, mini_radar_module)
-    end, {
-      desc = "Open " .. label .. " " .. desc_prefix .. " in horizontal split",
-    })
-
-    -- New tab
-    vim.keymap.set("n", prefix .. config.keys.tab .. label, function()
-      open_fn(label, "tabedit", config, mini_radar_module)
-    end, { desc = "Open " .. label .. " " .. desc_prefix .. " in new tab" })
-
-    -- Float window
-    vim.keymap.set("n", prefix .. config.keys.float .. label, function()
-      open_fn(label, "float", config, mini_radar_module)
-    end, {
-      desc = "Open " .. label .. " " .. desc_prefix .. " in floating window",
-    })
   end
 end
 

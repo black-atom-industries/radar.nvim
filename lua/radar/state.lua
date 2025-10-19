@@ -30,18 +30,4 @@ function M.get_lock_by_field(field, value)
   end
 end
 
----Get lock by filename
----@param filename string
----@return Radar.Lock?
-function M.get_lock_from_filename(filename)
-  return M.get_lock_by_field("filename", filename)
-end
-
----Get lock by label
----@param label string
----@return Radar.Lock?
-function M.get_lock_from_label(label)
-  return M.get_lock_by_field("label", label)
-end
-
 return M

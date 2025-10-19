@@ -8,7 +8,7 @@ local M = {}
 ---@return string
 function M.get_formatted_filepath(path, config, max_width, label_width)
   -- Use our path utility for formatting and shortening
-  local path_utils = require("radar.utils.path")
+  local path_utils = require("radar.ui.path")
   return path_utils.format_and_shorten(
     path,
     config.appearance.path_format,

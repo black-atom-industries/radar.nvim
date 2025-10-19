@@ -53,40 +53,6 @@ describe("state", function()
     end)
   end)
 
-  describe("get_lock_from_filename", function()
-    before_each(function()
-      clear_test_state()
-      setup_test_locks()
-    end)
-
-    it("finds lock by filename", function()
-      local lock = state.get_lock_from_filename("file2.lua")
-      MiniTest.expect.equality(lock.label, "2")
-    end)
-
-    it("returns nil when filename not found", function()
-      local lock = state.get_lock_from_filename("nonexistent.lua")
-      MiniTest.expect.equality(lock, nil)
-    end)
-  end)
-
-  describe("get_lock_from_label", function()
-    before_each(function()
-      clear_test_state()
-      setup_test_locks()
-    end)
-
-    it("finds lock by label", function()
-      local lock = state.get_lock_from_label("3")
-      MiniTest.expect.equality(lock.filename, "file3.lua")
-    end)
-
-    it("returns nil when label not found", function()
-      local lock = state.get_lock_from_label("99")
-      MiniTest.expect.equality(lock, nil)
-    end)
-  end)
-
   describe("state initialization", function()
     it("has correct initial structure", function()
       -- Test that state has all expected fields with correct types

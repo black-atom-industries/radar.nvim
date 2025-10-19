@@ -12,6 +12,41 @@ function M.setup(config)
   end, { desc = "Toggle Radar" })
 end
 
+---Helper to register all split mode keymaps for a single action
+---@param bufnr integer
+---@param key string Base key for the action
+---@param action function Function to call with open_cmd
+---@param desc string Description for keymaps
+---@param config Radar.Config
+local function register_split_variants(bufnr, key, action, desc, config)
+  local opts = { buffer = bufnr, silent = true, noremap = true, nowait = true }
+  local modes = {
+    { key = key, cmd = nil, desc = desc },
+    {
+      key = config.keys.vertical .. key,
+      cmd = "vsplit",
+      desc = desc .. " in vertical split",
+    },
+    {
+      key = config.keys.horizontal .. key,
+      cmd = "split",
+      desc = desc .. " in horizontal split",
+    },
+    { key = config.keys.tab .. key, cmd = "tabedit", desc = desc .. " in new tab" },
+    {
+      key = config.keys.float .. key,
+      cmd = "float",
+      desc = desc .. " in floating window",
+    },
+  }
+
+  for _, mode in ipairs(modes) do
+    vim.keymap.set("n", mode.key, function()
+      action(mode.cmd)
+    end, vim.tbl_extend("force", opts, { desc = mode.desc }))
+  end
+end
+
 ---Setup buffer-local keymaps for radar window
 ---@param bufnr integer
 ---@param config Radar.Config
@@ -19,213 +54,70 @@ end
 function M.setup_buffer_local_keymaps(bufnr, config)
   local navigation = require("radar.navigation")
   local mini_radar = require("radar.ui.mini_radar")
-  local opts_base = { buffer = bufnr, silent = true, noremap = true, nowait = true }
+  local opts = { buffer = bufnr, silent = true, noremap = true, nowait = true }
 
   -- Close radar
   vim.keymap.set("n", "q", function()
     mini_radar.close()
-  end, vim.tbl_extend("force", opts_base, { desc = "Close Radar" }))
+  end, vim.tbl_extend("force", opts, { desc = "Close Radar" }))
 
   vim.keymap.set("n", "<Esc>", function()
     mini_radar.close()
-  end, vim.tbl_extend("force", opts_base, { desc = "Close Radar" }))
+  end, vim.tbl_extend("force", opts, { desc = "Close Radar" }))
 
-  -- Line-based navigation - open file from current line
-  vim.keymap.set("n", config.keys.line.open, function()
-    navigation.open_file_from_line(nil, config, mini_radar)
-  end, vim.tbl_extend("force", opts_base, { desc = "Open file from line" }))
+  -- Line-based navigation - all split variants
+  register_split_variants(bufnr, config.keys.line.open, function(cmd)
+    navigation.open_file_from_line(cmd, config, mini_radar)
+  end, "Open file from line", config)
 
+  -- Use separate keys for line-based splits (V, S, T, F)
   vim.keymap.set("n", config.keys.line.vertical, function()
     navigation.open_file_from_line("vsplit", config, mini_radar)
-  end, vim.tbl_extend("force", opts_base, { desc = "Open file in vertical split" }))
+  end, vim.tbl_extend("force", opts, { desc = "Open file in vertical split" }))
 
-  vim.keymap.set(
-    "n",
-    config.keys.line.horizontal,
-    function()
-      navigation.open_file_from_line("split", config, mini_radar)
-    end,
-    vim.tbl_extend("force", opts_base, { desc = "Open file in horizontal split" })
-  )
+  vim.keymap.set("n", config.keys.line.horizontal, function()
+    navigation.open_file_from_line("split", config, mini_radar)
+  end, vim.tbl_extend("force", opts, { desc = "Open file in horizontal split" }))
 
   vim.keymap.set("n", config.keys.line.tab, function()
     navigation.open_file_from_line("tabedit", config, mini_radar)
-  end, vim.tbl_extend("force", opts_base, { desc = "Open file in new tab" }))
+  end, vim.tbl_extend("force", opts, { desc = "Open file in new tab" }))
 
   vim.keymap.set("n", config.keys.line.float, function()
     navigation.open_file_from_line("float", config, mini_radar)
-  end, vim.tbl_extend(
-    "force",
-    opts_base,
-    { desc = "Open file in floating window" }
-  ))
+  end, vim.tbl_extend("force", opts, { desc = "Open file in floating window" }))
 
-  -- Lock current buffer (or source buffer if we're in radar)
+  -- Lock current buffer
   vim.keymap.set("n", config.keys.lock, function()
     local locks = require("radar.locks")
     local persistence = require("radar.persistence")
     local state = require("radar.state")
-
-    -- Use the buffer we opened from, not the radar buffer itself
     locks.lock_current_buffer(state.source_bufnr, config, persistence, mini_radar)
-  end, vim.tbl_extend("force", opts_base, { desc = "Lock source buffer" }))
+  end, vim.tbl_extend("force", opts, { desc = "Lock source buffer" }))
 
-  -- Lock keymaps (1-9)
-  M.register_file_keymaps_buffer_local(
-    bufnr,
-    config.keys.locks,
-    navigation.open_lock,
-    "Lock",
-    config,
-    mini_radar
-  )
+  -- Lock keymaps (1-9) - all split variants
+  for _, label in ipairs(config.keys.locks) do
+    register_split_variants(bufnr, label, function(cmd)
+      navigation.open_lock(label, cmd, config, mini_radar)
+    end, "Open lock " .. label, config)
+  end
 
-  -- Alternative file (o)
-  local alt_label = config.keys.alternative
+  -- Alternative file - all split variants
+  register_split_variants(bufnr, config.keys.alternative, function(cmd)
+    navigation.open_alternative(cmd, config, mini_radar)
+  end, "Open alternative file", config)
 
-  vim.keymap.set("n", alt_label, function()
-    navigation.open_alternative(nil, config, mini_radar)
-  end, vim.tbl_extend("force", opts_base, { desc = "Open alternative file" }))
+  -- Recent file keymaps (a-g) - all split variants
+  for _, label in ipairs(config.keys.recent) do
+    register_split_variants(bufnr, label, function(cmd)
+      navigation.open_recent(label, cmd, config, mini_radar)
+    end, "Open recent file " .. label, config)
+  end
 
-  vim.keymap.set(
-    "n",
-    config.keys.vertical .. alt_label,
-    function()
-      navigation.open_alternative("vsplit", config, mini_radar)
-    end,
-    vim.tbl_extend("force", opts_base, {
-      desc = "Open alternative file in vertical split",
-    })
-  )
-
-  vim.keymap.set(
-    "n",
-    config.keys.horizontal .. alt_label,
-    function()
-      navigation.open_alternative("split", config, mini_radar)
-    end,
-    vim.tbl_extend("force", opts_base, {
-      desc = "Open alternative file in horizontal split",
-    })
-  )
-
-  vim.keymap.set(
-    "n",
-    config.keys.tab .. alt_label,
-    function()
-      navigation.open_alternative("tabedit", config, mini_radar)
-    end,
-    vim.tbl_extend("force", opts_base, {
-      desc = "Open alternative file in new tab",
-    })
-  )
-
-  vim.keymap.set(
-    "n",
-    config.keys.float .. alt_label,
-    function()
-      navigation.open_alternative("float", config, mini_radar)
-    end,
-    vim.tbl_extend("force", opts_base, {
-      desc = "Open alternative file in floating window",
-    })
-  )
-
-  -- Recent file keymaps (a, s, d, f, g)
-  M.register_file_keymaps_buffer_local(
-    bufnr,
-    config.keys.recent,
-    navigation.open_recent,
-    "Recent File",
-    config,
-    mini_radar
-  )
-
-  -- Edit locks (e)
+  -- Edit locks
   vim.keymap.set("n", "e", function()
     require("radar.ui.edit").edit_locks(config, mini_radar)
-  end, vim.tbl_extend("force", opts_base, { desc = "Edit radar locks" }))
-end
-
----Register buffer-local keymaps for a collection of file labels
----@param bufnr integer
----@param labels string[]
----@param open_fn function
----@param desc_prefix string
----@param config Radar.Config
----@param mini_radar_module table
----@return nil
-function M.register_file_keymaps_buffer_local(
-  bufnr,
-  labels,
-  open_fn,
-  desc_prefix,
-  config,
-  mini_radar_module
-)
-  local opts_base = { buffer = bufnr, silent = true, noremap = true, nowait = true }
-
-  for _, label in ipairs(labels) do
-    -- Regular open (just the label, no prefix)
-    vim.keymap.set(
-      "n",
-      label,
-      function()
-        open_fn(label, nil, config, mini_radar_module)
-      end,
-      vim.tbl_extend("force", opts_base, {
-        desc = "Open " .. label .. " " .. desc_prefix,
-      })
-    )
-
-    -- Vertical split
-    vim.keymap.set(
-      "n",
-      config.keys.vertical .. label,
-      function()
-        open_fn(label, "vsplit", config, mini_radar_module)
-      end,
-      vim.tbl_extend("force", opts_base, {
-        desc = "Open " .. label .. " " .. desc_prefix .. " in vertical split",
-      })
-    )
-
-    -- Horizontal split
-    vim.keymap.set(
-      "n",
-      config.keys.horizontal .. label,
-      function()
-        open_fn(label, "split", config, mini_radar_module)
-      end,
-      vim.tbl_extend("force", opts_base, {
-        desc = "Open " .. label .. " " .. desc_prefix .. " in horizontal split",
-      })
-    )
-
-    -- New tab
-    vim.keymap.set(
-      "n",
-      config.keys.tab .. label,
-      function()
-        open_fn(label, "tabedit", config, mini_radar_module)
-      end,
-      vim.tbl_extend("force", opts_base, {
-        desc = "Open " .. label .. " " .. desc_prefix .. " in new tab",
-      })
-    )
-
-    -- Float window
-    vim.keymap.set(
-      "n",
-      config.keys.float .. label,
-      function()
-        open_fn(label, "float", config, mini_radar_module)
-      end,
-      vim.tbl_extend("force", opts_base, {
-        desc = "Open " .. label .. " " .. desc_prefix .. " in floating window",
-      })
-    )
-  end
+  end, vim.tbl_extend("force", opts, { desc = "Edit radar locks" }))
 end
 
 return M

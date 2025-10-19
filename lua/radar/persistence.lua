@@ -59,18 +59,11 @@ function M.get_git_branch()
   return sanitized_branch
 end
 
----Get data file path
----@param config Radar.Config
----@return string
-function M.get_data_file_path(config)
-  return config.persist.path
-end
-
 ---Load persistence data from file
 ---@param config Radar.Config
 ---@return Radar.PersistenceData?
 function M.load(config)
-  local file_path = M.get_data_file_path(config)
+  local file_path = config.persist.path
   local is_readable = vim.fn.filereadable(file_path)
   if is_readable == 1 then
     return M.read(file_path)
@@ -109,7 +102,7 @@ function M.persist(config)
   end
 
   vim.fn.mkdir(vim.fn.fnamemodify(config.persist.path, ":h"), "p")
-  M.write(M.get_data_file_path(config), data)
+  M.write(config.persist.path, data)
   return data
 end
 

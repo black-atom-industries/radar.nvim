@@ -1,4 +1,4 @@
-local path_utils = require("radar.utils.path")
+local path_utils = require("radar.ui.path")
 
 describe("path.shorten_path", function()
   local shorten_path = path_utils.shorten_path
