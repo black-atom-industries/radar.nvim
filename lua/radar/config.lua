@@ -48,9 +48,6 @@ M.default = {
   -- Lock label editor window
   radar_edit = {
     win_preset = "cursor",
-    width_padding = 10,
-    max_height = 20,
-    min_width = 60,
   },
 
   -- File float window

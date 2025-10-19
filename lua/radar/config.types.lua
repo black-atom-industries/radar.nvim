@@ -40,9 +40,6 @@
 
 ---@class Radar.Config.RadarEdit
 ---@field win_preset Radar.Config.WinPreset
----@field width_padding integer
----@field max_height integer
----@field min_width integer
 
 ---@class Radar.Config.FileFloat
 ---@field win_preset Radar.Config.WinPreset

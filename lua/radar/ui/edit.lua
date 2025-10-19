@@ -195,13 +195,10 @@ function M.edit_locks(radar_config, mini_radar_module)
 
   vim.api.nvim_buf_set_lines(edit_buf, 0, -1, false, lines)
 
-  -- Open floating window
+  -- Open floating window with dynamic sizing
   local calculated_width = calculate_window_width(radar_config, mini_radar_module)
-  local win_width = math.max(
-    radar_config.radar_edit.min_width,
-    calculated_width + radar_config.radar_edit.width_padding
-  )
-  local win_height = math.min(#lines + 2, radar_config.radar_edit.max_height)
+  local win_width = math.max(60, calculated_width + 10) -- min_width, padding
+  local win_height = math.min(#lines + 2, 20) -- max_height
 
   -- Resolve window config from preset with dynamic width/height
   local window = require("radar.window")
