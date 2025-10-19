@@ -150,15 +150,11 @@ function M.cleanup()
     vim.api.nvim_win_close(state.edit_winid, true)
   end
 
-  if
-    state.radar_winid and vim.api.nvim_win_is_valid(state.radar_winid)
-  then
-    vim.api.nvim_win_close(state.radar_winid, true)
-  end
+  -- Close all radar windows
+  state.close_all_radar_windows()
 
   state.edit_winid = nil
   state.edit_bufid = nil
-  state.radar_winid = nil
 end
 
 ---Create editable buffer for managing locks

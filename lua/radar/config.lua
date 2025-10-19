@@ -31,7 +31,8 @@ M.default = {
 
   -- Main radar window
   radar = {
-    win_preset = "center",
+    grid_size = { width = 100, height = 30 },
+    position = "center",
     winblend = 0,
     max_recent_files = 20,
     show_empty_message = true,
@@ -40,6 +41,7 @@ M.default = {
       locks = "󰋱  LOCKED IN",
       alternative = "  OTHER",
       recent = "󰽏  NEAR",
+      hints = "  KEYS",
     },
     win_opts = {
       number = false,
