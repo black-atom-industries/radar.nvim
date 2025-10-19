@@ -44,7 +44,7 @@ This spatial keyboard layout gives you instant access to **24 files** without mo
   opts = {
     -- Optionally customize window preset
     radar = {
-      win_preset = "top_right",  -- or "center", "cursor", "bottom_center", "full_height_sidebar"
+      win_preset = "top_right",  -- or "center", "center_large", "cursor", "bottom_center", "full_height_sidebar"
     }
   }
 }

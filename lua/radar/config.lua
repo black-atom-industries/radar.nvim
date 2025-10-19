@@ -40,19 +40,19 @@ M.default = {
     titles = {
       main = "󰐷  RADAR",
       locks = "󰋱  LOCKED IN",
-      alternative = "  OTHER",
+      alternative = "  OTHER",
       recent = "󰽏  NEAR",
     },
   },
 
   -- Lock label editor window
   radar_edit = {
-    win_preset = "cursor",
+    win_preset = "center",
   },
 
   -- File float window
   file_float = {
-    win_preset = "center",
+    win_preset = "center_large",
   },
 }
 

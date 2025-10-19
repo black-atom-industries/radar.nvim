@@ -1,4 +1,4 @@
----@alias Radar.Config.WinPreset "center" | "cursor" | "top_right" | "bottom_center" | "full_height_sidebar"
+---@alias Radar.Config.WinPreset "center" | "center_large" | "cursor" | "top_right" | "bottom_center" | "full_height_sidebar"
 
 ---@class Radar.Config.Keys.Line
 ---@field open string

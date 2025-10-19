@@ -313,7 +313,8 @@ radar = {
 ```
 
 **Available base presets**:
-- `"center"` - Centered floating window
+- `"center"` - Centered floating window (75x10)
+- `"center_large"` - Large centered window (80% width, 70% height)
 - `"cursor"` - Window appears at cursor position
 - `"top_right"` - Top-right corner
 - `"bottom_center"` - Bottom center
