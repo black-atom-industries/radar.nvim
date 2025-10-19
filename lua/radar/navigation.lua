@@ -2,49 +2,34 @@ local M = {}
 
 ---Get file path from current line in radar window
 ---@param config Radar.Config
+---@param section "locks" | "recent"
 ---@return string? filepath
-function M.get_file_from_line(config)
-  local radar = require("radar.ui.radar")
-  local bufid = radar.get_bufid()
-  if not bufid then
+function M.get_file_from_line(config, section)
+  local state = require("radar.state")
+
+  if not state.radar_windows or not state.radar_windows[section] then
     return nil
   end
 
-  local current_line_nr = vim.api.nvim_win_get_cursor(0)[1]
+  local winid = state.radar_windows[section]
+  if not vim.api.nvim_win_is_valid(winid) then
+    return nil
+  end
+
+  local bufid = vim.api.nvim_win_get_buf(winid)
+  local current_line_nr = vim.api.nvim_win_get_cursor(winid)[1]
   local lines = vim.api.nvim_buf_get_lines(bufid, 0, -1, false)
-  local state = require("radar.state")
 
-  -- Track which section we're in and the index within that section
-  local current_section = nil
-  local section_index = 0
+  -- Line number directly maps to entry index
+  local entry_index = current_line_nr
 
-  for i, line in ipairs(lines) do
-    -- Section headers - reset section tracking
-    if line == config.radar.titles.locks then
-      current_section = "locks"
-      section_index = 0
-    elseif line == config.radar.titles.alternative then
-      current_section = "alternative"
-      section_index = 0
-    elseif line == config.radar.titles.recent then
-      current_section = "recent"
-      section_index = 0
-    elseif line ~= "" and line ~= " " and current_section then
-      -- This is a file entry line - increment index
-      section_index = section_index + 1
-
-      -- Check if this is our target line
-      if i == current_line_nr then
-        -- Return the file based on section and index
-        if current_section == "locks" and state.locks[section_index] then
-          return state.locks[section_index].filename
-        elseif current_section == "alternative" then
-          local alternative = require("radar.alternative")
-          return alternative.get_alternative_file()
-        elseif current_section == "recent" and state.recent_files[section_index] then
-          return state.recent_files[section_index]
-        end
-      end
+  if section == "locks" then
+    if entry_index > 0 and entry_index <= #state.locks then
+      return state.locks[entry_index].filename
+    end
+  elseif section == "recent" then
+    if entry_index > 0 and entry_index <= #state.recent_files then
+      return state.recent_files[entry_index]
     end
   end
 
@@ -165,9 +150,10 @@ end
 ---@param open_cmd? string Command to open file (edit, vsplit, split, tabedit, float)
 ---@param config Radar.Config
 ---@param radar_module table
+---@param section "locks" | "recent"
 ---@return nil
-function M.open_file_from_line(open_cmd, config, radar_module)
-  local filepath = M.get_file_from_line(config)
+function M.open_file_from_line(open_cmd, config, radar_module, section)
+  local filepath = M.get_file_from_line(config, section)
   if filepath then
     M.open_file(filepath, open_cmd, config, radar_module)
   end
