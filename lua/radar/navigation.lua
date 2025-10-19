@@ -4,8 +4,8 @@ local M = {}
 ---@param config Radar.Config
 ---@return string? filepath
 function M.get_file_from_line(config)
-  local mini_radar = require("radar.ui.mini_radar")
-  local bufid = mini_radar.get_bufid()
+  local radar = require("radar.ui.radar")
+  local bufid = radar.get_bufid()
   if not bufid then
     return nil
   end
@@ -55,15 +55,15 @@ end
 ---@param filepath string? File path to open
 ---@param open_cmd? string Command to open file (edit, vsplit, split, tabedit, float)
 ---@param config Radar.Config
----@param mini_radar_module table
+---@param radar_module table
 ---@return nil
-function M.open_file(filepath, open_cmd, config, mini_radar_module)
+function M.open_file(filepath, open_cmd, config, radar_module)
   if not filepath then
     return
   end
 
   -- Close radar first, so file opens in the previous window
-  mini_radar_module.close()
+  radar_module.close()
 
   local path = vim.fn.fnameescape(filepath)
   open_cmd = open_cmd or "edit"
@@ -120,27 +120,27 @@ end
 ---@param label string
 ---@param open_cmd? string Command to open file (edit, vsplit, split, tabedit, float)
 ---@param config Radar.Config
----@param mini_radar_module table
+---@param radar_module table
 ---@return nil
-function M.open_lock(label, open_cmd, config, mini_radar_module)
+function M.open_lock(label, open_cmd, config, radar_module)
   local state = require("radar.state")
   local lock = state.get_lock_by_field("label", tostring(label))
   if lock then
-    M.open_file(lock.filename, open_cmd, config, mini_radar_module)
+    M.open_file(lock.filename, open_cmd, config, radar_module)
   end
 end
 
 ---Open alternative file
 ---@param open_cmd? string Command to open file (edit, vsplit, split, tabedit, float)
 ---@param config Radar.Config
----@param mini_radar_module table
+---@param radar_module table
 ---@return nil
-function M.open_alternative(open_cmd, config, mini_radar_module)
+function M.open_alternative(open_cmd, config, radar_module)
   local state = require("radar.state")
   -- Use the alternate file captured when radar was opened
   local alt_file = state.source_alt_file
   if alt_file then
-    M.open_file(alt_file, open_cmd, config, mini_radar_module)
+    M.open_file(alt_file, open_cmd, config, radar_module)
   end
 end
 
@@ -148,14 +148,14 @@ end
 ---@param label string
 ---@param open_cmd? string Command to open file (edit, vsplit, split, tabedit, float)
 ---@param config Radar.Config
----@param mini_radar_module table
+---@param radar_module table
 ---@return nil
-function M.open_recent(label, open_cmd, config, mini_radar_module)
+function M.open_recent(label, open_cmd, config, radar_module)
   local state = require("radar.state")
   -- Find the recent file by label
   for i, recent_label in ipairs(config.keys.recent) do
     if recent_label == label and state.recent_files[i] then
-      M.open_file(state.recent_files[i], open_cmd, config, mini_radar_module)
+      M.open_file(state.recent_files[i], open_cmd, config, radar_module)
       return
     end
   end
@@ -164,12 +164,12 @@ end
 ---Open file from current line in radar window
 ---@param open_cmd? string Command to open file (edit, vsplit, split, tabedit, float)
 ---@param config Radar.Config
----@param mini_radar_module table
+---@param radar_module table
 ---@return nil
-function M.open_file_from_line(open_cmd, config, mini_radar_module)
+function M.open_file_from_line(open_cmd, config, radar_module)
   local filepath = M.get_file_from_line(config)
   if filepath then
-    M.open_file(filepath, open_cmd, config, mini_radar_module)
+    M.open_file(filepath, open_cmd, config, radar_module)
   end
 end
 

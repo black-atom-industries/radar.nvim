@@ -84,9 +84,9 @@ end
 ---@param buf_nr? integer
 ---@param config Radar.Config
 ---@param persistence_module table
----@param mini_radar_module table
+---@param radar_module table
 ---@return nil
-function M.lock_current_buffer(buf_nr, config, persistence_module, mini_radar_module)
+function M.lock_current_buffer(buf_nr, config, persistence_module, radar_module)
   buf_nr = buf_nr or vim.api.nvim_get_current_buf()
 
   -- Don't lock non-file buffers (like the radar window itself)
@@ -107,10 +107,10 @@ function M.lock_current_buffer(buf_nr, config, persistence_module, mini_radar_mo
 
   M.toggle(normalized_filename, config, persistence_module)
 
-  if not mini_radar_module.exists() then
-    mini_radar_module.create(config)
+  if not radar_module.exists() then
+    radar_module.create(config)
   else
-    mini_radar_module.update(config)
+    radar_module.update(config)
   end
 end
 

@@ -1,7 +1,7 @@
 local M = {}
 
 -- Namespace for highlights
-local ns_mini_radar = vim.api.nvim_create_namespace("radar.win.mini")
+local ns_radar = vim.api.nvim_create_namespace("radar.win")
 
 ---Format file path to relative path from cwd
 ---@param path string
@@ -119,11 +119,11 @@ function M.build_radar_entries(config)
   return all_entries
 end
 
----Get mini radar buffer ID
+---Get radar buffer ID
 ---@return integer?
 function M.get_bufid()
   local state = require("radar.state")
-  local win = state.mini_radar_winid
+  local win = state.radar_winid
 
   if win ~= nil and vim.api.nvim_win_is_valid(win) then
     return vim.api.nvim_win_get_buf(win)
@@ -132,15 +132,15 @@ function M.get_bufid()
   end
 end
 
----Check if mini radar exists
+---Check if radar exists
 ---@return boolean
 function M.exists()
   local state = require("radar.state")
-  return state.mini_radar_winid and vim.api.nvim_win_is_valid(state.mini_radar_winid)
+  return state.radar_winid and vim.api.nvim_win_is_valid(state.radar_winid)
     or false
 end
 
----Ensure mini radar exists, create if needed
+---Ensure radar exists, create if needed
 ---@param config Radar.Config
 ---@return nil
 function M.ensure_exists(config)
@@ -149,7 +149,7 @@ function M.ensure_exists(config)
   end
 end
 
----Toggle mini radar visibility
+---Toggle radar visibility
 ---@param config Radar.Config
 ---@return nil
 function M.toggle(config)
@@ -160,7 +160,7 @@ function M.toggle(config)
   end
 end
 
----Open mini radar and focus it
+---Open radar and focus it
 ---@param config Radar.Config
 ---@return nil
 function M.open(config)
@@ -177,19 +177,19 @@ function M.open(config)
     M.create(config)
   else
     -- Window exists, just focus it
-    vim.api.nvim_set_current_win(state.mini_radar_winid)
+    vim.api.nvim_set_current_win(state.radar_winid)
   end
 end
 
----Close mini radar window (keep buffer for later reopening)
+---Close radar window (keep buffer for later reopening)
 ---@return nil
 function M.close()
   local state = require("radar.state")
   if
-    state.mini_radar_winid and vim.api.nvim_win_is_valid(state.mini_radar_winid)
+    state.radar_winid and vim.api.nvim_win_is_valid(state.radar_winid)
   then
-    vim.api.nvim_win_close(state.mini_radar_winid, false)
-    state.mini_radar_winid = nil
+    vim.api.nvim_win_close(state.radar_winid, false)
+    state.radar_winid = nil
   end
 end
 
@@ -214,7 +214,7 @@ function M.apply_highlights(config)
   end
 
   -- Clear all highlights once
-  vim.api.nvim_buf_clear_namespace(bufid, ns_mini_radar, 0, -1)
+  vim.api.nvim_buf_clear_namespace(bufid, ns_radar, 0, -1)
 
   -- Track which section we're in for proper highlighting
   local current_section = nil
@@ -225,21 +225,21 @@ function M.apply_highlights(config)
     if line == config.radar.titles.locks then
       current_section = "locks"
       section_index = 0
-      vim.api.nvim_buf_set_extmark(bufid, ns_mini_radar, i - 1, 0, {
+      vim.api.nvim_buf_set_extmark(bufid, ns_radar, i - 1, 0, {
         end_col = #line,
         hl_group = "@tag.builtin",
       })
     elseif line == config.radar.titles.alternative then
       current_section = "alternative"
       section_index = 0
-      vim.api.nvim_buf_set_extmark(bufid, ns_mini_radar, i - 1, 0, {
+      vim.api.nvim_buf_set_extmark(bufid, ns_radar, i - 1, 0, {
         end_col = #line,
         hl_group = "@variable",
       })
     elseif line == config.radar.titles.recent then
       current_section = "recent"
       section_index = 0
-      vim.api.nvim_buf_set_extmark(bufid, ns_mini_radar, i - 1, 0, {
+      vim.api.nvim_buf_set_extmark(bufid, ns_radar, i - 1, 0, {
         end_col = #line,
         hl_group = "@type",
       })
@@ -280,7 +280,7 @@ function M.apply_highlights(config)
       if matches then
         local entry_hl = "@function" -- Both locks and recent use same highlight
 
-        vim.api.nvim_buf_set_extmark(bufid, ns_mini_radar, i - 1, 0, {
+        vim.api.nvim_buf_set_extmark(bufid, ns_radar, i - 1, 0, {
           end_col = #line,
           hl_group = entry_hl,
         })
@@ -325,7 +325,7 @@ function M.create(config)
   local new_win = vim.api.nvim_open_win(new_buf_id, true, win_opts)
 
   local state = require("radar.state")
-  state.mini_radar_winid = new_win
+  state.radar_winid = new_win
 
   -- Set window transparency
   vim.api.nvim_set_option_value("winblend", config.radar.winblend, { win = new_win })
@@ -349,21 +349,21 @@ function M.update(config)
 
   -- Keep window open even when empty
   M.ensure_exists(config)
-  local mini_radar_bufid = M.get_bufid()
-  if mini_radar_bufid == nil then
+  local radar_bufid = M.get_bufid()
+  if radar_bufid == nil then
     return
   end
 
   local all_entries = M.build_radar_entries(config)
 
   -- Temporarily make modifiable to update lines
-  vim.api.nvim_set_option_value("modifiable", true, { buf = mini_radar_bufid })
-  vim.api.nvim_buf_set_lines(mini_radar_bufid, 0, -1, false, all_entries)
-  vim.api.nvim_set_option_value("modifiable", false, { buf = mini_radar_bufid })
+  vim.api.nvim_set_option_value("modifiable", true, { buf = radar_bufid })
+  vim.api.nvim_buf_set_lines(radar_bufid, 0, -1, false, all_entries)
+  vim.api.nvim_set_option_value("modifiable", false, { buf = radar_bufid })
 
   local state = require("radar.state")
   local new_height = #all_entries
-  vim.api.nvim_win_set_config(state.mini_radar_winid, {
+  vim.api.nvim_win_set_config(state.radar_winid, {
     height = new_height,
   })
 

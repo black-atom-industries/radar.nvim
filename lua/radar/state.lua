@@ -7,7 +7,7 @@ local M = {
   ---@type string[]
   session_files = {},
   ---@type integer?
-  mini_radar_winid = nil,
+  radar_winid = nil,
   ---@type integer?
   edit_winid = nil,
   ---@type integer?

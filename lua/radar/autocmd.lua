@@ -11,11 +11,11 @@ function M.setup(config)
     callback = function()
       -- Update recent files now that vim.v.oldfiles is loaded
       local recent = require("radar.recent")
-      local mini_radar = require("radar.ui.mini_radar")
+      local radar = require("radar.ui.radar")
       recent.update_state(config)
       -- Only update if radar is open
-      if mini_radar.exists() then
-        mini_radar.update(config)
+      if radar.exists() then
+        radar.update(config)
       end
     end,
   })
@@ -23,10 +23,10 @@ function M.setup(config)
   autocmd("VimResized", {
     group = autogrp("radar.VimResized", { clear = true }),
     callback = function()
-      local mini_radar = require("radar.ui.mini_radar")
+      local radar = require("radar.ui.radar")
       -- Only update if radar is open
-      if mini_radar.exists() then
-        mini_radar.update(config)
+      if radar.exists() then
+        radar.update(config)
       end
     end,
   })
@@ -35,14 +35,14 @@ function M.setup(config)
     group = autogrp("radar.BufEnter", { clear = true }),
     callback = function()
       local recent = require("radar.recent")
-      local mini_radar = require("radar.ui.mini_radar")
+      local radar = require("radar.ui.radar")
       -- Track current file for session recent files
       recent.track_current_file(config)
       -- Update recent files to include current session files
       recent.update_state(config)
       -- Update radar if it exists (this rebuilds content and applies highlights)
-      if mini_radar.exists() then
-        mini_radar.update(config)
+      if radar.exists() then
+        radar.update(config)
       end
     end,
   })

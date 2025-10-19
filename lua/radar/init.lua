@@ -9,7 +9,7 @@ function M.setup(opts)
 
   require("radar.autocmd").setup(config)
   require("radar.keys").setup(config)
-  require("radar.persistence").populate(config, require("radar.ui.mini_radar"))
+  require("radar.persistence").populate(config, require("radar.ui.radar"))
 end
 
 return M
