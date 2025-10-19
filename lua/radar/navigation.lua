@@ -79,6 +79,11 @@ function M.open_file(filepath, open_cmd, config, mini_radar_module)
     local buf = vim.api.nvim_create_buf(false, true)
     local win = vim.api.nvim_open_win(buf, true, win_opts)
 
+    -- Apply window-local options
+    for opt, value in pairs(config.file_float.win_opts) do
+      vim.api.nvim_set_option_value(opt, value, { win = win })
+    end
+
     -- Now edit the file in the floating window (this triggers all autocmds, treesitter, etc.)
     ---@diagnostic disable-next-line: undefined-field
     vim.cmd.edit(path)

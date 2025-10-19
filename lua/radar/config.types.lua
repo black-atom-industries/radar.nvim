@@ -35,12 +35,15 @@
 ---@field max_recent_files integer
 ---@field show_empty_message boolean
 ---@field titles Radar.Config.Titles
+---@field win_opts table<string, any> Window-local options (see |options-list|)
 
 ---@class Radar.Config.RadarEdit
 ---@field win_preset Radar.Config.WinPreset|string
+---@field win_opts table<string, any> Window-local options (see |options-list|)
 
 ---@class Radar.Config.FileFloat
 ---@field win_preset Radar.Config.WinPreset|string
+---@field win_opts table<string, any> Window-local options (see |options-list|)
 
 ---@class Radar.Config
 ---@field keys Radar.Config.Keys

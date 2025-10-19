@@ -212,6 +212,11 @@ function M.edit_locks(radar_config, mini_radar_module)
   local edit_win = vim.api.nvim_open_win(edit_buf, true, win_opts)
   state.edit_winid = edit_win
 
+  -- Apply window-local options
+  for opt, value in pairs(radar_config.radar_edit.win_opts) do
+    vim.api.nvim_set_option_value(opt, value, { win = edit_win })
+  end
+
   -- Set up buffer autocmds for save and close
   setup_edit_autocmds(edit_buf, radar_config, mini_radar_module)
 

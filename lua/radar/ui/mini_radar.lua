@@ -330,6 +330,11 @@ function M.create(config)
   -- Set window transparency
   vim.api.nvim_set_option_value("winblend", config.radar.winblend, { win = new_win })
 
+  -- Apply window-local options
+  for opt, value in pairs(config.radar.win_opts) do
+    vim.api.nvim_set_option_value(opt, value, { win = new_win })
+  end
+
   -- Apply all highlights
   M.apply_highlights(config)
 end
