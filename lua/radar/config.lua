@@ -7,7 +7,9 @@ M.default = {
     lock = "l",
     locks = { "1", "2", "3", "4", "5", "6", "7", "8", "9" },
     alternative = "o",
-    recent = { "a", "s", "d", "f", "g" },
+    recent = { "q", "w", "e", "r", "t" },
+    modified = { "a", "s", "d", "f", "g" },
+    pull_request = { "z", "x", "c", "v", "b" },
     vertical = "<C-v>",
     horizontal = "<C-s>",
     tab = "<C-t>",
@@ -31,7 +33,7 @@ M.default = {
 
   -- Main radar window
   radar = {
-    grid_size = { width = 100, height = 20 },
+    grid_size = { width = 135, height = 35 },
     position = "center",
     winblend = 0,
     max_recent_files = 20,
@@ -41,6 +43,8 @@ M.default = {
       locks = "󰋱  LOCKED IN",
       alternative = "  OTHER",
       recent = "󰽏  NEAR",
+      modified = "󰷉  GIT STATUS",
+      pull_request = "  PULL REQUEST",
       hints = "  KEYS",
     },
     win_opts = {

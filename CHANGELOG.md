@@ -7,9 +7,14 @@
 - [ ] fix: Keep order of Recent list if contents remain the same
   - Currently choosing a entry from the recents will put it in the a slot
 
-## 2025.09.20 - Saturday
+## 2025.10.20 - Monday 
 
-- [ ] feat: New Plugin Structure
+- [x] Fix Number Labels in PR section
+- [x] Cache PR request on VimEnter and use the last commit hash to indicate needed validations
+
+ 2025.09.20 - Saturday
+
+- [x] feat: New Plugin Structure
 
 ## 2025.09.19 - Friday
 

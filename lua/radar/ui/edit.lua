@@ -9,7 +9,7 @@ local function calculate_window_width(radar_module)
   local state = require("radar.state")
   -- Check locked files
   for _, lock in ipairs(state.locks) do
-    local formatted_path = radar_module.get_formatted_filepath(lock.filename)
+    local formatted_path = vim.fn.fnamemodify(lock.filename, ":p:.")
     local entry_text = string.format("   [%s] %s  ", lock.label, formatted_path)
     max_width = math.max(max_width, vim.fn.strdisplaywidth(entry_text))
   end
@@ -184,7 +184,7 @@ function M.edit_locks(radar_config, radar_module)
   -- Create buffer lines: just the filepaths (labels assigned by line order)
   local lines = {}
   for _, lock in ipairs(state.locks) do
-    local formatted_path = radar_module.get_formatted_filepath(lock.filename)
+    local formatted_path = vim.fn.fnamemodify(lock.filename, ":p:.")
     table.insert(lines, formatted_path)
   end
 

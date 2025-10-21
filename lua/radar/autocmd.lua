@@ -9,6 +9,10 @@ function M.setup(config)
     nested = true,
     group = autogrp("radar.VimEnter", { clear = true }),
     callback = function()
+      -- Initialize PR cache asynchronously
+      local git = require("radar.git")
+      git.init_pr_cache()
+
       -- Update recent files now that vim.v.oldfiles is loaded
       local recent = require("radar.recent")
       local radar = require("radar.ui.radar")
@@ -51,6 +55,16 @@ function M.setup(config)
       if radar.exists() then
         radar.update(config)
       end
+    end,
+  })
+
+  -- Invalidate PR cache after git operations
+  autocmd("BufWritePost", {
+    pattern = { "COMMIT_EDITMSG", "MERGE_MSG", ".git/rebase-merge/*" },
+    group = autogrp("radar.GitOps", { clear = true }),
+    callback = function()
+      local git = require("radar.git")
+      git.refresh_pr_cache()
     end,
   })
 end

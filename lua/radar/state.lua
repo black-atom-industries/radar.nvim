@@ -6,9 +6,22 @@ local M = {
   recent_files = {},
   ---@type string[]
   session_files = {},
-  ---@type { alternative: integer?, locks: integer?, recent: integer?, hints: integer? }?
+  ---@type { path: string, staged: string, unstaged: string }[]
+  modified_files = {},
+  ---@type { path: string, staged: string, unstaged: string }[]
+  pr_files = {},
+  ---@type boolean
+  has_pr = false,
+  ---@type { files: { path: string, staged: string, unstaged: string }[], has_pr: boolean, commit_hash: string?, is_loading: boolean }
+  pr_cache = {
+    files = {},
+    has_pr = false,
+    commit_hash = nil,
+    is_loading = false,
+  },
+  ---@type { alternative: integer?, locks: integer?, recent: integer?, modified: integer?, pull_request: integer? }?
   radar_windows = nil,
-  ---@type "locks" | "recent"?
+  ---@type "locks" | "recent" | "modified" | "pull_request"?
   focused_section = nil,
   ---@type integer?
   edit_winid = nil,

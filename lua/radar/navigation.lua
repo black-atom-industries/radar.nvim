@@ -2,7 +2,7 @@ local M = {}
 
 ---Get file path from current line in radar window
 ---@param config Radar.Config
----@param section "locks" | "recent"
+---@param section "locks" | "recent" | "modified" | "pull_request"
 ---@return string? filepath
 function M.get_file_from_line(config, section)
   local state = require("radar.state")
@@ -30,6 +30,14 @@ function M.get_file_from_line(config, section)
   elseif section == "recent" then
     if entry_index > 0 and entry_index <= #state.recent_files then
       return state.recent_files[entry_index]
+    end
+  elseif section == "modified" then
+    if entry_index > 0 and entry_index <= #state.modified_files then
+      return state.modified_files[entry_index].path
+    end
+  elseif section == "pull_request" then
+    if entry_index > 0 and entry_index <= #state.pr_files then
+      return state.pr_files[entry_index].path
     end
   end
 
@@ -146,11 +154,45 @@ function M.open_recent(label, open_cmd, config, radar_module)
   end
 end
 
+---Open modified file by label
+---@param label string
+---@param open_cmd? string Command to open file (edit, vsplit, split, tabedit, float)
+---@param config Radar.Config
+---@param radar_module table
+---@return nil
+function M.open_modified(label, open_cmd, config, radar_module)
+  local state = require("radar.state")
+  -- Find the modified file by label
+  for i, modified_label in ipairs(config.keys.modified) do
+    if modified_label == label and state.modified_files[i] then
+      M.open_file(state.modified_files[i].path, open_cmd, config, radar_module)
+      return
+    end
+  end
+end
+
+---Open PR file by label
+---@param label string
+---@param open_cmd? string Command to open file (edit, vsplit, split, tabedit, float)
+---@param config Radar.Config
+---@param radar_module table
+---@return nil
+function M.open_pr(label, open_cmd, config, radar_module)
+  local state = require("radar.state")
+  -- Find the PR file by label
+  for i, pr_label in ipairs(config.keys.pull_request) do
+    if pr_label == label and state.pr_files[i] then
+      M.open_file(state.pr_files[i].path, open_cmd, config, radar_module)
+      return
+    end
+  end
+end
+
 ---Open file from current line in radar window
 ---@param open_cmd? string Command to open file (edit, vsplit, split, tabedit, float)
 ---@param config Radar.Config
 ---@param radar_module table
----@param section "locks" | "recent"
+---@param section "locks" | "recent" | "modified" | "pull_request"
 ---@return nil
 function M.open_file_from_line(open_cmd, config, radar_module, section)
   local filepath = M.get_file_from_line(config, section)
