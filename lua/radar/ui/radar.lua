@@ -1,5 +1,12 @@
 local M = {}
 
+---Format file path to relative path from cwd
+---@param path string
+---@return string
+function M.get_formatted_filepath(path)
+  return vim.fn.fnamemodify(path, ":p:.")
+end
+
 ---Calculate position based on config position setting
 ---@param config Radar.Config
 ---@return { row: integer, col: integer }
