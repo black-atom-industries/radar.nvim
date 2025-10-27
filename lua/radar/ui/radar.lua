@@ -214,7 +214,7 @@ local function create_alternative_window(layout, config)
     width = layout.alternative.width,
     height = layout.alternative.height,
     style = "minimal",
-    border = "solid",
+    border = config.radar.border,
     title = " " .. config.radar.titles.alternative .. " ",
     title_pos = "left",
     focusable = false, -- Non-focusable indicator
@@ -319,7 +319,7 @@ local function create_locks_window(layout, config, should_focus)
     width = layout.locks.width,
     height = layout.locks.height,
     style = "minimal",
-    border = "solid",
+    border = config.radar.border,
     title = " " .. config.radar.titles.locks .. " ",
     title_pos = "left",
     focusable = true,
@@ -388,12 +388,16 @@ local function create_recent_window(layout, config, should_focus)
 
   if #state.recent_files > 0 then
     for i, filename in ipairs(state.recent_files) do
-      local label = config.keys.recent[i]
+      local label = config.keys.recent[i] -- Will be nil after exhausting keybindings
+      local path = vim.fn.fnamemodify(filename, ":p:.")
+      local entry
       if label then
-        local path = vim.fn.fnamemodify(filename, ":p:.")
-        local entry = string.format(" [%s] %s", label, path)
-        table.insert(lines, entry)
+        entry = string.format(" [%s] %s", label, path)
+      else
+        -- Show without keybinding label for files beyond the keybinding list
+        entry = string.format("     %s", path)
       end
+      table.insert(lines, entry)
     end
   else
     if config.radar.show_empty_message then
@@ -425,7 +429,7 @@ local function create_recent_window(layout, config, should_focus)
     width = layout.recent.width,
     height = layout.recent.height,
     style = "minimal",
-    border = "solid",
+    border = config.radar.border,
     title = " " .. config.radar.titles.recent .. " ",
     title_pos = "left",
     focusable = true,
@@ -485,7 +489,7 @@ local function create_hints_window(layout, config)
     width = layout.hints.width,
     height = layout.hints.height,
     style = "minimal",
-    border = "solid",
+    border = config.radar.border,
     focusable = false, -- Non-focusable overlay
     zindex = 101, -- Higher than other windows
   }

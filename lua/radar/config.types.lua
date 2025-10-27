@@ -38,6 +38,7 @@
 
 ---@class Radar.Config.Radar
 ---@field grid_size Radar.Config.GridSize
+---@field border? string Border style (see |nvim_open_win()| 'border' option)
 ---@field position Radar.Config.Position
 ---@field winblend integer
 ---@field max_recent_files integer

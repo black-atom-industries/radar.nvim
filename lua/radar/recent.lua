@@ -36,7 +36,7 @@ function M.get_files(config)
         table.insert(recent_files, filepath)
         seen_files[filepath] = true
 
-        if #recent_files >= #config.keys.recent then
+        if #recent_files >= config.radar.max_recent_files then
           return recent_files
         end
       end
@@ -49,7 +49,7 @@ function M.get_files(config)
     if
       not seen_files[filepath]
       and not excluded_files[filepath]
-      and #recent_files < #config.keys.recent
+      and #recent_files < config.radar.max_recent_files
     then
       -- Only include files from current working directory
       if vim.startswith(filepath, cwd) and vim.fn.filereadable(filepath) == 1 then
