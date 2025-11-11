@@ -1,28 +1,5 @@
 local M = {}
-
----Sort projects alphabetically
----@param projects table
----@return table
-local function sort_projects(projects)
-  if not projects then
-    return {}
-  end
-
-  -- Get all project paths and sort them
-  local sorted_keys = {}
-  for project_path, _ in pairs(projects) do
-    table.insert(sorted_keys, project_path)
-  end
-  table.sort(sorted_keys)
-
-  -- Build new table with sorted keys
-  local sorted_projects = {}
-  for _, project_path in ipairs(sorted_keys) do
-    sorted_projects[project_path] = projects[project_path]
-  end
-
-  return sorted_projects
-end
+local utils = require("radar.utils")
 
 ---Get list of branches for a git project
 ---@param project_path string
@@ -189,7 +166,7 @@ function M.cleanup(config, opts)
   end
 
   -- Sort projects alphabetically before writing
-  new_data.projects = sort_projects(new_data.projects)
+  new_data.projects = utils.sort_projects(new_data.projects)
 
   -- Write cleaned data if not dry run
   if not dry_run then

@@ -1,28 +1,5 @@
 local M = {}
-
----Sort projects alphabetically
----@param projects table
----@return table
-local function sort_projects(projects)
-  if not projects then
-    return {}
-  end
-
-  -- Get all project paths and sort them
-  local sorted_keys = {}
-  for project_path, _ in pairs(projects) do
-    table.insert(sorted_keys, project_path)
-  end
-  table.sort(sorted_keys)
-
-  -- Build new table with sorted keys
-  local sorted_projects = {}
-  for _, project_path in ipairs(sorted_keys) do
-    sorted_projects[project_path] = projects[project_path]
-  end
-
-  return sorted_projects
-end
+local utils = require("radar.utils")
 
 ---Write table to file as JSON
 ---@param path string
@@ -38,12 +15,13 @@ function M.write(path, tbl)
   -- Pretty-print with jq if available (async, non-blocking)
   -- Sort projects alphabetically and maintain version as first key
   if ok then
+    local escaped_path = vim.fn.shellescape(path)
     local jq_cmd = string.format(
       "jq '{version: .version, projects: (.projects | to_entries | sort_by(.key) | from_entries)}' %s > %s.tmp && mv %s.tmp %s",
-      path,
-      path,
-      path,
-      path
+      escaped_path,
+      escaped_path,
+      escaped_path,
+      escaped_path
     )
     vim.fn.jobstart(jq_cmd, {
       on_exit = function(_, exit_code)
@@ -147,18 +125,19 @@ function M.persist(config)
     end
 
     -- Construct data with version first, then deep extend projects
-    local merged_projects = vim.tbl_deep_extend("force", persisted_data.projects or {}, {
-      [project_path] = {
-        [git_branch] = {
-          locks = state.locks,
-          lastAccessed = current_time,
+    local merged_projects =
+      vim.tbl_deep_extend("force", persisted_data.projects or {}, {
+        [project_path] = {
+          [git_branch] = {
+            locks = state.locks,
+            lastAccessed = current_time,
+          },
         },
-      },
-    })
+      })
 
     data = {
       version = 1,
-      projects = sort_projects(merged_projects),
+      projects = utils.sort_projects(merged_projects),
     }
   end
 
@@ -192,7 +171,7 @@ function M.populate(config)
         -- Reconstruct data with version first and sorted projects
         local updated_data = {
           version = data.version or 1,
-          projects = sort_projects(data.projects),
+          projects = utils.sort_projects(data.projects),
         }
 
         -- Write updated data back to file

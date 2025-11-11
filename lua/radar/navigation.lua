@@ -18,7 +18,6 @@ function M.get_file_from_line(config, section)
 
   local bufid = vim.api.nvim_win_get_buf(winid)
   local current_line_nr = vim.api.nvim_win_get_cursor(winid)[1]
-  local lines = vim.api.nvim_buf_get_lines(bufid, 0, -1, false)
 
   -- Line number directly maps to entry index
   local entry_index = current_line_nr
