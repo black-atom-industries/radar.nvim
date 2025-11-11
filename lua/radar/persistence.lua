@@ -1,5 +1,29 @@
 local M = {}
 
+---Sort projects alphabetically
+---@param projects table
+---@return table
+local function sort_projects(projects)
+  if not projects then
+    return {}
+  end
+
+  -- Get all project paths and sort them
+  local sorted_keys = {}
+  for project_path, _ in pairs(projects) do
+    table.insert(sorted_keys, project_path)
+  end
+  table.sort(sorted_keys)
+
+  -- Build new table with sorted keys
+  local sorted_projects = {}
+  for _, project_path in ipairs(sorted_keys) do
+    sorted_projects[project_path] = projects[project_path]
+  end
+
+  return sorted_projects
+end
+
 ---Write table to file as JSON
 ---@param path string
 ---@param tbl table
@@ -12,10 +36,10 @@ function M.write(path, tbl)
   end)
 
   -- Pretty-print with jq if available (async, non-blocking)
-  -- Explicitly specify key order: version first, then projects
+  -- Sort projects alphabetically and maintain version as first key
   if ok then
     local jq_cmd = string.format(
-      "jq '{version: .version, projects: .projects}' %s > %s.tmp && mv %s.tmp %s",
+      "jq '{version: .version, projects: (.projects | to_entries | sort_by(.key) | from_entries)}' %s > %s.tmp && mv %s.tmp %s",
       path,
       path,
       path,
@@ -123,16 +147,18 @@ function M.persist(config)
     end
 
     -- Construct data with version first, then deep extend projects
+    local merged_projects = vim.tbl_deep_extend("force", persisted_data.projects or {}, {
+      [project_path] = {
+        [git_branch] = {
+          locks = state.locks,
+          lastAccessed = current_time,
+        },
+      },
+    })
+
     data = {
       version = 1,
-      projects = vim.tbl_deep_extend("force", persisted_data.projects or {}, {
-        [project_path] = {
-          [git_branch] = {
-            locks = state.locks,
-            lastAccessed = current_time,
-          },
-        },
-      }),
+      projects = sort_projects(merged_projects),
     }
   end
 
@@ -163,10 +189,10 @@ function M.populate(config)
       if data.projects[project_path] and data.projects[project_path][git_branch] then
         data.projects[project_path][git_branch].lastAccessed = current_time
 
-        -- Reconstruct data with version first to maintain key order
+        -- Reconstruct data with version first and sorted projects
         local updated_data = {
           version = data.version or 1,
-          projects = data.projects,
+          projects = sort_projects(data.projects),
         }
 
         -- Write updated data back to file
