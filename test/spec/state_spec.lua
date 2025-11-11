@@ -13,9 +13,13 @@ describe("state", function()
     state.locks = {}
     state.recent_files = {}
     state.session_files = {}
-    state.mini_radar_winid = nil
+    state.radar_windows = nil
+    state.focused_section = nil
     state.edit_winid = nil
     state.edit_bufid = nil
+    state.source_bufnr = nil
+    state.source_alt_file = nil
+    state.switching_focus = false
   end
 
   describe("get_lock_by_field", function()
@@ -59,9 +63,13 @@ describe("state", function()
       MiniTest.expect.equality(type(state.locks), "table")
       MiniTest.expect.equality(type(state.recent_files), "table")
       MiniTest.expect.equality(type(state.session_files), "table")
-      MiniTest.expect.equality(state.mini_radar_winid, nil)
+      MiniTest.expect.equality(state.radar_windows, nil)
+      MiniTest.expect.equality(state.focused_section, nil)
       MiniTest.expect.equality(state.edit_winid, nil)
       MiniTest.expect.equality(state.edit_bufid, nil)
+      MiniTest.expect.equality(state.source_bufnr, nil)
+      MiniTest.expect.equality(state.source_alt_file, nil)
+      MiniTest.expect.equality(state.switching_focus, false)
     end)
   end)
 end)
