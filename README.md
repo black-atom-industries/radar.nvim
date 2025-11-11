@@ -137,6 +137,34 @@ This spatial keyboard layout gives you instant access to **24 files** without mo
 
 Locks are automatically saved and restored per project and git branch, so switching between projects or branches maintains separate lock sets.
 
+### Data Cleanup
+
+Over time, your persistence data file can accumulate entries for deleted branches or old projects. Use the cleanup command to remove stale entries:
+
+```vim
+:RadarCleanup          " Remove entries for branches that no longer exist
+:RadarCleanup --dry-run  " Preview what would be deleted without making changes
+```
+
+**What gets cleaned:**
+- Entries for projects whose directories no longer exist
+- Entries for git branches that have been deleted
+- Current branch is always preserved (fail-safe)
+
+**From Lua:**
+```lua
+require("radar").cleanup()                    -- Remove stale entries
+require("radar").cleanup({ dry_run = true })  -- Preview only
+```
+
+**Future capability (v1.0+):**
+```lua
+-- Remove entries not accessed in 90+ days (in addition to deleted branches)
+require("radar").cleanup({ older_than_days = 90 })
+```
+
+The cleanup command helps keep your data file tidy without affecting functionality. All changes are pretty-formatted for easy manual inspection.
+
 ## 🧪 Testing
 
 This plugin includes comprehensive tests using [mini.test](https://github.com/echasnovski/mini.test) with busted-style syntax.
@@ -207,6 +235,9 @@ This is a **learning project** demonstrating:
 
 - [x] File locking with 1-9 keybindings
 - [x] Context-aware persistence (per project + git branch)
+- [x] Data versioning and automatic migration
+- [x] Data cleanup command for stale branches
+- [x] Last accessed tracking for future time-based cleanup
 - [x] Dynamic highlighting of current file
 - [x] Floating window UI with customizable presets
 - [x] Recent files section (vim.v.oldfiles integration)
@@ -218,6 +249,7 @@ This is a **learning project** demonstrating:
 
 ### 🎯 Future (v1.0+)
 
+- [ ] Time-based cleanup (remove entries not accessed in X days)
 - [ ] Modified files section (git integration)
 - [ ] PR files section (branch changes)
 - [ ] Full radar view (on-demand comprehensive view)
