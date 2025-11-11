@@ -66,11 +66,16 @@
 ---@field label string
 ---@field filename string
 
----@class Radar.ProjectData
----@field locks Radar.Lock[]
-
 ---@class Radar.BranchData
----@field [string] Radar.ProjectData
+---@field locks Radar.Lock[]
+---@field lastAccessed number
+
+---@class Radar.ProjectBranches
+---@field [string] Radar.BranchData
+
+---@class Radar.Projects
+---@field [string] Radar.ProjectBranches
 
 ---@class Radar.PersistenceData
----@field [string] Radar.BranchData
+---@field version number
+---@field projects Radar.Projects
