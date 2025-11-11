@@ -13,11 +13,21 @@ function M.write(path, tbl)
   end)
 
   -- Pretty-print with jq if available (async, non-blocking)
-  -- Sort projects alphabetically and maintain version as first key
+  -- Recursively sort all object keys for deterministic output
   if ok then
     local escaped_path = vim.fn.shellescape(path)
+    -- Explicit object construction to ensure consistent key order:
+    -- Top level: version, projects
+    -- Project level: alphabetically sorted project paths
+    -- Branch level: alphabetically sorted branch names
+    -- Branch data: locks, lastAccessed
+    -- Lock objects: filename, label
+    local jq_filter = [[ {version:.version,projects:(.projects|to_entries|sort_by(.key)|map(.value=(]]
+      .. [[.value|to_entries|sort_by(.key)|map(.value={locks:(.value.locks|map({filename,label})),]]
+      .. [[lastAccessed:.value.lastAccessed})|from_entries))|from_entries)} ]]
     local jq_cmd = string.format(
-      "jq '{version: .version, projects: (.projects | to_entries | sort_by(.key) | from_entries)}' %s > %s.tmp && mv %s.tmp %s",
+      "jq '%s' %s > %s.tmp && mv %s.tmp %s",
+      jq_filter,
       escaped_path,
       escaped_path,
       escaped_path,
