@@ -89,9 +89,15 @@ end
 function M.lock_current_buffer(buf_nr, config, persistence_module, radar_module)
   buf_nr = buf_nr or vim.api.nvim_get_current_buf()
 
-  -- Don't lock non-file buffers (like the radar window itself)
+  -- Don't lock radar-related buffers
+  local filetype = vim.api.nvim_get_option_value("filetype", { buf = buf_nr })
+  if filetype == "radar" or filetype == "radar-edit" then
+    return
+  end
+
+  -- Don't lock terminal buffers
   local buftype = vim.api.nvim_get_option_value("buftype", { buf = buf_nr })
-  if buftype ~= "" then
+  if buftype == "terminal" then
     return
   end
 
@@ -102,8 +108,11 @@ function M.lock_current_buffer(buf_nr, config, persistence_module, radar_module)
     return
   end
 
-  -- Normalize filename to match the format used in UI (relative to cwd)
-  local normalized_filename = vim.fn.fnamemodify(filename, ":p:.")
+  -- Keep protocol URLs as-is (gh://, fugitive://, etc.), normalize regular paths
+  local normalized_filename = filename
+  if not filename:match("^%w+://") then
+    normalized_filename = vim.fn.fnamemodify(filename, ":p:.")
+  end
 
   M.toggle(normalized_filename, config, persistence_module)
 

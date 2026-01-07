@@ -186,12 +186,12 @@ local function create_alternative_window(layout, config)
   -- Build content (no title - shown in window border)
   local lines = {}
 
+  local label = config.keys.alternative or config.keys.prefix
   if alt_file then
     local path = vim.fn.fnamemodify(alt_file, ":p:.")
-    local label = config.keys.alternative
     table.insert(lines, string.format(" [%s] %s", label, path))
   else
-    table.insert(lines, " [o] - No other file yet")
+    table.insert(lines, string.format(" [%s] - No other file yet", label))
   end
 
   -- Create buffer

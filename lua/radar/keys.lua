@@ -80,8 +80,9 @@ function M.setup_common_keymaps(bufnr, config, radar, opts)
     locks.lock_current_buffer(state.source_bufnr, config, persistence, radar)
   end, vim.tbl_extend("force", opts, { desc = "Lock source buffer" }))
 
-  -- Alternative file
-  register_split_variants(bufnr, config.keys.alternative, function(cmd)
+  -- Alternative file (defaults to prefix for double-tap behavior)
+  local alt_key = config.keys.alternative or config.keys.prefix
+  register_split_variants(bufnr, alt_key, function(cmd)
     local navigation = require("radar.navigation")
     navigation.open_alternative(cmd, config, radar)
   end, "Open alternative file", config)

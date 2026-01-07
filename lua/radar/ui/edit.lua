@@ -60,9 +60,12 @@ function M.save_buffer(edit_buf, radar_config, radar_module)
       -- Trim whitespace from filepath
       local filepath = line:match("^%s*(.-)%s*$")
 
-      -- Validate filepath exists (expand to full path)
-      local full_path = vim.fn.expand(filepath)
-      if not vim.fn.filereadable(full_path) then
+      -- Protocol URLs (gh://, fugitive://, etc.) are valid without file check
+      local is_protocol_url = filepath:match("^%w+://")
+      local full_path = is_protocol_url and filepath or vim.fn.expand(filepath)
+
+      -- Validate regular filepaths exist
+      if not is_protocol_url and vim.fn.filereadable(full_path) ~= 1 then
         table.insert(
           errors,
           string.format("Line %d: File not found: %s", i, filepath)
@@ -127,9 +130,11 @@ function M.open_file_from_edit(edit_buf, open_cmd, radar_config, radar_module)
 
   -- Extract and expand filepath
   local filepath = line:match("^%s*(.-)%s*$")
-  local full_path = vim.fn.expand(filepath)
+  local is_protocol_url = filepath:match("^%w+://")
+  local full_path = is_protocol_url and filepath or vim.fn.expand(filepath)
 
-  if not vim.fn.filereadable(full_path) then
+  -- Only validate regular filepaths
+  if not is_protocol_url and vim.fn.filereadable(full_path) ~= 1 then
     vim.notify(string.format("File not found: %s", filepath), vim.log.levels.ERROR)
     return
   end
@@ -163,13 +168,15 @@ end
 ---@return nil
 function M.edit_locks(radar_config, radar_module)
   local state = require("radar.state")
-  if #state.locks == 0 then
-    vim.notify("No locks to edit", vim.log.levels.WARN)
-    return
-  end
 
   -- Close radar window before opening edit window
   radar_module.close()
+
+  -- Clean up any existing edit buffer with the same name (handles orphaned buffers)
+  local existing_buf = vim.fn.bufnr("radar-locks")
+  if existing_buf ~= -1 then
+    vim.api.nvim_buf_delete(existing_buf, { force = true })
+  end
 
   -- Create editable buffer
   local edit_buf = vim.api.nvim_create_buf(false, false)
@@ -193,7 +200,7 @@ function M.edit_locks(radar_config, radar_module)
   -- Open floating window with dynamic sizing
   local calculated_width = calculate_window_width(radar_module)
   local win_width = calculated_width + 10 -- Add padding
-  local win_height = math.min(#lines + 2, 20) -- max_height
+  local win_height = math.max(math.min(#lines + 2, 20), 5) -- min 5, max 20
 
   -- Resolve window config from preset with dynamic width/height
   local window = require("radar.window")
