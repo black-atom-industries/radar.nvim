@@ -1,3 +1,8 @@
+---@class Radar.TabsLineMapping
+---@field tabid integer
+---@field winid integer?
+---@field filepath string?
+
 ---@class Radar.State
 local M = {
   ---@type Radar.Lock[]
@@ -20,6 +25,12 @@ local M = {
   source_alt_file = nil,
   ---@type boolean
   switching_focus = false,
+  ---@type integer?
+  tabs_winid = nil,
+  ---@type integer?
+  tabs_bufid = nil,
+  ---@type Radar.TabsLineMapping[]
+  tabs_line_mapping = {},
 }
 
 ---Check if all radar windows are valid
@@ -65,6 +76,23 @@ function M.get_lock_by_field(field, value)
       return lock
     end
   end
+end
+
+---Check if tabs window is valid
+---@return boolean
+function M.is_tabs_window_valid()
+  return M.tabs_winid ~= nil and vim.api.nvim_win_is_valid(M.tabs_winid)
+end
+
+---Close tabs window if valid
+---@return nil
+function M.close_tabs_window()
+  if M.tabs_winid and vim.api.nvim_win_is_valid(M.tabs_winid) then
+    vim.api.nvim_win_close(M.tabs_winid, false)
+  end
+  M.tabs_winid = nil
+  M.tabs_bufid = nil
+  M.tabs_line_mapping = {}
 end
 
 return M

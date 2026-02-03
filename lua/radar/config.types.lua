@@ -18,6 +18,7 @@
 ---@field tab string
 ---@field float string
 ---@field line Radar.Config.Keys.Line
+---@field tabs_toggle string
 
 ---@class Radar.Config.Persist
 ---@field path string
@@ -54,6 +55,11 @@
 ---@field win_preset Radar.Config.WinPreset|string
 ---@field win_opts table<string, any> Window-local options (see |options-list|)
 
+---@class Radar.Config.Tabs
+---@field auto_close boolean Close window after selecting a tab/buffer
+---@field win_preset Radar.Config.WinPreset|string Window preset name
+---@field win_opts table<string, any> Window-local options (see |options-list|)
+
 ---@class Radar.Config
 ---@field keys Radar.Config.Keys
 ---@field persist Radar.Config.Persist
@@ -61,6 +67,7 @@
 ---@field radar Radar.Config.Radar
 ---@field radar_edit Radar.Config.RadarEdit
 ---@field file_float Radar.Config.FileFloat
+---@field tabs Radar.Config.Tabs
 
 ---@class Radar.Lock
 ---@field label string

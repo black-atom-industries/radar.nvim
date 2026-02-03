@@ -19,6 +19,7 @@ M.default = {
       tab = "T",
       float = "F",
     },
+    tabs_toggle = "<leader>t",
   },
 
   persist = {
@@ -32,7 +33,7 @@ M.default = {
   -- Main radar window
   radar = {
     grid_size = { width = 125, height = 20 },
-    border = "solid",
+    border = "single",
     position = "center",
     winblend = 0,
     max_recent_files = 25,
@@ -71,6 +72,17 @@ M.default = {
       relativenumber = true,
       cursorline = true,
       wrap = true,
+    },
+  },
+
+  -- Tabs floating window
+  tabs = {
+    auto_close = true,
+    win_preset = "center",
+    win_opts = {
+      number = false,
+      cursorline = true,
+      wrap = false,
     },
   },
 }

@@ -10,6 +10,11 @@ function M.setup(config)
   vim.keymap.set("n", config.keys.prefix, function()
     radar.toggle(config)
   end, { desc = "Toggle Radar" })
+
+  -- Tabs sidebar toggle
+  vim.keymap.set("n", config.keys.tabs_toggle, function()
+    require("radar.ui.tabs").toggle(config)
+  end, { desc = "Toggle Tabs Sidebar" })
 end
 
 ---Helper to register all split mode keymaps for a single action

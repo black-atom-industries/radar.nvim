@@ -53,6 +53,17 @@ function M.setup(config)
       end
     end,
   })
+
+  -- Tabs sidebar updates
+  autocmd({ "BufEnter", "TabEnter", "TabClosed", "WinEnter" }, {
+    group = autogrp("radar.TabsUpdate", { clear = true }),
+    callback = function()
+      local tabs_ui = require("radar.ui.tabs")
+      if tabs_ui.exists() then
+        tabs_ui.update(config)
+      end
+    end,
+  })
 end
 
 return M
