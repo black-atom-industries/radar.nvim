@@ -98,6 +98,11 @@ local function setup_keymaps(bufnr, config)
   vim.keymap.set("n", "<Esc>", function()
     M.close()
   end, vim.tbl_extend("force", opts, { desc = "Close tabs window" }))
+
+  -- Delete buffer / close tab
+  vim.keymap.set("n", "x", function()
+    M.delete_line(config)
+  end, vim.tbl_extend("force", opts, { desc = "Delete buffer/close tab" }))
 end
 
 ---Open the tabs floating window
@@ -185,6 +190,56 @@ function M.update(config)
 
   -- Re-apply highlights
   apply_highlights(bufnr, tabs_data)
+end
+
+---Delete the buffer or close the tab on the current line
+---@param config Radar.Config
+---@return nil
+function M.delete_line(config)
+  if not M.exists() then
+    return
+  end
+
+  local cursor = vim.api.nvim_win_get_cursor(state.tabs_winid)
+  local line_num = cursor[1]
+  local item = state.tabs_line_mapping[line_num]
+
+  if not item or not item.tabid then
+    return
+  end
+
+  if item.winid then
+    -- Buffer line: close the window (not the buffer, which may be open elsewhere)
+    local ok, err = pcall(vim.api.nvim_win_close, item.winid, false)
+    if not ok then
+      vim.notify("Cannot close window: " .. err, vim.log.levels.WARN)
+      return
+    end
+  else
+    -- Tab header line: close the tab
+    local tab_count = #vim.api.nvim_list_tabpages()
+    if tab_count <= 1 then
+      vim.notify("Cannot close the last tab", vim.log.levels.WARN)
+      return
+    end
+
+    local ok, err = pcall(vim.cmd, "tabclose " .. vim.api.nvim_tabpage_get_number(item.tabid))
+    if not ok then
+      vim.notify("Cannot close tab: " .. err, vim.log.levels.WARN)
+      return
+    end
+  end
+
+  -- Refresh the tabs window
+  M.update(config)
+
+  -- Clamp cursor if past the new last line
+  if M.exists() and state.tabs_bufid and vim.api.nvim_buf_is_valid(state.tabs_bufid) then
+    local new_count = vim.api.nvim_buf_line_count(state.tabs_bufid)
+    if line_num > new_count then
+      vim.api.nvim_win_set_cursor(state.tabs_winid, { math.max(1, new_count), 0 })
+    end
+  end
 end
 
 ---Jump to the tab/buffer on the current line
