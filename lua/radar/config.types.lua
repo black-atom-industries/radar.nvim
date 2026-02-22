@@ -11,7 +11,7 @@
 ---@field prefix string
 ---@field lock string
 ---@field locks string[]
----@field alternative string
+---@field alternative string?
 ---@field recent string[]
 ---@field vertical string
 ---@field horizontal string

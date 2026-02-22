@@ -4,66 +4,50 @@
 
 A Neovim plugin that treats file navigation like a fighter pilot's radar system. Your most important files are "locked targets" that you can instantly access, while other files appear as "blips" on your radar for quick identification and engagement.
 
-## ✨ Concept
+## Concept
 
 `radar.nvim` provides **instant access** to your working files through spatial keyboard shortcuts, eliminating the need for fuzzy finders or file trees for your active working set.
 
-- **📍 File Pinning**: Lock your most important files to slots 1-9 for instant access
-- **🎯 Smart Persistence**: Context-aware storage per project and git branch
-- **⚡ Dynamic Highlighting**: Auto-highlight the currently active pinned file
-- **🛡️ Robust Error Handling**: Graceful handling of special characters and edge cases
+- **File Pinning**: Lock your most important files to slots 1-9 for instant access
+- **Smart Persistence**: Context-aware storage per project and git branch
+- **Grid Layout**: Multi-section radar display with locks, recent files, and alternative file
+- **Tab Navigation**: Sidebar view of all open tabs and buffers
+- **Dynamic Highlighting**: Auto-highlight the currently active pinned file
 
 See also [Concept](./docs/concept.md)
-
-**Mini** Radar
-
-![](./assets/mini.png)
-
-**Full** Radar
-
-![](./assets/full.png)
 
 **Keybindings**
 
 ```
-[1][2][3][4][5][6][7][8][9]  ← Loks (manually locked targets)
-[q][w][e][r][t]              ← Modified files (git status)
+[1][2][3][4][5][6][7][8][9]  ← Locks (manually locked targets)
 [a][s][d][f][g]              ← Recent files (vim.v.oldfiles)
-[z][x][c][v][b]              ← PR files (branch changes)
+[<space>]                    ← Alternative file (test ↔ impl)
 ```
 
-This spatial keyboard layout gives you instant access to **24 files** without moving your left hand from home position.
+This spatial keyboard layout gives you instant access to **15 files** without moving your left hand from home position.
 
-## 📦 Installation
+## Installation
 
 ### Using [lazy.nvim](https://github.com/folke/lazy.nvim)
 
 ```lua
 {
   "black-atom-industries/radar.nvim",
-  opts = {
-    -- Optionally customize window preset
-    radar = {
-      win_preset = "top_right",  -- or "center", "center_large", "cursor", "bottom_center", "full_height_sidebar"
-    }
-  }
+  opts = {}
 }
 ```
 
 ### Configuration Examples
 
 **Simple customization:**
+
 ```lua
 {
   "black-atom-industries/radar.nvim",
   opts = {
-    -- Override a preset width
-    win_presets = {
-      center = { width = 100 }
-    },
-
     radar = {
-      win_preset = "center",
+      position = "top_right",  -- "center", "top_left", "top_right", "bottom_left", "bottom_right"
+      grid_size = { width = 140, height = 25 },
       max_recent_files = 10,
       titles = {
         main = "MY RADAR",
@@ -74,53 +58,79 @@ This spatial keyboard layout gives you instant access to **24 files** without mo
 }
 ```
 
-**Advanced customization:**
+**Customize tabs sidebar:**
+
 ```lua
 {
   "black-atom-industries/radar.nvim",
   opts = {
-    -- Create custom preset
-    win_presets = {
-      my_preset = function(config)
-        return {
-          relative = "editor",
-          width = 80,
-          height = 15,
-          row = 5,
-          col = vim.o.columns - 85,
-          border = "rounded",
-          style = "minimal",
-          title = config.radar.titles.main,
-          title_pos = "left",
-          focusable = true,
-          zindex = 100,
-        }
-      end
+    keys = {
+      tabs_toggle = "<leader>b",  -- default: "<leader>t"
     },
-
-    radar = {
-      win_preset = "my_preset"
+    tabs = {
+      auto_close = false,  -- keep open after selecting
+      win_preset = "center",
     }
   }
 }
 ```
 
-## 🎮 Usage
+## Configuration Reference
+
+For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). For all defaults see [`config.lua`](lua/radar/config.lua).
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `keys.prefix` | `"<space>"` | Toggle radar / alternative file (double-tap) |
+| `keys.lock` | `"l"` | Lock current buffer to a slot |
+| `keys.locks` | `{"1".."9"}` | Keys for lock slots |
+| `keys.recent` | `{"a".."g"}` | Keys for recent file slots |
+| `keys.tabs_toggle` | `"<leader>t"` | Toggle tabs sidebar |
+| `keys.alternative` | `nil` (= prefix) | Key for alternative file; nil defaults to prefix |
+| `keys.vertical` / `.horizontal` / `.tab` / `.float` | `<C-v>` / `<C-s>` / `<C-t>` / `<C-f>` | Split mode modifiers |
+| `radar.position` | `"center"` | Grid position: `center`, `top_left`, `top_right`, `bottom_left`, `bottom_right` |
+| `radar.grid_size` | `{ width = 125, height = 20 }` | Total grid dimensions |
+| `radar.border` | `"single"` | Border style (see `:h nvim_open_win`) |
+| `radar.max_recent_files` | `25` | Max recent files shown |
+| `radar.titles` | (nerd font icons) | Section titles for main, locks, alternative, recent, hints |
+| `radar.win_opts` | `{ cursorline = true, ... }` | Window-local options applied to radar buffers |
+| `tabs.auto_close` | `true` | Close tabs window after selecting |
+| `tabs.win_preset` | `"center"` | Window preset for tabs sidebar |
+| `radar_edit.win_preset` | `"center"` | Window preset for lock label editor |
+| `file_float.win_preset` | `"center_large"` | Window preset for floating file view |
+| `persist.path` | `stdpath("data")/radar/data.json` | Persistence file location |
+| `persist.defer_ms` | `500` | Debounce delay for saves |
+| `win_presets` | `{}` | Override or add custom window presets |
+
+**Available window presets** (for `win_preset` fields): `"center"`, `"center_large"`, `"cursor"`, `"top_right"`, `"bottom_center"`, `"full_height_sidebar"`
+
+## Usage
 
 ### Default Keybindings
 
 **Global:**
+
 - **`<space>`**: Toggle radar window
+- **`<leader>t`**: Toggle tabs sidebar
 
 **Within Radar Window:**
+
 - **`l`**: Lock current buffer (from source window)
 - **`1-9`**: Open locked files
 - **`a-g`**: Open recent files
 - **`<space>`**: Open alternative file (e.g., test ↔ implementation)
 - **`e`**: Edit lock labels
+- **`<Tab>` / `<S-Tab>`**: Cycle focus between sections
 - **`q` / `<Esc>`**: Close radar
 
+**Within Tabs Sidebar:**
+
+- **`<CR>`**: Jump to tab/buffer
+- **`x`**: Close buffer or tab
+- **`q` / `<Esc>`**: Close tabs sidebar
+
 **Line-based Navigation (within radar):**
+
 - **`<CR>`**: Open file under cursor
 - **`V`**: Open in vertical split
 - **`S`**: Open in horizontal split
@@ -128,6 +138,7 @@ This spatial keyboard layout gives you instant access to **24 files** without mo
 - **`F`**: Open in floating window
 
 **Split Modifiers (combine with 1-9, a-g, or `<space>`):**
+
 - **`<C-v>` + key**: Open in vertical split
 - **`<C-s>` + key**: Open in horizontal split
 - **`<C-t>` + key**: Open in new tab
@@ -147,45 +158,38 @@ Over time, your persistence data file can accumulate entries for deleted branche
 ```
 
 **What gets cleaned:**
+
 - Entries for projects whose directories no longer exist
 - Entries for git branches that have been deleted
 - Current branch is always preserved (fail-safe)
 
 **From Lua:**
+
 ```lua
 require("radar").cleanup()                    -- Remove stale entries
 require("radar").cleanup({ dry_run = true })  -- Preview only
 ```
 
-**Future capability (v1.0+):**
-```lua
--- Remove entries not accessed in 90+ days (in addition to deleted branches)
-require("radar").cleanup({ older_than_days = 90 })
-```
+## Testing
 
-The cleanup command helps keep your data file tidy without affecting functionality. All changes are pretty-formatted for easy manual inspection.
-
-## 🧪 Testing
-
-This plugin includes comprehensive tests using [mini.test](https://github.com/echasnovski/mini.test) with busted-style syntax.
+This plugin includes tests using [mini.test](https://github.com/echasnovski/mini.test) with busted-style syntax.
 
 ### Available Commands
 
-| Command | Description | Dependencies |
-|---------|-------------|--------------|
-| `make validate` | Validate test setup | None |
-| `make test` | Run all tests | None |
-| `make test-path` | Run only path utility tests | None |
-| `make test-watch` | Watch for changes and run tests | `entr` (`brew install entr`) |
-| `make lint` | Lint Lua files | `stylua` (`brew install stylua`) |
-| `make format` | Format Lua files | `stylua` (`brew install stylua`) |
-| `make clean` | Clean test artifacts | None |
-| `make help` | Show all available commands | None |
-
-### Test Coverage
-
-- **Path Shortening**: 18+ test cases covering width constraints, home directory replacement, ellipsis handling, and edge cases
-- **Smart Path Display**: Tests ensure long file paths fit within sidebar width while maintaining readability
+| Command             | Description                     | Dependencies                              |
+| ------------------- | ------------------------------- | ----------------------------------------- |
+| `make test`         | Run all tests                   | None                                      |
+| `make test-path`    | Run only path utility tests     | None                                      |
+| `make test-verbose` | Run tests with verbose output   | None                                      |
+| `make test-watch`   | Watch for changes and run tests | `entr` (`brew install entr`)              |
+| `make validate`     | Validate test setup             | None                                      |
+| `make check`        | Run all linters and type checks | `stylua`, `lua-language-server`, `selene` |
+| `make lint`         | Lint Lua files                  | `stylua` (`brew install stylua`)          |
+| `make typecheck`    | Run type checking               | `lua-language-server`                     |
+| `make selene`       | Run selene linter               | `selene` (`cargo install selene`)         |
+| `make format`       | Format Lua files                | `stylua` (`brew install stylua`)          |
+| `make clean`        | Clean test artifacts            | None                                      |
+| `make help`         | Show all available commands     | None                                      |
 
 ### Writing Tests
 
@@ -199,65 +203,24 @@ describe("my feature", function()
 end)
 ```
 
-## 🏗️ Architecture
-
-This is a **learning project** demonstrating:
-
-- Context-aware persistence with nested data structures
-- Dynamic UI management with floating windows
-- Extmarks for visual highlighting
-- Safe string handling for special characters
-- Robust error handling in dynamic environments
-
-## 🎨 Interface Preview
+## Interface Preview
 
 ```
-┌─────────────────────────────┐
-│ 󰐷  RADAR                   │
-│                             │
-│ 󰋱  LOCKED IN               │
-│   [1] lua/radar/init.lua    │
-│   [2] lua/radar/config.lua  │ ← highlighted (currently active)
-│   [3] test/spec/state.lua   │
-│                             │
-│   OTHER                    │
-│   [<space>] test/init.lua   │
-│                             │
-│ 󰽏  NEAR                    │
-│   [a] README.md             │
-│   [s] CLAUDE.md             │
-└─────────────────────────────┘
+┌──────── 󰐷  RADAR ────────────────────────────────────────────────┐
+│   OTHER                                                          │
+│   [<space>] test/spec/locks_spec.lua                              │
+└───────────────────────────────────────────────────────────────────┘
+
+┌── 󰋱  LOCKED IN ──────────────┐   ┌── 󰽏  NEAR ──────────────────┐
+│   [1] lua/radar/init.lua      │   │   [a] README.md              │
+│   [2] lua/radar/config.lua  ← │   │   [s] AGENTS.md              │
+│   [3] test/spec/state.lua     │   │   [d] lua/radar/keys.lua     │
+│                               │   │   [e] lua/radar/window.lua   │
+│                               │   │   [f] lua/radar/locks.lua    │
+└───────────────────────────────┘   └──────────────────────────────┘
 ```
 
-## 📋 Roadmap
-
-### ✅ Completed (v0.5)
-
-- [x] File locking with 1-9 keybindings
-- [x] Context-aware persistence (per project + git branch)
-- [x] Data versioning and automatic migration
-- [x] Data cleanup command for stale branches
-- [x] Last accessed tracking for future time-based cleanup
-- [x] Dynamic highlighting of current file
-- [x] Floating window UI with customizable presets
-- [x] Recent files section (vim.v.oldfiles integration)
-- [x] Alternative file support (test ↔ implementation)
-- [x] Line-based navigation in radar window
-- [x] Multiple split modes (vertical, horizontal, tab, float)
-- [x] Lock label editing
-- [x] Flexible window preset system
-
-### 🎯 Future (v1.0+)
-
-- [ ] Time-based cleanup (remove entries not accessed in X days)
-- [ ] Modified files section (git integration)
-- [ ] PR files section (branch changes)
-- [ ] Full radar view (on-demand comprehensive view)
-- [ ] Enhanced navigation between sections
-- [ ] Automatic reordering of labels after deletion
-- [ ] Non-git project support
-
-## 🤝 Contributing
+## Contributing
 
 This is primarily a learning project focused on understanding Neovim plugin development patterns. Contributions are welcome, but please:
 
@@ -266,11 +229,11 @@ This is primarily a learning project focused on understanding Neovim plugin deve
 - Keep code simple and educational
 - Test with both basic and edge cases
 
-## 📚 Learn More
+## Learn More
 
 - [docs/concept.md](docs/concept.md) - Comprehensive design vision and philosophy
-- [CLAUDE.md](CLAUDE.md) - Technical architecture and development patterns
+- [AGENTS.md](AGENTS.md) - Technical architecture and development patterns
 
-## 📄 License
+## License
 
 MIT
