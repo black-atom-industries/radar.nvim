@@ -92,6 +92,9 @@ selene:
 
 # Format Lua files
 format:
+	echo "Formatting markdown files..."
+	npx prettier --write "**/*.md"
+
 	@if command -v stylua >/dev/null 2>&1; then \
 		echo "Formatting Lua files..."; \
 		stylua lua/ test/; \
