@@ -137,7 +137,7 @@ From [docs/concept.md](docs/concept.md):
 - Alternative file (double-tap prefix key, detects test/impl pairs)
 - Tabs sidebar (`<leader>t`, separate view)
 
-**Planned (tracked in Linear):**
+**Planned (tracked in GitHub Issues):**
 
 - Modified files (git status) - DEV-260
 - PR files (branch changes) - DEV-261
@@ -181,7 +181,7 @@ end
 
 ## Issue Tracking
 
-All future work is tracked in **Linear** (Black Atom Industries workspace) with the `radar.nvim` label. See `/bai/status` or filter by label in Linear.
+All future work is tracked in [GitHub Issues](https://github.com/black-atom-industries/radar.nvim/issues). See `/bai/status` or filter by label.
 
 ## Configuration
 
