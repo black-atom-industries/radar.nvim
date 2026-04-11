@@ -172,20 +172,37 @@ function M.edit_locks(radar_config, radar_module)
   -- Close radar window before opening edit window
   radar_module.close()
 
-  -- Clean up any existing edit buffer with the same name (handles orphaned buffers)
-  local existing_buf = vim.fn.bufnr("radar-locks")
-  if existing_buf ~= -1 then
-    vim.api.nvim_buf_delete(existing_buf, { force = true })
+  -- Clean up ALL existing buffers with this name (handles orphaned buffers)
+  -- Loop because BufUnload callbacks during deletion can cause re-entrancy
+  for _ = 1, 10 do
+    local existing_buf = vim.fn.bufnr("radar-locks")
+    if existing_buf == -1 then
+      break
+    end
+    pcall(vim.api.nvim_buf_delete, existing_buf, { force = true })
   end
 
   -- Create editable buffer
   local edit_buf = vim.api.nvim_create_buf(false, false)
   state.edit_bufid = edit_buf
 
-  -- Set buffer options
+  -- Set buffer options — set name before other options to catch E95 early
+  -- Use pcall because a race with BufUnload/wipe can leave a ghost name
+  local ok, err = pcall(vim.api.nvim_buf_set_name, edit_buf, "radar-locks")
+  if not ok then
+    -- Force-remove any lingering buffer with that name and retry
+    local ghost = vim.fn.bufnr("radar-locks")
+    if ghost ~= -1 and ghost ~= edit_buf then
+      pcall(vim.api.nvim_buf_delete, ghost, { force = true })
+    end
+    -- Retry once — if it still fails, use a unique fallback name
+    local ok2, err2 = pcall(vim.api.nvim_buf_set_name, edit_buf, "radar-locks")
+    if not ok2 then
+      vim.api.nvim_buf_set_name(edit_buf, "radar-locks-" .. edit_buf)
+    end
+  end
   vim.api.nvim_set_option_value("buftype", "acwrite", { buf = edit_buf })
   vim.api.nvim_set_option_value("filetype", "radar-edit", { buf = edit_buf })
-  vim.api.nvim_buf_set_name(edit_buf, "radar-locks")
   vim.api.nvim_set_option_value("bufhidden", "wipe", { buf = edit_buf })
 
   -- Create buffer lines: just the filepaths (labels assigned by line order)
