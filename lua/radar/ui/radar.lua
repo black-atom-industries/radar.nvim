@@ -7,13 +7,22 @@ function M.get_formatted_filepath(path)
   return vim.fn.fnamemodify(path, ":p:.")
 end
 
+---Resolve a grid dimension value (float 0-1 = percentage, integer = absolute)
+---@param value number
+---@param terminal_size integer vim.o.columns or vim.o.lines
+---@param min_size integer
+---@return integer
+local function resolve_dimension(value, terminal_size, min_size)
+  local resolved = value <= 1 and math.floor(terminal_size * value) or math.floor(value)
+  return math.max(resolved, min_size)
+end
+
 ---Calculate position based on config position setting
 ---@param config Radar.Config
+---@param width integer Resolved grid width
+---@param height integer Resolved grid height
 ---@return { row: integer, col: integer }
-local function calculate_grid_origin(config)
-  local width = config.radar.grid_size.width
-  local height = config.radar.grid_size.height
-
+local function calculate_grid_origin(config, width, height)
   local positions = {
     center = {
       row = math.floor((vim.o.lines - height) / 2),
@@ -35,14 +44,15 @@ end
 ---@param config Radar.Config
 ---@return table Grid layout info
 local function calculate_grid_layout(config)
-  local origin = calculate_grid_origin(config)
-  local total_width = config.radar.grid_size.width
-  local total_height = config.radar.grid_size.height
+  local total_width = resolve_dimension(config.radar.grid_size.width, vim.o.columns, 80)
+  local total_height = resolve_dimension(config.radar.grid_size.height, vim.o.lines, 12)
+
+  local origin = calculate_grid_origin(config, total_width, total_height)
 
   -- Layout constants
   local ALTERNATIVE_HEIGHT = 1 -- Just one line of content (title is in border)
-  local VERTICAL_GAP = 3 -- Gap between alternative and locks/recent
-  local HORIZONTAL_GAP = 4 -- Gap between locks and recent
+  local VERTICAL_GAP = 1 -- Gap between alternative and locks/recent
+  local HORIZONTAL_GAP = 2 -- Gap between locks and recent
   local column_width = math.floor((total_width - HORIZONTAL_GAP) / 2)
 
   -- Calculate main content height (below alternative, with gap)

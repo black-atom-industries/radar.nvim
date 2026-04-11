@@ -32,7 +32,7 @@ M.default = {
 
   -- Main radar window
   radar = {
-    grid_size = { width = 125, height = 20 },
+    grid_size = { width = 0.7, height = 0.6 },
     border = "single",
     position = "center",
     winblend = 0,

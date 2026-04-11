@@ -25,8 +25,8 @@
 ---@field defer_ms integer
 
 ---@class Radar.Config.GridSize
----@field width integer Grid total width
----@field height integer Grid total height
+---@field width number Grid width (float 0-1 = percentage of terminal, integer = absolute columns)
+---@field height number Grid height (float 0-1 = percentage of terminal, integer = absolute lines)
 
 ---@alias Radar.Config.Position "center" | "top_left" | "top_right" | "bottom_left" | "bottom_right"
 
