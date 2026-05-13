@@ -195,7 +195,7 @@ function M.open(config)
   -- Resolve window config from preset
   local win_config = window.resolve_config(config, config.tabs.win_preset, {
     title = "  TABS ",
-    footer = " [CR] jump  [x] close  [o] only  [v] vsplit  [s] hsplit  [n] tab  [dd] cut  [p] paste  [P] paste before  [q] quit ",
+    footer = " [CR]jump [x]close [o]only [v]vsp [s]hsp [n]tab [dd]cut [p]paste [q]quit ",
     footer_pos = "left",
     border = "solid",
   })
