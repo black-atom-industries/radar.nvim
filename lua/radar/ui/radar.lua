@@ -81,18 +81,10 @@ local function build_content(config)
   local alt_file = state.source_alt_file
   local alt_text
   if alt_file then
-    alt_text = string.format(
-      " [%s] %s  |  %s",
-      alt_label,
-      vim.fn.fnamemodify(alt_file, ":p:."),
-      config.radar.titles.alternative
-    )
+    alt_text =
+      string.format(" [%s] %s", alt_label, vim.fn.fnamemodify(alt_file, ":p:."))
   else
-    alt_text = string.format(
-      " [%s] - No other file yet  |  %s",
-      alt_label,
-      config.radar.titles.alternative
-    )
+    alt_text = string.format(" [%s] - No other file yet", alt_label)
   end
   section_ranges.alt.start = add_line(alt_text)
   section_ranges.alt["end"] = #lines
@@ -164,10 +156,16 @@ local function build_content(config)
   end
   section_ranges.recent["end"] = #lines
 
+  -- ── Spacer before footer ──
+  add_line("")
+
   -- ── Footer ──
+  local alt_footer = config.keys.alternative or config.keys.prefix
   add_line(
     build_header(
-      "[1-9] lock  [a-g] recent  [o] other  [Tab] cycle  [l] lock  [e] edit  [q] quit",
+      "[1-9] lock  [a-g] recent  ["
+        .. alt_footer
+        .. "] alt  [Tab] cycle  [l] lock  [e] edit  [q] quit",
       "─"
     )
   )
@@ -240,33 +238,32 @@ local function apply_highlights(bufnr, config)
     end
   end
 
-  -- Alt file line: highlight the key label
-  if section_ranges.alt and section_ranges.alt.start > 0 then
-    local line = lines[section_ranges.alt.start]
-    if line then
-      local bracket_end = line:find("]")
-      if bracket_end then
-        vim.api.nvim_buf_set_extmark(
-          bufnr,
-          ns,
-          section_ranges.alt.start - 1,
-          1,
-          { end_col = bracket_end, hl_group = "@keyword" }
-        )
-      end
-      -- Highlight "| OTHER" suffix
-      local pipe_pos = line:find("  |  ")
-      if pipe_pos then
-        vim.api.nvim_buf_set_extmark(
-          bufnr,
-          ns,
-          section_ranges.alt.start - 1,
-          pipe_pos - 1,
-          { end_col = #line, hl_group = "@comment" }
-        )
+  -- Highlight key labels on item lines ([1], [a], [<Space>])
+  local function highlight_key_labels(range)
+    if not range or range.start == 0 then
+      return
+    end
+    for line_nr = range.start, range["end"] do
+      local line = lines[line_nr]
+      if line then
+        local bracket_start = line:find("%[")
+        local bracket_end = line:find("]")
+        if bracket_start and bracket_end and bracket_end > bracket_start then
+          vim.api.nvim_buf_set_extmark(
+            bufnr,
+            ns,
+            line_nr - 1,
+            bracket_start - 1,
+            { end_col = bracket_end, hl_group = "@keyword" }
+          )
+        end
       end
     end
   end
+
+  highlight_key_labels(section_ranges.alt)
+  highlight_key_labels(section_ranges.locks)
+  highlight_key_labels(section_ranges.recent)
 
   -- Footer line: dim it
   local last_line = #lines
