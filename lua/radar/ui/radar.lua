@@ -464,7 +464,7 @@ function M.create(config)
     style = "minimal",
     border = config.radar.border,
     title = " " .. config.radar.titles.main .. " ",
-    title_pos = "center",
+    title_pos = "left",
     focusable = true,
     zindex = 100,
   }
