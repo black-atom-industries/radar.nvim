@@ -52,6 +52,13 @@ local function setup_highlights()
   vim.api.nvim_set_hl(0, "RadarTabsLspWarn", { fg = get_attr("DiagnosticSignWarn", "fg"), bg = lsp_bg })
   vim.api.nvim_set_hl(0, "RadarTabsLspInfo", { fg = get_attr("DiagnosticSignInfo", "fg"), bg = lsp_bg })
   vim.api.nvim_set_hl(0, "RadarTabsLspHint", { fg = get_attr("DiagnosticSignHint", "fg"), bg = lsp_bg })
+
+  -- Tab header groups (bold for all, standout fg for active)
+  local tab_bg = get_attr("CursorLine", "bg")
+  local active_fg = get_attr("Title", "fg")
+
+  vim.api.nvim_set_hl(0, "RadarTabsTabHeader", { bold = true, bg = tab_bg })
+  vim.api.nvim_set_hl(0, "RadarTabsTabHeaderActive", { bold = true, fg = active_fg, bg = tab_bg })
 end
 
 -- Create highlight groups on load and rebuild on theme change
@@ -190,11 +197,12 @@ local function apply_highlights(bufnr, tabs_data)
   local line_idx = 0
 
   for _, tab in ipairs(tabs_data) do
-    -- Highlight current tab header
-    if tab.is_current and line_idx < #lines then
+    -- Highlight tab header (all get bold + subtle bg, active gets standout fg)
+    if line_idx < #lines then
+      local hl_group = tab.is_current and "RadarTabsTabHeaderActive" or "RadarTabsTabHeader"
       vim.api.nvim_buf_set_extmark(bufnr, ns, line_idx, 0, {
         end_col = #lines[line_idx + 1],
-        hl_group = "@function",
+        hl_group = hl_group,
       })
     end
     line_idx = line_idx + 1
