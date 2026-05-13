@@ -4,6 +4,10 @@ local state = require("radar.state")
 local tabs = require("radar.tabs")
 local window = require("radar.window")
 
+---Cut item clipboard for cut/paste operations
+---@type { type: "buffer"|string, filepath?: string, buffers?: string[] }?
+local cut_item = nil
+
 ---Check if tabs window exists
 ---@return boolean
 function M.exists()
@@ -26,7 +30,8 @@ local function build_content(tabs_data)
   for _, tab in ipairs(tabs_data) do
     -- Tab header line
     local current_marker = tab.is_current and "*" or " "
-    local tab_line = string.format("%sTab %d (%s)", current_marker, tab.index, tab.cwd)
+    local tab_line =
+      string.format("%sTab %d (%s)", current_marker, tab.index, tab.cwd)
     table.insert(lines, tab_line)
     table.insert(line_mapping, { tabid = tab.tabid })
 
@@ -77,7 +82,6 @@ local function apply_highlights(bufnr, tabs_data)
       line_idx = line_idx + 1
     end
   end
-
 end
 
 ---Setup keymaps for the tabs buffer
@@ -114,6 +118,21 @@ local function setup_keymaps(bufnr, config)
   vim.keymap.set("n", "n", function()
     M.new_line(config)
   end, vim.tbl_extend("force", opts, { desc = "New tab/vertical split" }))
+
+  -- Cut buffer/tab into clipboard
+  vim.keymap.set("n", "dd", function()
+    M.cut_line(config)
+  end, vim.tbl_extend("force", opts, { desc = "Cut tab/buffer" }))
+
+  -- Paste cut item after cursor
+  vim.keymap.set("n", "p", function()
+    M.paste_line(config)
+  end, vim.tbl_extend("force", opts, { desc = "Paste cut tab/buffer" }))
+
+  -- Paste cut item before cursor
+  vim.keymap.set("n", "P", function()
+    M.paste_line_before(config)
+  end, vim.tbl_extend("force", opts, { desc = "Paste cut tab/buffer before" }))
 end
 
 ---Open the tabs floating window
@@ -146,7 +165,7 @@ function M.open(config)
   -- Resolve window config from preset
   local win_config = window.resolve_config(config, config.tabs.win_preset, {
     title = "  TABS ",
-    footer = " [CR] jump  [x] close  [o] only  [n] new  [q] quit ",
+    footer = " [CR] jump  [x] close  [o] only  [n] new  [dd] cut  [p] paste  [P] paste before  [q] quit ",
     footer_pos = "left",
     border = "solid",
   })
@@ -237,7 +256,8 @@ function M.delete_line(config)
       return
     end
 
-    local ok, err = pcall(vim.cmd, "tabclose " .. vim.api.nvim_tabpage_get_number(item.tabid))
+    local ok, err =
+      pcall(vim.cmd, "tabclose " .. vim.api.nvim_tabpage_get_number(item.tabid))
     if not ok then
       vim.notify("Cannot close tab: " .. err, vim.log.levels.WARN)
       return
@@ -248,7 +268,11 @@ function M.delete_line(config)
   M.update(config)
 
   -- Clamp cursor if past the new last line
-  if M.exists() and state.tabs_bufid and vim.api.nvim_buf_is_valid(state.tabs_bufid) then
+  if
+    M.exists()
+    and state.tabs_bufid
+    and vim.api.nvim_buf_is_valid(state.tabs_bufid)
+  then
     local new_count = vim.api.nvim_buf_line_count(state.tabs_bufid)
     if line_num > new_count then
       vim.api.nvim_win_set_cursor(state.tabs_winid, { math.max(1, new_count), 0 })
@@ -313,6 +337,207 @@ function M.new_line(config)
   else
     -- Tab header line: create a new tab
     vim.cmd("tabnew")
+  end
+end
+
+---Cut the tab or buffer on the current line (store in clipboard, don't close)
+---@param config Radar.Config
+---@return nil
+function M.cut_line(config)
+  if not M.exists() then
+    return
+  end
+
+  local cursor = vim.api.nvim_win_get_cursor(state.tabs_winid)
+  local line_num = cursor[1]
+  local item = state.tabs_line_mapping[line_num]
+
+  if not item or not item.tabid then
+    return
+  end
+
+  if item.winid then
+    -- Buffer line: store buffer info WITHOUT closing the window
+    if not item.filepath then
+      return
+    end
+    cut_item = { type = "buffer", filepath = item.filepath, winid = item.winid }
+  else
+    -- Tab header line: store tab info WITHOUT closing the tab
+    local buffer_paths = {}
+    local wins = vim.api.nvim_tabpage_list_wins(item.tabid)
+    for _, winid in ipairs(wins) do
+      local bufnr = vim.api.nvim_win_get_buf(winid)
+      local filepath = vim.api.nvim_buf_get_name(bufnr)
+      if filepath ~= "" then
+        table.insert(buffer_paths, filepath)
+      end
+    end
+    cut_item = { type = "tab", buffers = buffer_paths, tabid = item.tabid }
+  end
+
+  vim.notify("Cut " .. cut_item.type .. " — press p to paste it", vim.log.levels.INFO)
+end
+
+---Paste the cut item after the current line
+---@param config Radar.Config
+---@return nil
+function M.paste_line(config)
+  if not M.exists() or not cut_item then
+    return
+  end
+
+  local cursor = vim.api.nvim_win_get_cursor(state.tabs_winid)
+  local line_num = cursor[1]
+  local item = state.tabs_line_mapping[line_num]
+
+  if not item or not item.tabid then
+    return
+  end
+
+  -- Save the current tabpage (where the floating window lives)
+  local source_tabid = vim.api.nvim_get_current_tabpage()
+
+  if cut_item.type == "buffer" then
+    -- Create the new window FIRST at the paste position
+    if item.winid then
+      vim.api.nvim_set_current_win(item.winid)
+      pcall(vim.cmd, "vsplit")
+      pcall(vim.cmd, "edit " .. vim.fn.fnameescape(cut_item.filepath))
+    else
+      local tab_win = vim.api.nvim_tabpage_get_win(item.tabid)
+      vim.api.nvim_set_current_win(tab_win)
+      pcall(vim.cmd, "tabedit " .. vim.fn.fnameescape(cut_item.filepath))
+    end
+
+    -- Return to source tabpage so the floating window stays visible
+    if vim.api.nvim_tabpage_is_valid(source_tabid) then
+      local source_win = vim.api.nvim_tabpage_get_win(source_tabid)
+      pcall(vim.api.nvim_set_current_win, source_win)
+    end
+
+    -- THEN close the original window
+    if cut_item.winid and vim.api.nvim_win_is_valid(cut_item.winid) then
+      pcall(vim.api.nvim_win_close, cut_item.winid, false)
+    end
+
+  elseif cut_item.type == "tab" and cut_item.tabid then
+    if not vim.api.nvim_tabpage_is_valid(cut_item.tabid) then
+      return
+    end
+
+    -- Calculate target position (0-indexed) for tabmove
+    local tabs = vim.api.nvim_list_tabpages()
+    local target_pos = nil
+    for i, tabid in ipairs(tabs) do
+      if tabid == item.tabid then
+        target_pos = i - 1 -- 0-indexed
+        break
+      end
+    end
+
+    if target_pos == nil then
+      return
+    end
+
+    -- Navigate to the cut tab, move it after the target, then return
+    local cut_tab_win = vim.api.nvim_tabpage_get_win(cut_item.tabid)
+    vim.api.nvim_set_current_win(cut_tab_win)
+    vim.cmd("tabmove " .. (target_pos + 1))
+
+    -- Return to the source tab where the floating window is
+    if vim.api.nvim_tabpage_is_valid(source_tabid) then
+      local source_win = vim.api.nvim_tabpage_get_win(source_tabid)
+      pcall(vim.api.nvim_set_current_win, source_win)
+    end
+  end
+
+  cut_item = nil
+
+  -- Refresh the tabs window to show the new layout
+  M.update(config)
+
+  -- Clamp cursor if past the new last line
+  if
+    M.exists()
+    and state.tabs_bufid
+    and vim.api.nvim_buf_is_valid(state.tabs_bufid)
+  then
+    local new_count = vim.api.nvim_buf_line_count(state.tabs_bufid)
+    if line_num > new_count then
+      vim.api.nvim_win_set_cursor(state.tabs_winid, { math.max(1, new_count), 0 })
+    end
+  end
+end
+
+---Paste the cut item before the current line
+---@param config Radar.Config
+---@return nil
+function M.paste_line_before(config)
+  if not M.exists() or not cut_item then
+    return
+  end
+
+  local cursor = vim.api.nvim_win_get_cursor(state.tabs_winid)
+  local line_num = cursor[1]
+  local item = state.tabs_line_mapping[line_num]
+
+  if not item or not item.tabid then
+    return
+  end
+
+  -- Save the current tabpage (where the floating window lives)
+  local source_tabid = vim.api.nvim_get_current_tabpage()
+
+  if cut_item.type == "tab" and cut_item.tabid then
+    if not vim.api.nvim_tabpage_is_valid(cut_item.tabid) then
+      return
+    end
+
+    -- Calculate target position (0-indexed) for tabmove
+    local tabs = vim.api.nvim_list_tabpages()
+    local target_pos = nil
+    for i, tabid in ipairs(tabs) do
+      if tabid == item.tabid then
+        target_pos = i - 1 -- 0-indexed
+        break
+      end
+    end
+
+    if target_pos == nil then
+      return
+    end
+
+    -- Navigate to the cut tab, move it before the target, then return
+    local cut_tab_win = vim.api.nvim_tabpage_get_win(cut_item.tabid)
+    vim.api.nvim_set_current_win(cut_tab_win)
+    vim.cmd("tabmove " .. target_pos)
+
+    -- Return to the source tab where the floating window is
+    if vim.api.nvim_tabpage_is_valid(source_tabid) then
+      local source_win = vim.api.nvim_tabpage_get_win(source_tabid)
+      pcall(vim.api.nvim_set_current_win, source_win)
+    end
+
+    cut_item = nil
+
+    -- Refresh the tabs window to show the new layout
+    M.update(config)
+
+    -- Clamp cursor if past the new last line
+    if
+      M.exists()
+      and state.tabs_bufid
+      and vim.api.nvim_buf_is_valid(state.tabs_bufid)
+    then
+      local new_count = vim.api.nvim_buf_line_count(state.tabs_bufid)
+      if line_num > new_count then
+        vim.api.nvim_win_set_cursor(state.tabs_winid, { math.max(1, new_count), 0 })
+      end
+    end
+  else
+    -- Buffer line: fall back to paste after (for now)
+    M.paste_line(config)
   end
 end
 
