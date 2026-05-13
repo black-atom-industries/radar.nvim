@@ -77,13 +77,40 @@ function M.setup_common_keymaps(bufnr, config, radar, opts)
     radar.cycle_focus_prev()
   end, vim.tbl_extend("force", opts, { desc = "Cycle to previous section" }))
 
-  -- Lock current buffer
+  -- Lock/unlock file under cursor
   vim.keymap.set("n", config.keys.lock, function()
+    local navigation = require("radar.navigation")
     local locks = require("radar.locks")
     local persistence = require("radar.persistence")
-    local state = require("radar.state")
-    locks.lock_current_buffer(state.source_bufnr, config, persistence, radar)
-  end, vim.tbl_extend("force", opts, { desc = "Lock source buffer" }))
+
+    local section = radar.get_focused_section_from_cursor()
+    if not section then
+      return
+    end
+
+    local filepath = navigation.get_file_from_line(config, section)
+    if not filepath then
+      return
+    end
+
+    -- Normalize to relative path (locks use :p:. format)
+    local normalized = filepath
+    if not filepath:match("^%w+://") then
+      normalized = vim.fn.fnamemodify(filepath, ":p:.")
+    end
+
+    locks.toggle(normalized, config, persistence)
+
+    if not radar.exists() then
+      radar.create(config)
+    else
+      radar.update(config)
+    end
+  end, vim.tbl_extend(
+    "force",
+    opts,
+    { desc = "Toggle lock for file under cursor" }
+  ))
 
   -- Alternative file (defaults to prefix for double-tap behavior)
   local alt_key = config.keys.alternative or config.keys.prefix
