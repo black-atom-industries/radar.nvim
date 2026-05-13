@@ -275,7 +275,7 @@ local function apply_highlights(bufnr, config)
   if section_ranges.locks and section_ranges.locks.start > 0 then
     local lock_start = section_ranges.locks.start
     for i, lock in ipairs(state.locks) do
-      local line_nr = lock_start + i - 1
+      local line_nr = lock_start + i
       local line = lines[line_nr]
       if line and lock.filename == curr_filepath_formatted then
         vim.api.nvim_buf_set_extmark(bufnr, locks_ns, line_nr - 1, 0, {
@@ -290,7 +290,7 @@ local function apply_highlights(bufnr, config)
   if section_ranges.recent and section_ranges.recent.start > 0 then
     local recent_start = section_ranges.recent.start
     for i, filename in ipairs(state.recent_files) do
-      local line_nr = recent_start + i - 1
+      local line_nr = recent_start + i
       local line = lines[line_nr]
       if line and filename == curr_filepath then
         vim.api.nvim_buf_set_extmark(bufnr, recent_ns, line_nr - 1, 0, {
