@@ -32,6 +32,7 @@ The refactor removes the entire existing `lua/radar/ui/radar.lua` implementation
 ## Architecture Changes
 
 ### Current Architecture (Single Window)
+
 ```lua
 -- State tracks one window
 state.radar_winid = <single window ID>
@@ -41,6 +42,7 @@ state.radar_winid = <single window ID>
 ```
 
 ### New Architecture (Grid System)
+
 ```lua
 -- State tracks multiple windows
 state.radar_windows = {
@@ -59,6 +61,7 @@ state.radar_windows = {
 ## Files to Modify
 
 ### 1. `/Users/nbr/repos/black-atom-industries/radar.nvim/lua/radar/config.lua`
+
 - Remove `win_preset` field from `radar` config
 - Add `grid_size = { width = 100, height = 30 }` to `radar` config
 - Add `position = "center"` to `radar` config (for grid placement)
@@ -66,16 +69,19 @@ state.radar_windows = {
 - Keep all other fields unchanged
 
 ### 2. `/Users/nbr/repos/black-atom-industries/radar.nvim/lua/radar/config.types.lua`
+
 - Update `Radar.Config.Radar` type
 - Remove `win_preset` field
 - Add `grid_size` field: `{ width: integer, height: integer }`
 - Add `position` field: `"center" | "top_left" | "top_right" | "bottom_left" | "bottom_right"`
 
 ### 3. `/Users/nbr/repos/black-atom-industries/radar.nvim/lua/radar/state.lua`
+
 - Replace `radar_winid` with `radar_windows` table
 - Add helper functions for window validation
 
 ### 4. `/Users/nbr/repos/black-atom-industries/radar.nvim/lua/radar/ui/radar.lua`
+
 - **COMPLETE REWRITE** - Replace entire file with grid implementation
 - Create grid layout calculator
 - Implement 4 separate window creators
@@ -83,15 +89,18 @@ state.radar_windows = {
 - Port highlights to work with multiple buffers
 
 ### 5. `/Users/nbr/repos/black-atom-industries/radar.nvim/lua/radar/keys.lua`
+
 - Update buffer-local keymaps to work with focused section
 - Add Tab/Shift-Tab for focus cycling
 - Update line-based navigation to detect current section
 
 ### 6. `/Users/nbr/repos/black-atom-industries/radar.nvim/lua/radar/navigation.lua`
+
 - Update `get_file_from_line()` to work with separate buffers
 - Handle section detection from buffer context
 
 ### 7. `/Users/nbr/repos/black-atom-industries/radar.nvim/lua/radar/autocmd.lua`
+
 - Update to handle multiple windows in `radar.exists()` calls
 
 ---
@@ -155,6 +164,7 @@ M.default = {
 ```
 
 ### Testing Checklist - Phase 1
+
 - [ ] Run `:checkhealth` to ensure no Lua errors
 - [ ] Config loads without errors
 - [ ] Type checking passes (if using LuaLS)
@@ -227,6 +237,7 @@ end
 ```
 
 ### Testing Checklist - Phase 2
+
 - [ ] State loads without errors
 - [ ] Helper functions work correctly
 - [ ] No references to old `radar_winid` remain
@@ -315,6 +326,7 @@ end
 ```
 
 ### Testing Checklist - Phase 3
+
 - [ ] Grid calculator returns correct dimensions
 - [ ] Different positions (center, top_left, etc.) work correctly
 - [ ] Grid adapts to various window sizes
@@ -393,6 +405,7 @@ end
 ```
 
 ### Testing Checklist - Phase 4
+
 - [ ] Alternative window appears at correct position
 - [ ] Shows alternative file when available
 - [ ] Shows placeholder when no alternative file
@@ -522,6 +535,7 @@ end
 ```
 
 ### Testing Checklist - Phase 5
+
 - [ ] Locks window appears at correct position
 - [ ] Shows locks correctly
 - [ ] Shows empty message when no locks
@@ -650,6 +664,7 @@ end
 ```
 
 ### Testing Checklist - Phase 6
+
 - [ ] Recent window appears at correct position
 - [ ] Shows recent files correctly
 - [ ] Shows empty message when no recent files
@@ -728,6 +743,7 @@ end
 ```
 
 ### Testing Checklist - Phase 7
+
 - [ ] Hints window appears at correct position
 - [ ] Shows keybinding hints correctly
 - [ ] Non-focusable (can't Tab to it)
@@ -855,6 +871,7 @@ end
 ```
 
 ### Testing Checklist - Phase 8
+
 - [ ] `create()` creates all 4 windows correctly
 - [ ] `update()` refreshes content properly
 - [ ] `close()` closes all windows
@@ -1088,6 +1105,7 @@ end
 ```
 
 ### Testing Checklist - Phase 9
+
 - [ ] Tab cycles between locks and recent
 - [ ] Shift-Tab cycles between recent and locks
 - [ ] Can't focus alternative or hints sections
@@ -1130,6 +1148,7 @@ No changes needed - autocmds already call `radar.exists()` and `radar.update()` 
 ### Step 10.3: Test all navigation modes
 
 Test each split variant:
+
 - [ ] `<CR>` opens in current window
 - [ ] `<C-v>` + key opens in vertical split
 - [ ] `<C-s>` + key opens in horizontal split
@@ -1154,12 +1173,13 @@ Update the architecture section to reflect the new grid system:
 
 ```markdown
 ### Current Modular Structure (Grid-Based)
-
 ```
+
 lua/radar/
 ├── ui/
-│   ├── radar.lua         -- Grid layout system with 4 windows
-│   └── edit.lua          -- Lock label editor
+│ ├── radar.lua -- Grid layout system with 4 windows
+│ └── edit.lua -- Lock label editor
+
 ```
 
 ### Grid Layout
@@ -1219,24 +1239,28 @@ After each phase, commit with semantic format:
 ## Critical Patterns to Maintain
 
 ### 1. Safe String Matching
+
 ```lua
 -- ALWAYS use literal matching for filenames
 if line:find(formatted_filepath, 1, true) then
 ```
 
 ### 2. Window Validation
+
 ```lua
 -- Always validate before use
 if winid and vim.api.nvim_win_is_valid(winid) then
 ```
 
 ### 3. Safe Nested Access
+
 ```lua
 -- Use vim.tbl_get for safe nested access
 local persisted_pins = vim.tbl_get(data, project_path, git_branch, "pins")
 ```
 
 ### 4. Deferred Persistence
+
 ```lua
 -- Batch changes to avoid excessive I/O
 vim.defer_fn(function()
@@ -1245,6 +1269,7 @@ end, config.persist.defer_ms)
 ```
 
 ### 5. Buffer Modification Pattern
+
 ```lua
 -- Always modifiable -> edit -> unmodifiable
 vim.api.nvim_set_option_value("modifiable", true, { buf = bufnr })

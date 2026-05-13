@@ -34,14 +34,8 @@ function M.setup(config)
   autocmd("BufEnter", {
     group = autogrp("radar.BufEnter", { clear = true }),
     callback = function()
-      local state = require("radar.state")
       local recent = require("radar.recent")
       local radar = require("radar.ui.radar")
-
-      -- Skip update if we're switching focus between radar windows
-      if state.switching_focus then
-        return
-      end
 
       -- Track current file for session recent files
       recent.track_current_file(config)

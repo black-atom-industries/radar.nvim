@@ -86,3 +86,12 @@
 ---@class Radar.PersistenceData
 ---@field version number
 ---@field projects Radar.Projects
+
+---@class Radar.SectionBounds
+---@field start integer 1-indexed line number
+---@field ["end"] integer 1-indexed line number (end is a Lua keyword)
+
+---@class Radar.SectionRanges
+---@field alt Radar.SectionBounds
+---@field locks Radar.SectionBounds
+---@field recent Radar.SectionBounds

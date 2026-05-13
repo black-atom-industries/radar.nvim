@@ -11,10 +11,12 @@ local M = {
   recent_files = {},
   ---@type string[]
   session_files = {},
-  ---@type { alternative: integer?, locks: integer?, recent: integer?, hints: integer? }?
-  radar_windows = nil,
+  ---@type integer?
+  radar_winid = nil,
   ---@type "locks" | "recent"?
   focused_section = nil,
+  ---@type Radar.SectionRanges?
+  section_line_ranges = nil,
   ---@type integer?
   edit_winid = nil,
   ---@type integer?
@@ -23,8 +25,6 @@ local M = {
   source_bufnr = nil,
   ---@type string?
   source_alt_file = nil,
-  ---@type boolean
-  switching_focus = false,
   ---@type integer?
   tabs_winid = nil,
   ---@type integer?
@@ -33,37 +33,22 @@ local M = {
   tabs_line_mapping = {},
 }
 
----Check if all radar windows are valid
+---Check if radar window is valid
 ---@return boolean
 function M.are_radar_windows_valid()
-  if not M.radar_windows then
-    return false
-  end
-
-  for section, winid in pairs(M.radar_windows) do
-    if not winid or not vim.api.nvim_win_is_valid(winid) then
-      return false
-    end
-  end
-
-  return true
+  return M.radar_winid ~= nil and vim.api.nvim_win_is_valid(M.radar_winid)
 end
 
----Close all radar windows
+---Close radar window
 ---@return nil
 function M.close_all_radar_windows()
-  if not M.radar_windows then
-    return
+  if M.radar_winid and vim.api.nvim_win_is_valid(M.radar_winid) then
+    vim.api.nvim_win_close(M.radar_winid, false)
   end
 
-  for section, winid in pairs(M.radar_windows) do
-    if winid and vim.api.nvim_win_is_valid(winid) then
-      vim.api.nvim_win_close(winid, false)
-    end
-  end
-
-  M.radar_windows = nil
+  M.radar_winid = nil
   M.focused_section = nil
+  M.section_line_ranges = nil
 end
 
 ---Get lock by field value

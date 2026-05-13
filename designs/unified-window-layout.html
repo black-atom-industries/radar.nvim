@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>radar.nvim — Unified Window Layout</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0f111a;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
+    padding: 24px;
+  }
+  .radar {
+    width: 720px;
+    border: 1px solid #3b4261;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #1e1f2e;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .header {
+    text-align: center;
+    padding: 4px 0;
+    background: #1a1b26;
+    border-bottom: 1px solid #3b4261;
+    color: #7aa2f7;
+    font-size: 11px;
+    letter-spacing: 3px;
+  }
+  .alt-section {
+    padding: 5px 16px;
+    background: #1a1b26;
+    border-bottom: 1px solid #252736;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .alt-label {
+    color: #565f89;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .alt-key {
+    color: #e0af68;
+    font-weight: bold;
+  }
+  .alt-path {
+    color: #9ece6a;
+  }
+  .section {
+    border-bottom: 1px solid #252736;
+  }
+  .section:last-of-type {
+    border-bottom: none;
+  }
+  .section-header {
+    padding: 6px 16px 3px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title {
+    color: #7dcfff;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .section-title.recent {
+    color: #bb9af7;
+  }
+  .section-rule {
+    flex: 1;
+    height: 0;
+    border-top: 1px solid #252736;
+  }
+  .section-count {
+    color: #565f89;
+    font-size: 10px;
+  }
+  .section-items {
+    padding: 3px 16px 6px;
+  }
+  .item {
+    padding: 1px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .item-key {
+    color: #e0af68;
+    min-width: 28px;
+  }
+  .item-path {
+    color: #c0caf5;
+  }
+  .item-path-unbound {
+    padding-left: 34px;
+    color: #565f89;
+  }
+  .recent-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 6px;
+    row-gap: 1px;
+  }
+  .recent-divider {
+    margin-top: 3px;
+    padding-top: 3px;
+    border-top: 1px solid #1e1f2e;
+  }
+  .footer {
+    padding: 4px 16px;
+    background: #1a1b26;
+    border-top: 1px solid #3b4261;
+    display: flex;
+    justify-content: space-between;
+    color: #565f89;
+    font-size: 10px;
+  }
+  .file-highlight {
+    background: rgba(122, 162, 247, 0.08);
+    border-radius: 2px;
+  }
+</style>
+</head>
+<body>
+<div class="radar">
+  <div class="header">═══  R A D A R  ═══</div>
+
+  <div class="alt-section">
+    <span class="alt-label">Alt</span>
+    <span class="alt-key">[&lt;Space&gt;]</span>
+    <span class="alt-path">src/components/Button.tsx</span>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">🔒 Locks</span>
+      <span class="section-rule"></span>
+      <span class="section-count">2 locked</span>
+    </div>
+    <div class="section-items">
+      <div class="item">
+        <span class="item-key">[1]</span>
+        <span class="item-path">ROADMAP.md</span>
+      </div>
+      <div class="item">
+        <span class="item-key">[2]</span>
+        <span class="item-path">src/knobs/catalog.ts</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title recent">📡 Recent</span>
+      <span class="section-rule"></span>
+      <span class="section-count">16 files</span>
+    </div>
+    <div class="section-items">
+      <div class="recent-grid">
+        <span class="item-key">[a]</span><span class="item-path">src/hooks/useAuth.ts</span>
+        <span class="item-key">[b]</span><span class="item-path">src/utils/parser.ts</span>
+        <span class="item-key">[c]</span><span class="item-path">src/components/Select.tsx</span>
+        <span class="item-key">[d]</span><span class="item-path">src/styles/global.css</span>
+        <span class="item-key">[e]</span><span class="item-path">src/store/theme.ts</span>
+        <span class="item-key">[f]</span><span class="item-path">src/api/client.ts</span>
+        <span class="item-key">[g]</span><span class="item-path">package.json</span>
+      </div>
+      <div class="recent-divider">
+        <div class="item-path-unbound">src/types/index.ts</div>
+        <div class="item-path-unbound">src/App.tsx</div>
+        <div class="item-path-unbound">tsconfig.json</div>
+        <div class="item-path-unbound">vite.config.ts</div>
+        <div class="item-path-unbound">index.html</div>
+        <div class="item-path-unbound">src/main.tsx</div>
+        <div class="item-path-unbound">src/router.tsx</div>
+        <div class="item-path-unbound">src/i18n/en.ts</div>
+        <div class="item-path-unbound">src/i18n/de.ts</div>
+        <div class="item-path-unbound">.env.local</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>[1-9] lock  [a-g] recent  [o] other  [l] lock file  [e] edit</span>
+    <span>[CR] open  [V|S|T|F] split/tab/float  [Tab] cycle  [q] quit</span>
+  </div>
+</div>
+</body>
+</html>

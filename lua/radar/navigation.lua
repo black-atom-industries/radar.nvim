@@ -7,20 +7,21 @@ local M = {}
 function M.get_file_from_line(config, section)
   local state = require("radar.state")
 
-  if not state.radar_windows or not state.radar_windows[section] then
+  if not state.radar_winid or not vim.api.nvim_win_is_valid(state.radar_winid) then
     return nil
   end
 
-  local winid = state.radar_windows[section]
-  if not vim.api.nvim_win_is_valid(winid) then
+  local current_line_nr = vim.api.nvim_win_get_cursor(state.radar_winid)[1]
+  local ranges = state.section_line_ranges
+
+  if not ranges or not ranges[section] then
     return nil
   end
 
-  local bufid = vim.api.nvim_win_get_buf(winid)
-  local current_line_nr = vim.api.nvim_win_get_cursor(winid)[1]
-
-  -- Line number directly maps to entry index
-  local entry_index = current_line_nr
+  -- Calculate entry index from line number with section offset
+  -- First line in section range is the section header, so entries start at header + 1
+  local section_start = ranges[section].start
+  local entry_index = current_line_nr - section_start
 
   if section == "locks" then
     if entry_index > 0 and entry_index <= #state.locks then

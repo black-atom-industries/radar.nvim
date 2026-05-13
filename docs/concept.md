@@ -193,4 +193,3 @@ If you're contributing, please:
 - Vim's marks system (but visual and persistent)
 - The need for speed in file navigation
 - Frustration with losing context when using fuzzy finders
-

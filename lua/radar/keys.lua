@@ -98,11 +98,11 @@ function M.setup_common_keymaps(bufnr, config, radar, opts)
   end, vim.tbl_extend("force", opts, { desc = "Edit radar locks" }))
 end
 
----Setup keymaps for locks section
+---Setup all keymaps on a single buffer (unified window)
 ---@param bufnr integer
 ---@param config Radar.Config
 ---@return nil
-function M.setup_locks_keymaps(bufnr, config)
+function M.setup_all_keymaps(bufnr, config)
   local navigation = require("radar.navigation")
   local radar = require("radar.ui.radar")
   local opts = { buffer = bufnr, silent = true, noremap = true, nowait = true }
@@ -117,82 +117,38 @@ function M.setup_locks_keymaps(bufnr, config)
     end, "Open lock " .. label, config)
   end
 
-  -- Recent file keymaps (a-g) - cross-section access
+  -- Recent file keymaps (a-g)
   for _, label in ipairs(config.keys.recent) do
     register_split_variants(bufnr, label, function(cmd)
       navigation.open_recent(label, cmd, config, radar)
     end, "Open recent file " .. label, config)
   end
 
-  -- Line-based navigation
+  -- Line-based navigation — use cursor position to determine section
   register_split_variants(bufnr, config.keys.line.open, function(cmd)
-    navigation.open_file_from_line(cmd, config, radar, "locks")
+    local section = radar.get_focused_section_from_cursor() or "locks"
+    navigation.open_file_from_line(cmd, config, radar, section)
   end, "Open file from line", config)
 
   -- Additional line keys (V, S, T, F)
   vim.keymap.set("n", config.keys.line.vertical, function()
-    navigation.open_file_from_line("vsplit", config, radar, "locks")
+    local section = radar.get_focused_section_from_cursor() or "locks"
+    navigation.open_file_from_line("vsplit", config, radar, section)
   end, vim.tbl_extend("force", opts, { desc = "Open file in vertical split" }))
 
   vim.keymap.set("n", config.keys.line.horizontal, function()
-    navigation.open_file_from_line("split", config, radar, "locks")
+    local section = radar.get_focused_section_from_cursor() or "locks"
+    navigation.open_file_from_line("split", config, radar, section)
   end, vim.tbl_extend("force", opts, { desc = "Open file in horizontal split" }))
 
   vim.keymap.set("n", config.keys.line.tab, function()
-    navigation.open_file_from_line("tabedit", config, radar, "locks")
+    local section = radar.get_focused_section_from_cursor() or "locks"
+    navigation.open_file_from_line("tabedit", config, radar, section)
   end, vim.tbl_extend("force", opts, { desc = "Open file in new tab" }))
 
   vim.keymap.set("n", config.keys.line.float, function()
-    navigation.open_file_from_line("float", config, radar, "locks")
-  end, vim.tbl_extend("force", opts, { desc = "Open file in floating window" }))
-end
-
----Setup keymaps for recent section
----@param bufnr integer
----@param config Radar.Config
----@return nil
-function M.setup_recent_keymaps(bufnr, config)
-  local navigation = require("radar.navigation")
-  local radar = require("radar.ui.radar")
-  local opts = { buffer = bufnr, silent = true, noremap = true, nowait = true }
-
-  -- Common keymaps
-  M.setup_common_keymaps(bufnr, config, radar, opts)
-
-  -- Lock keymaps (1-9) - cross-section access
-  for _, label in ipairs(config.keys.locks) do
-    register_split_variants(bufnr, label, function(cmd)
-      navigation.open_lock(label, cmd, config, radar)
-    end, "Open lock " .. label, config)
-  end
-
-  -- Recent-specific keymaps (a-g)
-  for _, label in ipairs(config.keys.recent) do
-    register_split_variants(bufnr, label, function(cmd)
-      navigation.open_recent(label, cmd, config, radar)
-    end, "Open recent file " .. label, config)
-  end
-
-  -- Line-based navigation
-  register_split_variants(bufnr, config.keys.line.open, function(cmd)
-    navigation.open_file_from_line(cmd, config, radar, "recent")
-  end, "Open file from line", config)
-
-  -- Additional line keys (V, S, T, F)
-  vim.keymap.set("n", config.keys.line.vertical, function()
-    navigation.open_file_from_line("vsplit", config, radar, "recent")
-  end, vim.tbl_extend("force", opts, { desc = "Open file in vertical split" }))
-
-  vim.keymap.set("n", config.keys.line.horizontal, function()
-    navigation.open_file_from_line("split", config, radar, "recent")
-  end, vim.tbl_extend("force", opts, { desc = "Open file in horizontal split" }))
-
-  vim.keymap.set("n", config.keys.line.tab, function()
-    navigation.open_file_from_line("tabedit", config, radar, "recent")
-  end, vim.tbl_extend("force", opts, { desc = "Open file in new tab" }))
-
-  vim.keymap.set("n", config.keys.line.float, function()
-    navigation.open_file_from_line("float", config, radar, "recent")
+    local section = radar.get_focused_section_from_cursor() or "locks"
+    navigation.open_file_from_line("float", config, radar, section)
   end, vim.tbl_extend("force", opts, { desc = "Open file in floating window" }))
 end
 
