@@ -13,7 +13,8 @@ end
 ---@param min_size integer
 ---@return integer
 local function resolve_dimension(value, terminal_size, min_size)
-  local resolved = value <= 1 and math.floor(terminal_size * value) or math.floor(value)
+  local resolved = value <= 1 and math.floor(terminal_size * value)
+    or math.floor(value)
   return math.max(resolved, min_size)
 end
 
@@ -44,8 +45,10 @@ end
 ---@param config Radar.Config
 ---@return table Grid layout info
 local function calculate_grid_layout(config)
-  local total_width = resolve_dimension(config.radar.grid_size.width, vim.o.columns, 80)
-  local total_height = resolve_dimension(config.radar.grid_size.height, vim.o.lines, 12)
+  local total_width =
+    resolve_dimension(config.radar.grid_size.width, vim.o.columns, 80)
+  local total_height =
+    resolve_dimension(config.radar.grid_size.height, vim.o.lines, 12)
 
   local origin = calculate_grid_origin(config, total_width, total_height)
 
