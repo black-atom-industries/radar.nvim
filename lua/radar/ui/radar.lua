@@ -179,12 +179,13 @@ end
 ---@param bufnr integer
 ---@param config Radar.Config
 local function apply_highlights(bufnr, config)
-  -- Locks namespace
+  local ns = vim.api.nvim_create_namespace("radar.ui")
   local locks_ns = vim.api.nvim_create_namespace("radar.locks")
   local recent_ns = vim.api.nvim_create_namespace("radar.recent")
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
 
   -- Clear existing highlights
+  vim.api.nvim_buf_clear_namespace(bufnr, ns, 0, -1)
   vim.api.nvim_buf_clear_namespace(bufnr, locks_ns, 0, -1)
   vim.api.nvim_buf_clear_namespace(bufnr, recent_ns, 0, -1)
 
@@ -193,6 +194,90 @@ local function apply_highlights(bufnr, config)
   if not section_ranges then
     return
   end
+
+  -- ── Structural highlights ──
+
+  -- Line 0: Radar header
+  if #lines > 0 then
+    vim.api.nvim_buf_set_extmark(bufnr, ns, 0, 0, {
+      end_col = #lines[1],
+      hl_group = "@constant",
+    })
+  end
+
+  -- Section header lines (first line of each section range)
+  local header_lines = {
+    { section = "locks", name = "locks" },
+    { section = "recent", name = "recent" },
+  }
+
+  for _, hl in ipairs(header_lines) do
+    local range = section_ranges[hl.section]
+    if range and range.start > 0 then
+      local line_idx = range.start - 1 -- 0-indexed extmark
+      local line = lines[range.start]
+      if line then
+        -- Highlight label prefix (e.g., "🔒 Locks" or "📡 Recent")
+        -- Find label end: the text before the ── fill
+        local label_end = line:find("[─━]")
+        if label_end then
+          vim.api.nvim_buf_set_extmark(bufnr, ns, line_idx, 0, {
+            end_col = label_end - 1,
+            hl_group = "@function.builtin",
+          })
+          -- Highlight the count number after the dashes
+          vim.api.nvim_buf_set_extmark(bufnr, ns, line_idx, label_end - 1, {
+            end_col = #line,
+            hl_group = "@comment",
+          })
+        else
+          vim.api.nvim_buf_set_extmark(bufnr, ns, line_idx, 0, {
+            end_col = #line,
+            hl_group = "@function.builtin",
+          })
+        end
+      end
+    end
+  end
+
+  -- Alt file line: highlight the key label
+  if section_ranges.alt and section_ranges.alt.start > 0 then
+    local line = lines[section_ranges.alt.start]
+    if line then
+      local bracket_end = line:find("]")
+      if bracket_end then
+        vim.api.nvim_buf_set_extmark(
+          bufnr,
+          ns,
+          section_ranges.alt.start - 1,
+          1,
+          { end_col = bracket_end, hl_group = "@keyword" }
+        )
+      end
+      -- Highlight "| OTHER" suffix
+      local pipe_pos = line:find("  |  ")
+      if pipe_pos then
+        vim.api.nvim_buf_set_extmark(
+          bufnr,
+          ns,
+          section_ranges.alt.start - 1,
+          pipe_pos - 1,
+          { end_col = #line, hl_group = "@comment" }
+        )
+      end
+    end
+  end
+
+  -- Footer line: dim it
+  local last_line = #lines
+  if last_line > 0 then
+    vim.api.nvim_buf_set_extmark(bufnr, ns, last_line - 1, 0, {
+      end_col = #lines[last_line],
+      hl_group = "@comment",
+    })
+  end
+
+  -- ── Current file highlighting ──
 
   -- Get current file for highlighting
   local curr_filepath = vim.api.nvim_buf_get_name(vim.api.nvim_get_current_buf())
@@ -403,6 +488,12 @@ function M.create(config)
 
   -- Apply window options
   vim.api.nvim_set_option_value("winblend", config.radar.winblend, { win = winid })
+  -- Ensure solid non-transparent background
+  vim.api.nvim_set_option_value(
+    "winhighlight",
+    "Normal:NormalFloat",
+    { win = winid }
+  )
   for opt, value in pairs(config.radar.win_opts) do
     vim.api.nvim_set_option_value(opt, value, { win = winid })
   end
