@@ -62,21 +62,32 @@ end
 ---@param persistence_module table
 ---@return Radar.Lock
 function M.toggle(filename, config, persistence_module)
+  local debug = require("radar.debug")
   local state = require("radar.state")
   local exists = state.get_lock_by_field("filename", filename)
+
+  debug.log("toggle(", filename, ")")
+  debug.log("  exists =", exists)
+  debug.log("  locks before =", #state.locks, vim.inspect(state.locks))
 
   local lock
 
   if not exists then
     lock = M.add(filename, config)
+    debug.log("  action = ADD, label =", lock.label)
   else
     lock = M.remove(filename)
+    debug.log("  action = REMOVE, removed =", lock)
   end
+
+  debug.log("  locks after =", #state.locks, vim.inspect(state.locks))
+  debug.log("  section_ranges =", state.section_line_ranges)
 
   vim.defer_fn(function()
     persistence_module.persist(config)
   end, config.persist.defer_ms)
 
+  debug.flush()
   return lock
 end
 
@@ -116,11 +127,15 @@ function M.lock_current_buffer(buf_nr, config, persistence_module, radar_module)
 
   M.toggle(normalized_filename, config, persistence_module)
 
+  local debug = require("radar.debug")
   if not radar_module.exists() then
+    debug.log("  radar does not exist, calling create")
     radar_module.create(config)
   else
+    debug.log("  radar exists, calling update")
     radar_module.update(config)
   end
+  debug.flush()
 end
 
 return M

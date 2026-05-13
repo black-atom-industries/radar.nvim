@@ -32,11 +32,11 @@ M.default = {
 
   -- Main radar window
   radar = {
-    grid_size = { width = 0.7, height = 0.6 },
-    border = "single",
+    grid_size = { width = 50, height = 75 },
+    border = "solid",
     position = "center",
     winblend = 0,
-    max_recent_files = 25,
+    max_recent_files = 10,
     show_empty_message = true,
     titles = {
       main = "󰐷  RADAR",

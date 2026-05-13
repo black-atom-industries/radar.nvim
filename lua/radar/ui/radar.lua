@@ -419,7 +419,12 @@ end
 ---@param config Radar.Config
 ---@return nil
 function M.create(config)
+  local debug = require("radar.debug")
   local state = require("radar.state")
+
+  debug.log("create() called")
+  debug.log("  locks count =", #state.locks)
+  debug.log("  recent count =", #state.recent_files)
 
   -- Update recent files first
   local recent = require("radar.recent")
@@ -429,6 +434,9 @@ function M.create(config)
   local lines, section_ranges = build_content(config)
   state.section_line_ranges = section_ranges
 
+  debug.log("  content lines =", #lines)
+  debug.log("  section_ranges =", section_ranges)
+
   -- Calculate window dimensions
   local width = resolve_dimension(config.radar.grid_size.width, vim.o.columns, 80)
   local content_height = #lines
@@ -437,6 +445,17 @@ function M.create(config)
     resolve_dimension(config.radar.grid_size.height, vim.o.lines, 12)
   )
   local origin = calculate_origin(config, width, total_height)
+
+  debug.log(
+    "  window: ",
+    width,
+    "x",
+    total_height,
+    "at",
+    origin.row,
+    ",",
+    origin.col
+  )
 
   -- Create buffer
   local bufnr = vim.api.nvim_create_buf(false, true)
@@ -495,13 +514,20 @@ function M.create(config)
   if first_lock_line <= #lines then
     vim.api.nvim_win_set_cursor(winid, { first_lock_line, 0 })
   end
+
+  debug.log("  radar window created, winid =", winid)
+  debug.flush()
 end
 
 ---Update radar window (close and recreate)
 ---@param config Radar.Config
 ---@return nil
 function M.update(config)
+  local debug = require("radar.debug")
+  debug.log("update() called")
+
   if not M.exists() then
+    debug.log("  radar does not exist, delegating to create")
     M.create(config)
     return
   end
@@ -513,8 +539,10 @@ function M.update(config)
   recent.update_state(config)
 
   -- Close and recreate
+  debug.log("  closing window and recreating")
   M.close()
   M.create(config)
+  debug.flush()
 end
 
 return M
