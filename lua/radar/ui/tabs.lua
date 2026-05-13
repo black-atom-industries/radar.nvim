@@ -154,6 +154,11 @@ end
 ---@param config Radar.Config
 ---@return nil
 function M.open(config)
+  -- Capture the source buffer before creating the tabs window
+  local source_buf = vim.api.nvim_get_current_buf()
+  local source_filepath = vim.api.nvim_buf_get_name(source_buf)
+  local source_tabid = vim.api.nvim_get_current_tabpage()
+
   -- Get tabs data
   local tabs_data = tabs.get_tabs_data()
 
@@ -198,8 +203,24 @@ function M.open(config)
   -- Apply highlights
   apply_highlights(bufnr, tabs_data)
 
-  -- Position cursor on first line
-  vim.api.nvim_win_set_cursor(winid, { 1, 0 })
+  -- Position cursor on the source buffer's line
+  local cursor_line = 1
+
+  -- Find the line matching current tab + buffer
+  for i, entry in ipairs(line_mapping) do
+    if entry.tabid == source_tabid then
+      if entry.filepath and entry.filepath == source_filepath then
+        -- Exact buffer match (highest priority)
+        cursor_line = i
+        break
+      elseif cursor_line == 1 then
+        -- Tab header match (fallback if no buffer found)
+        cursor_line = i
+      end
+    end
+  end
+
+  vim.api.nvim_win_set_cursor(winid, { cursor_line, 0 })
 end
 
 ---Toggle tabs window
