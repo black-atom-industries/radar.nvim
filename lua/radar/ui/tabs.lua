@@ -129,10 +129,20 @@ local function setup_keymaps(bufnr, config)
     M.only_line(config)
   end, vim.tbl_extend("force", opts, { desc = "Make tab/buffer the only one" }))
 
-  -- New tab / vertical split
+  -- New tab
   vim.keymap.set("n", "n", function()
     M.new_line(config)
-  end, vim.tbl_extend("force", opts, { desc = "New tab/vertical split" }))
+  end, vim.tbl_extend("force", opts, { desc = "New tab" }))
+
+  -- Vertical split
+  vim.keymap.set("n", "v", function()
+    M.vsplit_line(config)
+  end, vim.tbl_extend("force", opts, { desc = "Vertical split" }))
+
+  -- Horizontal split
+  vim.keymap.set("n", "s", function()
+    M.split_line(config)
+  end, vim.tbl_extend("force", opts, { desc = "Horizontal split" }))
 
   -- Cut buffer/tab into clipboard
   vim.keymap.set("n", "dd", function()
@@ -185,7 +195,7 @@ function M.open(config)
   -- Resolve window config from preset
   local win_config = window.resolve_config(config, config.tabs.win_preset, {
     title = "  TABS ",
-    footer = " [CR] jump  [x] close  [o] only  [n] new  [dd] cut  [p] paste  [P] paste before  [q] quit ",
+    footer = " [CR] jump  [x] close  [o] only  [v] vsplit  [s] hsplit  [n] tab  [dd] cut  [p] paste  [P] paste before  [q] quit ",
     footer_pos = "left",
     border = "solid",
   })
@@ -347,7 +357,7 @@ function M.only_line(config)
   end
 end
 
----Create a new tab or vertical split from the current line
+---Create a new tab from the current tab header line
 ---@param config Radar.Config
 ---@return nil
 function M.new_line(config)
@@ -359,21 +369,61 @@ function M.new_line(config)
   local line_num = cursor[1]
   local item = state.tabs_line_mapping[line_num]
 
-  if not item or not item.tabid then
+  if not item or not item.tabid or item.winid then
     return
   end
 
   -- Close the tabs window first
   M.close()
 
-  if item.winid then
-    -- Buffer line: create a vertical split in this window
-    vim.api.nvim_set_current_win(item.winid)
-    vim.cmd("vsplit")
-  else
-    -- Tab header line: create a new tab
-    vim.cmd("tabnew")
+  -- Tab header line: create a new tab
+  vim.cmd("tabnew")
+end
+
+---Create a vertical split from the current buffer line
+---@param config Radar.Config
+---@return nil
+function M.vsplit_line(config)
+  if not M.exists() then
+    return
   end
+
+  local cursor = vim.api.nvim_win_get_cursor(state.tabs_winid)
+  local line_num = cursor[1]
+  local item = state.tabs_line_mapping[line_num]
+
+  if not item or not item.winid then
+    return
+  end
+
+  -- Close the tabs window first
+  M.close()
+
+  vim.api.nvim_set_current_win(item.winid)
+  vim.cmd("vsplit")
+end
+
+---Create a horizontal split from the current buffer line
+---@param config Radar.Config
+---@return nil
+function M.split_line(config)
+  if not M.exists() then
+    return
+  end
+
+  local cursor = vim.api.nvim_win_get_cursor(state.tabs_winid)
+  local line_num = cursor[1]
+  local item = state.tabs_line_mapping[line_num]
+
+  if not item or not item.winid then
+    return
+  end
+
+  -- Close the tabs window first
+  M.close()
+
+  vim.api.nvim_set_current_win(item.winid)
+  vim.cmd("split")
 end
 
 ---Cut the tab or buffer on the current line (store in clipboard, don't close)
