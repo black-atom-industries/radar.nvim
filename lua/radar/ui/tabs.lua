@@ -396,7 +396,8 @@ function M.open(config)
 
   -- Resolve window config from preset (before building content to get width)
   local win_config = window.resolve_config(config, config.tabs.win_preset, {
-    title = "  TABS ",
+    title = "  ☰ TABS ",
+    title_pos = "left",
     footer = " [CR]jump [x]close [o]only [v]vsp [s]hsp [n]tab [dd]cut [p]paste [q]quit ",
     footer_pos = "left",
     border = "solid",
