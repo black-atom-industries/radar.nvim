@@ -77,6 +77,7 @@ local function apply_highlights(bufnr, tabs_data)
       line_idx = line_idx + 1
     end
   end
+
 end
 
 ---Setup keymaps for the tabs buffer
@@ -103,6 +104,11 @@ local function setup_keymaps(bufnr, config)
   vim.keymap.set("n", "x", function()
     M.delete_line(config)
   end, vim.tbl_extend("force", opts, { desc = "Delete buffer/close tab" }))
+
+  -- Make tab/buffer the only one
+  vim.keymap.set("n", "o", function()
+    M.only_line(config)
+  end, vim.tbl_extend("force", opts, { desc = "Make tab/buffer the only one" }))
 end
 
 ---Open the tabs floating window
@@ -135,6 +141,8 @@ function M.open(config)
   -- Resolve window config from preset
   local win_config = window.resolve_config(config, config.tabs.win_preset, {
     title = "  TABS ",
+    footer = " [CR] jump  [x] close  [o] only  [q] quit ",
+    footer_pos = "left",
   })
 
   local winid = vim.api.nvim_open_win(bufnr, true, win_config)
@@ -239,6 +247,37 @@ function M.delete_line(config)
     if line_num > new_count then
       vim.api.nvim_win_set_cursor(state.tabs_winid, { math.max(1, new_count), 0 })
     end
+  end
+end
+
+---Make the tab or buffer the only one (tabonly/only)
+---@param config Radar.Config
+---@return nil
+function M.only_line(config)
+  if not M.exists() then
+    return
+  end
+
+  local cursor = vim.api.nvim_win_get_cursor(state.tabs_winid)
+  local line_num = cursor[1]
+  local item = state.tabs_line_mapping[line_num]
+
+  if not item or not item.tabid then
+    return
+  end
+
+  -- Close the tabs window first
+  M.close()
+
+  if item.winid then
+    -- Buffer line: switch to this window, then close all other windows in the tab
+    vim.api.nvim_set_current_win(item.winid)
+    vim.cmd("only")
+  else
+    -- Tab header line: switch to this tab, then close all other tabs
+    local tab_win = vim.api.nvim_tabpage_get_win(item.tabid)
+    vim.api.nvim_set_current_win(tab_win)
+    vim.cmd("tabonly")
   end
 end
 
