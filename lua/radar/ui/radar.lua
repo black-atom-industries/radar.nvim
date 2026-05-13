@@ -162,12 +162,9 @@ local function build_content(config)
   -- ── Footer ──
   local alt_footer = config.keys.alternative or config.keys.prefix
   add_line(
-    build_header(
-      "[1-9] lock  [a-g] recent  ["
-        .. alt_footer
-        .. "] alt  [Tab] cycle  [l] lock  [e] edit  [q] quit",
-      "─"
-    )
+    "  [1-9] lock  [a-g] recents  ["
+      .. alt_footer
+      .. "] alt  [Tab]  [l]  [e]  [q] quit"
   )
 
   return lines, section_ranges
@@ -194,14 +191,6 @@ local function apply_highlights(bufnr, config)
   end
 
   -- ── Structural highlights ──
-
-  -- Line 0: Radar header
-  if #lines > 0 then
-    vim.api.nvim_buf_set_extmark(bufnr, ns, 0, 0, {
-      end_col = #lines[1],
-      hl_group = "@constant",
-    })
-  end
 
   -- Section header lines (first line of each section range)
   local header_lines = {
