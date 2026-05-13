@@ -395,13 +395,19 @@ function M.open(config)
   local source_tabid = vim.api.nvim_get_current_tabpage()
 
   -- Resolve window config from preset (before building content to get width)
-  local win_config = window.resolve_config(config, config.tabs.win_preset, {
+  local state = require("radar.state")
+  local row_override = {}
+  if state.radar_origin then
+    row_override.row = state.radar_origin.row
+  end
+  local tabs_opts = vim.tbl_extend("force", row_override, {
     title = "  ☰ TABS ",
     title_pos = "left",
     footer = " [CR]jump [x]close [o]only [v]vsp [s]hsp [n]tab [dd]cut [p]paste [q]quit ",
     footer_pos = "left",
     border = "solid",
   })
+  local win_config = window.resolve_config(config, config.tabs.win_preset, tabs_opts)
 
   -- Get tabs data
   local tabs_data = tabs.get_tabs_data()

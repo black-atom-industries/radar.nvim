@@ -17,6 +17,8 @@ local M = {
   focused_section = nil,
   ---@type Radar.SectionRanges?
   section_line_ranges = nil,
+  ---@type { row: integer, col: integer }?
+  radar_origin = nil,
   ---@type integer?
   edit_winid = nil,
   ---@type integer?
@@ -49,6 +51,7 @@ function M.close_all_radar_windows()
   M.radar_winid = nil
   M.focused_section = nil
   M.section_line_ranges = nil
+  M.radar_origin = nil
 end
 
 ---Get lock by field value

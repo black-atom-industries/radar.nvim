@@ -221,13 +221,20 @@ function M.edit_locks(radar_config, radar_module)
 
   -- Resolve window config from preset with dynamic width/height
   local window = require("radar.window")
-  local win_opts =
-    window.resolve_config(radar_config, radar_config.radar_edit.win_preset, {
+  local row_override = {}
+  if state.radar_origin then
+    row_override.row = state.radar_origin.row
+  end
+  local win_opts = window.resolve_config(
+    radar_config,
+    radar_config.radar_edit.win_preset,
+    vim.tbl_extend("force", row_override, {
       width = win_width,
       height = win_height,
       title = " Edit Locks ",
       title_pos = "center",
     })
+  )
 
   local edit_win = vim.api.nvim_open_win(edit_buf, true, win_opts)
   state.edit_winid = edit_win

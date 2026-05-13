@@ -463,6 +463,9 @@ function M.create(config)
     origin.col
   )
 
+  -- Store for tabs/edit to reuse
+  state.radar_origin = origin
+
   -- Create buffer
   local bufnr = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_set_option_value("buftype", "nofile", { buf = bufnr })
