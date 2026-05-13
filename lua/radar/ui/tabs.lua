@@ -148,6 +148,7 @@ function M.open(config)
     title = "  TABS ",
     footer = " [CR] jump  [x] close  [o] only  [n] new  [q] quit ",
     footer_pos = "left",
+    border = "solid",
   })
 
   local winid = vim.api.nvim_open_win(bufnr, true, win_config)
