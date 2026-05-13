@@ -79,28 +79,28 @@ This spatial keyboard layout gives you instant access to **15 files** without mo
 
 For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). For all defaults see [`config.lua`](lua/radar/config.lua).
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `keys.prefix` | `"<space>"` | Toggle radar / alternative file (double-tap) |
-| `keys.lock` | `"l"` | Lock current buffer to a slot |
-| `keys.locks` | `{"1".."9"}` | Keys for lock slots |
-| `keys.recent` | `{"a".."g"}` | Keys for recent file slots |
-| `keys.tabs_toggle` | `"<leader>t"` | Toggle tabs sidebar |
-| `keys.alternative` | `nil` (= prefix) | Key for alternative file; nil defaults to prefix |
-| `keys.vertical` / `.horizontal` / `.tab` / `.float` | `<C-v>` / `<C-s>` / `<C-t>` / `<C-f>` | Split mode modifiers |
-| `radar.position` | `"center"` | Grid position: `center`, `top_left`, `top_right`, `bottom_left`, `bottom_right` |
-| `radar.grid_size` | `{ width = 125, height = 20 }` | Total grid dimensions |
-| `radar.border` | `"single"` | Border style (see `:h nvim_open_win`) |
-| `radar.max_recent_files` | `25` | Max recent files shown |
-| `radar.titles` | (nerd font icons) | Section titles for main, locks, alternative, recent, hints |
-| `radar.win_opts` | `{ cursorline = true, ... }` | Window-local options applied to radar buffers |
-| `tabs.auto_close` | `true` | Close tabs window after selecting |
-| `tabs.win_preset` | `"center"` | Window preset for tabs sidebar |
-| `radar_edit.win_preset` | `"center"` | Window preset for lock label editor |
-| `file_float.win_preset` | `"center_large"` | Window preset for floating file view |
-| `persist.path` | `stdpath("data")/radar/data.json` | Persistence file location |
-| `persist.defer_ms` | `500` | Debounce delay for saves |
-| `win_presets` | `{}` | Override or add custom window presets |
+| Option                                              | Default                               | Description                                                                     |
+| --------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------- |
+| `keys.prefix`                                       | `"<space>"`                           | Toggle radar / alternative file (double-tap)                                    |
+| `keys.lock`                                         | `"l"`                                 | Lock current buffer to a slot                                                   |
+| `keys.locks`                                        | `{"1".."9"}`                          | Keys for lock slots                                                             |
+| `keys.recent`                                       | `{"a".."g"}`                          | Keys for recent file slots                                                      |
+| `keys.tabs_toggle`                                  | `"<leader>t"`                         | Toggle tabs sidebar                                                             |
+| `keys.alternative`                                  | `nil` (= prefix)                      | Key for alternative file; nil defaults to prefix                                |
+| `keys.vertical` / `.horizontal` / `.tab` / `.float` | `<C-v>` / `<C-s>` / `<C-t>` / `<C-f>` | Split mode modifiers                                                            |
+| `radar.position`                                    | `"center"`                            | Grid position: `center`, `top_left`, `top_right`, `bottom_left`, `bottom_right` |
+| `radar.grid_size`                                   | `{ width = 125, height = 20 }`        | Total grid dimensions                                                           |
+| `radar.border`                                      | `"single"`                            | Border style (see `:h nvim_open_win`)                                           |
+| `radar.max_recent_files`                            | `25`                                  | Max recent files shown                                                          |
+| `radar.titles`                                      | (nerd font icons)                     | Section titles for main, locks, alternative, recent, hints                      |
+| `radar.win_opts`                                    | `{ cursorline = true, ... }`          | Window-local options applied to radar buffers                                   |
+| `tabs.auto_close`                                   | `true`                                | Close tabs window after selecting                                               |
+| `tabs.win_preset`                                   | `"center"`                            | Window preset for tabs sidebar                                                  |
+| `radar_edit.win_preset`                             | `"center"`                            | Window preset for lock label editor                                             |
+| `file_float.win_preset`                             | `"center_large"`                      | Window preset for floating file view                                            |
+| `persist.path`                                      | `stdpath("data")/radar/data.json`     | Persistence file location                                                       |
+| `persist.defer_ms`                                  | `500`                                 | Debounce delay for saves                                                        |
+| `win_presets`                                       | `{}`                                  | Override or add custom window presets                                           |
 
 **Available window presets** (for `win_preset` fields): `"center"`, `"center_large"`, `"cursor"`, `"top_right"`, `"bottom_center"`, `"full_height_sidebar"`
 
