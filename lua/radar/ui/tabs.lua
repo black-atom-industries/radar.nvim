@@ -109,6 +109,11 @@ local function setup_keymaps(bufnr, config)
   vim.keymap.set("n", "o", function()
     M.only_line(config)
   end, vim.tbl_extend("force", opts, { desc = "Make tab/buffer the only one" }))
+
+  -- New tab / vertical split
+  vim.keymap.set("n", "n", function()
+    M.new_line(config)
+  end, vim.tbl_extend("force", opts, { desc = "New tab/vertical split" }))
 end
 
 ---Open the tabs floating window
@@ -141,7 +146,7 @@ function M.open(config)
   -- Resolve window config from preset
   local win_config = window.resolve_config(config, config.tabs.win_preset, {
     title = "  TABS ",
-    footer = " [CR] jump  [x] close  [o] only  [q] quit ",
+    footer = " [CR] jump  [x] close  [o] only  [n] new  [q] quit ",
     footer_pos = "left",
   })
 
@@ -278,6 +283,35 @@ function M.only_line(config)
     local tab_win = vim.api.nvim_tabpage_get_win(item.tabid)
     vim.api.nvim_set_current_win(tab_win)
     vim.cmd("tabonly")
+  end
+end
+
+---Create a new tab or vertical split from the current line
+---@param config Radar.Config
+---@return nil
+function M.new_line(config)
+  if not M.exists() then
+    return
+  end
+
+  local cursor = vim.api.nvim_win_get_cursor(state.tabs_winid)
+  local line_num = cursor[1]
+  local item = state.tabs_line_mapping[line_num]
+
+  if not item or not item.tabid then
+    return
+  end
+
+  -- Close the tabs window first
+  M.close()
+
+  if item.winid then
+    -- Buffer line: create a vertical split in this window
+    vim.api.nvim_set_current_win(item.winid)
+    vim.cmd("vsplit")
+  else
+    -- Tab header line: create a new tab
+    vim.cmd("tabnew")
   end
 end
 
