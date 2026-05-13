@@ -98,24 +98,46 @@ end
 ---@param radar_module table
 ---@return nil
 function M.lock_current_buffer(buf_nr, config, persistence_module, radar_module)
+  local debug = require("radar.debug")
+  local state = require("radar.state")
+
+  debug.log("=== lock_current_buffer ===")
+  debug.log("  source_bufnr (passed) =", buf_nr)
+  debug.log("  state.source_bufnr =", state.source_bufnr)
+  debug.log("  nvim_get_current_buf() =", vim.api.nvim_get_current_buf())
+  debug.log(
+    "  nvim_get_current_buf name =",
+    vim.api.nvim_buf_get_name(vim.api.nvim_get_current_buf())
+  )
+  debug.log("  state.recent_files =", state.recent_files)
+
   buf_nr = buf_nr or vim.api.nvim_get_current_buf()
+  debug.log("  resolved buf_nr =", buf_nr)
 
   -- Don't lock radar-related buffers
   local filetype = vim.api.nvim_get_option_value("filetype", { buf = buf_nr })
+  debug.log("  buf filetype =", filetype)
   if filetype == "radar" or filetype == "radar-edit" then
+    debug.log("  EARLY RETURN: radar buffer")
+    debug.flush()
     return
   end
 
   -- Don't lock terminal buffers
   local buftype = vim.api.nvim_get_option_value("buftype", { buf = buf_nr })
   if buftype == "terminal" then
+    debug.log("  EARLY RETURN: terminal buffer")
+    debug.flush()
     return
   end
 
   local filename = vim.api.nvim_buf_get_name(buf_nr)
+  debug.log("  raw filename =", filename)
 
   -- Don't lock empty or unnamed buffers
   if filename == "" then
+    debug.log("  EARLY RETURN: empty buffer")
+    debug.flush()
     return
   end
 
@@ -124,10 +146,10 @@ function M.lock_current_buffer(buf_nr, config, persistence_module, radar_module)
   if not filename:match("^%w+://") then
     normalized_filename = vim.fn.fnamemodify(filename, ":p:.")
   end
+  debug.log("  normalized filename =", normalized_filename)
 
   M.toggle(normalized_filename, config, persistence_module)
 
-  local debug = require("radar.debug")
   if not radar_module.exists() then
     debug.log("  radar does not exist, calling create")
     radar_module.create(config)

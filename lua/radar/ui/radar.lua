@@ -336,10 +336,16 @@ end
 ---@param config Radar.Config
 ---@return nil
 function M.open(config)
+  local debug = require("radar.debug")
   local state = require("radar.state")
 
   -- Store the buffer we're opening from
   state.source_bufnr = vim.api.nvim_get_current_buf()
+  debug.log("=== radar.open() ===")
+  debug.log("  source_bufnr set to =", state.source_bufnr)
+  debug.log("  source buf name =", vim.api.nvim_buf_get_name(state.source_bufnr))
+  debug.log("  current buffer =", vim.api.nvim_get_current_buf())
+  debug.flush()
 
   -- Capture the alternate file before focus changes
   local alternative = require("radar.alternative")
