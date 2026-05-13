@@ -338,6 +338,12 @@ local function setup_keymaps(bufnr, config)
     M.close()
   end, vim.tbl_extend("force", opts, { desc = "Close tabs window" }))
 
+  -- Return to radar
+  vim.keymap.set("n", "r", function()
+    M.close()
+    require("radar.ui.radar").open(config)
+  end, vim.tbl_extend("force", opts, { desc = "Return to Radar" }))
+
   -- Delete buffer / close tab
   vim.keymap.set("n", "x", function()
     M.delete_line(config)
