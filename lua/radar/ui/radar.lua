@@ -47,6 +47,8 @@ end
 local function build_content(config)
   local state = require("radar.state")
   local width = resolve_dimension(config.radar.grid_size.width, vim.o.columns, 80)
+  -- Account for left + right window border (2 cells)
+  local content_width = math.max(width - 2, 40)
 
   ---@type string[]
   local lines = {}
@@ -63,7 +65,7 @@ local function build_content(config)
   end
 
   local function build_header(text, fill_char)
-    local fill_width = math.max(width - vim.fn.strdisplaywidth(text) - 2, 0)
+    local fill_width = math.max(content_width - vim.fn.strdisplaywidth(text) - 2, 0)
     local fill = fill_width > 0
         and string.rep(
           fill_char,
@@ -72,9 +74,6 @@ local function build_content(config)
       or ""
     return " " .. text .. fill .. " "
   end
-
-  -- ── Radar header ──
-  add_line(build_header("═══  R A D A R  ═══", "═"))
 
   -- ── Alternative file ──
   local alt_label = config.keys.alternative or config.keys.prefix
@@ -99,7 +98,7 @@ local function build_content(config)
     .. string.rep(
       "─",
       math.max(
-        width
+        content_width
           - vim.fn.strdisplaywidth(locks_title)
           - vim.fn.strdisplaywidth(tostring(locks_count))
           - 4,
@@ -130,7 +129,7 @@ local function build_content(config)
     .. string.rep(
       "─",
       math.max(
-        width
+        content_width
           - vim.fn.strdisplaywidth(recent_title)
           - vim.fn.strdisplaywidth(tostring(recent_count))
           - 4,
