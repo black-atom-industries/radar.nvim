@@ -41,24 +41,56 @@ local function setup_highlights()
   -- Git indicator groups
   vim.api.nvim_set_hl(0, "RadarTabsGitSection", { bg = git_bg })
   vim.api.nvim_set_hl(0, "RadarTabsGitLabel", { fg = muted, bg = git_bg })
-  vim.api.nvim_set_hl(0, "RadarTabsGitAdd", { fg = get_attr("MiniDiffSignAdd", "fg"), bg = git_bg })
-  vim.api.nvim_set_hl(0, "RadarTabsGitChange", { fg = get_attr("MiniDiffSignChange", "fg"), bg = git_bg })
-  vim.api.nvim_set_hl(0, "RadarTabsGitDelete", { fg = get_attr("MiniDiffSignDelete", "fg"), bg = git_bg })
+  vim.api.nvim_set_hl(
+    0,
+    "RadarTabsGitAdd",
+    { fg = get_attr("MiniDiffSignAdd", "fg"), bg = git_bg }
+  )
+  vim.api.nvim_set_hl(
+    0,
+    "RadarTabsGitChange",
+    { fg = get_attr("MiniDiffSignChange", "fg"), bg = git_bg }
+  )
+  vim.api.nvim_set_hl(
+    0,
+    "RadarTabsGitDelete",
+    { fg = get_attr("MiniDiffSignDelete", "fg"), bg = git_bg }
+  )
 
   -- LSP indicator groups
   vim.api.nvim_set_hl(0, "RadarTabsLspSection", { bg = lsp_bg })
   vim.api.nvim_set_hl(0, "RadarTabsLspLabel", { fg = muted, bg = lsp_bg })
-  vim.api.nvim_set_hl(0, "RadarTabsLspError", { fg = get_attr("DiagnosticSignError", "fg"), bg = lsp_bg })
-  vim.api.nvim_set_hl(0, "RadarTabsLspWarn", { fg = get_attr("DiagnosticSignWarn", "fg"), bg = lsp_bg })
-  vim.api.nvim_set_hl(0, "RadarTabsLspInfo", { fg = get_attr("DiagnosticSignInfo", "fg"), bg = lsp_bg })
-  vim.api.nvim_set_hl(0, "RadarTabsLspHint", { fg = get_attr("DiagnosticSignHint", "fg"), bg = lsp_bg })
+  vim.api.nvim_set_hl(
+    0,
+    "RadarTabsLspError",
+    { fg = get_attr("DiagnosticSignError", "fg"), bg = lsp_bg }
+  )
+  vim.api.nvim_set_hl(
+    0,
+    "RadarTabsLspWarn",
+    { fg = get_attr("DiagnosticSignWarn", "fg"), bg = lsp_bg }
+  )
+  vim.api.nvim_set_hl(
+    0,
+    "RadarTabsLspInfo",
+    { fg = get_attr("DiagnosticSignInfo", "fg"), bg = lsp_bg }
+  )
+  vim.api.nvim_set_hl(
+    0,
+    "RadarTabsLspHint",
+    { fg = get_attr("DiagnosticSignHint", "fg"), bg = lsp_bg }
+  )
 
   -- Tab header groups (bold for all, standout fg for active)
-  local tab_bg = get_attr("CursorLine", "bg")
-  local active_fg = get_attr("Title", "fg")
+  local tab_bg = get_attr("Normal", "bg")
+  local active_fg = get_attr("@attribute", "fg")
 
   vim.api.nvim_set_hl(0, "RadarTabsTabHeader", { bold = true, bg = tab_bg })
-  vim.api.nvim_set_hl(0, "RadarTabsTabHeaderActive", { bold = true, fg = active_fg, bg = tab_bg })
+  vim.api.nvim_set_hl(
+    0,
+    "RadarTabsTabHeaderActive",
+    { bold = true, fg = active_fg, bg = tab_bg }
+  )
 end
 
 -- Create highlight groups on load and rebuild on theme change
@@ -199,7 +231,8 @@ local function apply_highlights(bufnr, tabs_data)
   for _, tab in ipairs(tabs_data) do
     -- Highlight tab header (all get bold + subtle bg, active gets standout fg)
     if line_idx < #lines then
-      local hl_group = tab.is_current and "RadarTabsTabHeaderActive" or "RadarTabsTabHeader"
+      local hl_group = tab.is_current and "RadarTabsTabHeaderActive"
+        or "RadarTabsTabHeader"
       vim.api.nvim_buf_set_extmark(bufnr, ns, line_idx, 0, {
         end_col = #lines[line_idx + 1],
         hl_group = hl_group,
@@ -659,12 +692,19 @@ function M.cut_line(config)
   cut_line_num = line_num
 
   -- Re-apply highlights to visually mark the cut line
-  if M.exists() and state.tabs_bufid and vim.api.nvim_buf_is_valid(state.tabs_bufid) then
+  if
+    M.exists()
+    and state.tabs_bufid
+    and vim.api.nvim_buf_is_valid(state.tabs_bufid)
+  then
     local tabs_data = tabs.get_tabs_data()
     apply_highlights(state.tabs_bufid, tabs_data)
   end
 
-  vim.notify("Cut " .. cut_item.type .. " — press p to paste it", vim.log.levels.INFO)
+  vim.notify(
+    "Cut " .. cut_item.type .. " — press p to paste it",
+    vim.log.levels.INFO
+  )
 end
 
 ---Paste the cut item after the current line
@@ -704,7 +744,6 @@ function M.paste_line(config)
     if cut_item.winid and vim.api.nvim_win_is_valid(cut_item.winid) then
       pcall(vim.api.nvim_win_close, cut_item.winid, false)
     end
-
   elseif cut_item.type == "tab" and cut_item.tabid then
     if not vim.api.nvim_tabpage_is_valid(cut_item.tabid) then
       return
