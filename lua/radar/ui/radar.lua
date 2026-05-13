@@ -163,7 +163,7 @@ local function build_content(config)
   add_line(
     "  [1-9] lock  [a-g] recents  ["
       .. alt_footer
-      .. "] alt  [Tab]  [l]  [e]  [q] quit"
+      .. "] alt  [Tab]  [l]  [e]  [t] tabs  [q] quit"
   )
 
   return lines, section_ranges

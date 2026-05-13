@@ -112,6 +112,12 @@ function M.setup_common_keymaps(bufnr, config, radar, opts)
     { desc = "Toggle lock for file under cursor" }
   ))
 
+  -- Open tabs sidebar (closes radar)
+  vim.keymap.set("n", "t", function()
+    radar.close()
+    require("radar.ui.tabs").open(config)
+  end, vim.tbl_extend("force", opts, { desc = "Open Tabs Sidebar" }))
+
   -- Alternative file (defaults to prefix for double-tap behavior)
   local alt_key = config.keys.alternative or config.keys.prefix
   register_split_variants(bufnr, alt_key, function(cmd)
