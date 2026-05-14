@@ -6,7 +6,7 @@ local window = require("radar.window")
 local indicators = require("radar.ui.indicators")
 
 ---Cut item clipboard for cut/paste operations
----@type { type: "buffer"|string, filepath?: string, buffers?: string[] }?
+---@type { type: "buffer"|string, filepath?: string, buffers?: string[], winid?: integer, tabid?: integer }?
 local cut_item = nil
 
 ---Line number of the currently cut item (for visual highlight)

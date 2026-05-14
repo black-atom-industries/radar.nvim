@@ -45,7 +45,7 @@ end
 
 ---Build the content lines and section line ranges for the unified buffer
 ---@param config Radar.Config
----@return { lines: string[], section_ranges: Radar.SectionRanges }
+---@return string[], Radar.SectionRanges
 local function build_content(config)
   local state = require("radar.state")
   local width = resolve_dimension(config.radar.size.width, vim.o.columns, 80)

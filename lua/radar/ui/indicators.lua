@@ -137,7 +137,7 @@ end
 ---@param left string
 ---@param suffix string
 ---@param total_width integer Total columns available
----@param indent integer Leading indentation in spaces (unused currently, kept for API compatibility)
+---@param _indent integer Leading indentation in spaces (unused currently, kept for API compatibility)
 ---@return string
 function M.right_align_line(left, suffix, total_width, _indent)
   if suffix == "" then

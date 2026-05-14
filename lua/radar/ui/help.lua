@@ -73,12 +73,7 @@ local function setup_close_keymaps(bufnr)
 end
 
 ---Show a help popup centered over a parent window
----@param opts table
----@param opts.parent_winid integer Window to center over & return focus to
----@param opts.title string Border title (e.g. "  RADAR HELP  ")
----@param opts.lines string[] Content lines (fully pre-formatted)
----@param opts.width? integer Override width (default: computed from longest line + 2)
----@param opts.height? integer Override height (default: from #lines)
+---@param opts { parent_winid?: integer, title: string, lines: string[], width?: integer, height?: integer }
 function M.show(opts)
   if not opts.parent_winid or not vim.api.nvim_win_is_valid(opts.parent_winid) then
     return
@@ -167,7 +162,7 @@ function M.close()
 end
 
 ---Toggle help popup
----@param opts table Same as M.show()
+---@param opts { parent_winid?: integer, title: string, lines: string[], width?: integer, height?: integer }
 function M.toggle(opts)
   if _winid and vim.api.nvim_win_is_valid(_winid) then
     M.close()
