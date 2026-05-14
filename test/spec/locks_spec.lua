@@ -1,5 +1,5 @@
-local locks = require("radar.locks")
-local state = require("radar.state")
+local locks = require("radar.data.locks")
+local state = require("radar.data.state")
 local config = require("radar.config")
 
 describe("locks", function()

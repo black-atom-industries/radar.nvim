@@ -13,7 +13,7 @@ function M.get_files(config)
   local seen_files = {}
   local excluded_files = {}
 
-  local state = require("radar.state")
+  local state = require("radar.data.state")
   -- Create lookup table for locked files (normalize to absolute paths)
   for _, lock in ipairs(state.get_locks()) do
     local abs_path = vim.fn.fnamemodify(lock.filename, ":p")
@@ -21,7 +21,7 @@ function M.get_files(config)
   end
 
   -- Exclude alternative file
-  local alternative = require("radar.alternative")
+  local alternative = require("radar.data.alternative")
   local alt_file = alternative.get_alternative_file()
   if alt_file then
     excluded_files[alt_file] = true
@@ -76,7 +76,7 @@ function M.track_current_file(config)
   -- Get absolute path
   local abs_path = vim.fn.fnamemodify(current_file, ":p")
 
-  local state = require("radar.state")
+  local state = require("radar.data.state")
   -- Remove if already exists (we'll add it to the end)
   for i = #state.get_session_files(), 1, -1 do
     if state.get_session_files()[i] == abs_path then
@@ -101,7 +101,7 @@ function M.update_state(config)
   if not config then
     return
   end
-  local state = require("radar.state")
+  local state = require("radar.data.state")
   state.set_recent_files(M.get_files(config))
 end
 

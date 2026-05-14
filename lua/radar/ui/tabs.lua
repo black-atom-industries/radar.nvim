@@ -1,8 +1,8 @@
 local M = {}
 
-local state = require("radar.state")
-local tabs = require("radar.tabs")
-local window = require("radar.window")
+local state = require("radar.data.state")
+local tabs = require("radar.data.tabs")
+local window = require("radar.ui.window")
 local indicators = require("radar.ui.indicators")
 
 ---Cut item clipboard for cut/paste operations

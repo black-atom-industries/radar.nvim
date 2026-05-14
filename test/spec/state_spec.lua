@@ -1,4 +1,4 @@
-local state = require("radar.state")
+local state = require("radar.data.state")
 
 describe("state", function()
   local function setup_test_locks()

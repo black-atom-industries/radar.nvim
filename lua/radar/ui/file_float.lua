@@ -9,7 +9,7 @@ local M = {}
 ---@return integer winid The window ID of the created float
 function M.open(filepath, config)
   -- Resolve window config from preset
-  local window = require("radar.window")
+  local window = require("radar.ui.window")
   local win_opts = window.resolve_config(config, config.file_float.win_preset, {
     title = " " .. vim.fn.fnamemodify(filepath, ":.") .. " ",
   })

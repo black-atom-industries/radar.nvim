@@ -10,7 +10,7 @@ function M.setup(config)
     group = autogrp("radar.VimEnter", { clear = true }),
     callback = function()
       -- Update recent files now that vim.v.oldfiles is loaded
-      local recent = require("radar.recent")
+      local recent = require("radar.data.recent")
       local radar = require("radar.ui.radar")
       recent.update_state(config)
       -- Only update if radar is open
@@ -34,7 +34,7 @@ function M.setup(config)
   autocmd("BufEnter", {
     group = autogrp("radar.BufEnter", { clear = true }),
     callback = function()
-      local recent = require("radar.recent")
+      local recent = require("radar.data.recent")
       local radar = require("radar.ui.radar")
 
       -- Track current file for session recent files

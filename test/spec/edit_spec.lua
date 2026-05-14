@@ -1,5 +1,5 @@
 local edit = require("radar.ui.edit")
-local state = require("radar.state")
+local state = require("radar.data.state")
 local config = require("radar.config")
 
 describe("edit", function()

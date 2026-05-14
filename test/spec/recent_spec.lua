@@ -1,5 +1,5 @@
-local recent = require("radar.recent")
-local state = require("radar.state")
+local recent = require("radar.data.recent")
+local state = require("radar.data.state")
 local config = require("radar.config")
 
 describe("recent", function()

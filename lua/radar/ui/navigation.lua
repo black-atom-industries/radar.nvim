@@ -5,7 +5,7 @@ local M = {}
 ---@param section "locks" | "recent"
 ---@return string? filepath
 function M.get_file_from_line(_config, section)
-  local state = require("radar.state")
+  local state = require("radar.data.state")
 
   if
     not state.get_radar_winid()
@@ -70,7 +70,7 @@ end
 ---@param radar_module table
 ---@return nil
 function M.open_lock(label, open_cmd, config, radar_module)
-  local state = require("radar.state")
+  local state = require("radar.data.state")
   local lock = state.get_lock_by_field("label", tostring(label))
   if lock then
     M.open_file(lock.filename, open_cmd, config, radar_module)
@@ -83,7 +83,7 @@ end
 ---@param radar_module table
 ---@return nil
 function M.open_alternative(open_cmd, config, radar_module)
-  local state = require("radar.state")
+  local state = require("radar.data.state")
   -- Use the alternate file captured when radar was opened
   local alt_file = state.get_source_alt_file()
   if alt_file then
@@ -98,7 +98,7 @@ end
 ---@param radar_module table
 ---@return nil
 function M.open_recent(label, open_cmd, config, radar_module)
-  local state = require("radar.state")
+  local state = require("radar.data.state")
   -- Find the recent file by label
   for i, recent_label in ipairs(config.keys.recent) do
     if recent_label == label and state.get_recent_files()[i] then

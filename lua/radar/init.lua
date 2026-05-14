@@ -10,8 +10,8 @@ function M.setup(opts)
   config = vim.tbl_deep_extend("force", require("radar.config").default, opts)
 
   require("radar.autocmd").setup(config)
-  require("radar.keys").setup(config)
-  require("radar.persistence").populate(config, require("radar.ui.radar"))
+  require("radar.ui.keys").setup(config)
+  require("radar.persist.persistence").populate(config, require("radar.ui.radar"))
 
   -- Create user command
   vim.api.nvim_create_user_command("RadarCleanup", function(cmd_opts)
@@ -39,7 +39,7 @@ function M.cleanup(opts)
   end
 
   opts = opts or {}
-  local cleanup = require("radar.cleanup")
+  local cleanup = require("radar.persist.cleanup")
   local result = cleanup.cleanup(config, opts)
 
   if opts.dry_run then

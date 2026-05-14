@@ -6,7 +6,7 @@ local M = {}
 local function calculate_window_width(radar_module)
   local max_width = 60 -- Minimum width
 
-  local state = require("radar.state")
+  local state = require("radar.data.state")
   -- Check locked files
   for _, lock in ipairs(state.get_locks()) do
     local formatted_path = radar_module.get_formatted_filepath(lock.filename)
@@ -89,8 +89,8 @@ function M.save_buffer(edit_buf, radar_config, radar_module)
   end
 
   -- Update locks and persist
-  local state = require("radar.state")
-  local persistence = require("radar.persistence")
+  local state = require("radar.data.state")
+  local persistence = require("radar.persist.persistence")
   state.set_locks(new_locks)
   persistence.persist(radar_config)
   radar_module.update(radar_config)
@@ -107,7 +107,7 @@ end
 ---@param radar_module table
 ---@return nil
 function M.open_file_from_edit(edit_buf, open_cmd, radar_config, radar_module)
-  local state = require("radar.state")
+  local state = require("radar.data.state")
   local cursor = vim.api.nvim_win_get_cursor(state.get_edit_winid())
   local line_nr = cursor[1]
   local lines = vim.api.nvim_buf_get_lines(edit_buf, 0, -1, false)
@@ -143,14 +143,14 @@ function M.open_file_from_edit(edit_buf, open_cmd, radar_config, radar_module)
   M.cleanup()
 
   -- Open the file using navigation module
-  local navigation = require("radar.navigation")
+  local navigation = require("radar.ui.navigation")
   navigation.open_file(full_path, open_cmd, radar_config, radar_module)
 end
 
 ---Cleanup edit mode state
 ---@return nil
 function M.cleanup()
-  local state = require("radar.state")
+  local state = require("radar.data.state")
   if
     state.get_edit_winid() and vim.api.nvim_win_is_valid(state.get_edit_winid())
   then
@@ -169,7 +169,7 @@ end
 ---@param radar_module table
 ---@return nil
 function M.edit_locks(radar_config, radar_module)
-  local state = require("radar.state")
+  local state = require("radar.data.state")
 
   -- Close radar window before opening edit window
   radar_module.close()
@@ -222,7 +222,7 @@ function M.edit_locks(radar_config, radar_module)
   local win_height = math.max(math.min(#lines + 2, 20), 5) -- min 5, max 20
 
   -- Resolve window config from preset with dynamic width/height
-  local window = require("radar.window")
+  local window = require("radar.ui.window")
   local row_override = {}
   if state.get_radar_origin() then
     row_override.row = state.get_radar_origin().row

@@ -4,7 +4,7 @@ local M = {}
 ---@param config Radar.Config
 ---@return string
 function M.get_next_unused_label(config)
-  local state = require("radar.state")
+  local state = require("radar.data.state")
   local used_labels = {}
   for _, lock in ipairs(state.get_locks()) do
     table.insert(used_labels, lock.label)
@@ -32,7 +32,7 @@ function M.add(filename, config)
     filename = filename,
   }
 
-  local state = require("radar.state")
+  local state = require("radar.data.state")
   table.insert(state.get_locks(), lock)
   return lock
 end
@@ -44,7 +44,7 @@ function M.remove(filename)
   ---@type Radar.Lock
   local removed_lock
 
-  local state = require("radar.state")
+  local state = require("radar.data.state")
   for i, lock in ipairs(state.get_locks()) do
     if lock.filename == filename then
       removed_lock = lock
@@ -63,7 +63,7 @@ end
 ---@return Radar.Lock
 function M.toggle(filename, config, persistence_module)
   local debug = require("radar.debug")
-  local state = require("radar.state")
+  local state = require("radar.data.state")
   local exists = state.get_lock_by_field("filename", filename)
 
   debug.log("toggle(", filename, ")")
@@ -99,7 +99,7 @@ end
 ---@return nil
 function M.lock_current_buffer(buf_nr, config, persistence_module, radar_module)
   local debug = require("radar.debug")
-  local state = require("radar.state")
+  local state = require("radar.data.state")
 
   debug.log("=== lock_current_buffer ===")
   debug.log("  source_bufnr (passed) =", buf_nr)

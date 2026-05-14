@@ -97,7 +97,7 @@ function M.load(config)
   local is_readable = vim.fn.filereadable(file_path)
   if is_readable == 1 then
     local data = M.read(file_path)
-    local migration = require("radar.migration")
+    local migration = require("radar.persist.migration")
     return migration.migrate(data)
   else
     return nil
@@ -114,7 +114,7 @@ function M.persist(config)
   local persisted_data = M.load(config)
   local data
 
-  local state = require("radar.state")
+  local state = require("radar.data.state")
   local current_time = os.time()
 
   if persisted_data == nil then
@@ -174,7 +174,7 @@ function M.populate(config)
     local locks = vim.tbl_get(data, "projects", project_path, git_branch, "locks")
 
     if locks ~= nil then
-      local state = require("radar.state")
+      local state = require("radar.data.state")
       state.set_locks(locks)
 
       -- Update lastAccessed for current project/branch

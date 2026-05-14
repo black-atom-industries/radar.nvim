@@ -47,7 +47,7 @@ end
 ---@param config Radar.Config
 ---@return string[], Radar.SectionRanges
 local function build_content(config)
-  local state = require("radar.state")
+  local state = require("radar.data.state")
   local width = resolve_dimension(config.radar.size.width, vim.o.columns, 80)
   -- Account for left + right window border (2 cells)
   local content_width = math.max(width - 2, 40)
@@ -174,7 +174,7 @@ local function apply_highlights(bufnr)
   vim.api.nvim_buf_clear_namespace(bufnr, locks_ns, 0, -1)
   vim.api.nvim_buf_clear_namespace(bufnr, recent_ns, 0, -1)
 
-  local state = require("radar.state")
+  local state = require("radar.data.state")
   local section_ranges = state.get_section_line_ranges()
   if not section_ranges then
     return
@@ -304,7 +304,7 @@ end
 ---Check if radar exists (window valid)
 ---@return boolean
 function M.exists()
-  local state = require("radar.state")
+  local state = require("radar.data.state")
   return state.get_radar_winid() ~= nil
     and vim.api.nvim_win_is_valid(state.get_radar_winid())
 end
@@ -312,7 +312,7 @@ end
 ---Close radar window
 ---@return nil
 function M.close()
-  local state = require("radar.state")
+  local state = require("radar.data.state")
   if
     state.get_radar_winid() and vim.api.nvim_win_is_valid(state.get_radar_winid())
   then
@@ -341,7 +341,7 @@ end
 ---@return nil
 function M.open(config)
   local debug = require("radar.debug")
-  local state = require("radar.state")
+  local state = require("radar.data.state")
 
   -- Store the buffer we're opening from
   state.set_source_bufnr(vim.api.nvim_get_current_buf())
@@ -355,7 +355,7 @@ function M.open(config)
   debug.flush()
 
   -- Capture the alternate file before focus changes
-  local alternative = require("radar.alternative")
+  local alternative = require("radar.data.alternative")
   state.set_source_alt_file(alternative.get_alternative_file())
 
   if not M.exists() then
@@ -366,7 +366,7 @@ end
 ---Get buffer ID of the single radar window
 ---@return integer?
 function M.get_focused_bufid()
-  local state = require("radar.state")
+  local state = require("radar.data.state")
   if
     not state.get_radar_winid()
     or not vim.api.nvim_win_is_valid(state.get_radar_winid())
@@ -379,7 +379,7 @@ end
 ---Determine current section from cursor position
 ---@return "locks" | "recent" | nil
 function M.get_focused_section_from_cursor()
-  local state = require("radar.state")
+  local state = require("radar.data.state")
   if
     not state.get_radar_winid()
     or not vim.api.nvim_win_is_valid(state.get_radar_winid())
@@ -407,7 +407,7 @@ end
 ---Cycle focus to next section (Tab)
 ---@return nil
 function M.cycle_focus_next()
-  local state = require("radar.state")
+  local state = require("radar.data.state")
   if
     not state.get_radar_winid()
     or not vim.api.nvim_win_is_valid(state.get_radar_winid())
@@ -442,14 +442,14 @@ end
 ---@return nil
 function M.create(config)
   local debug = require("radar.debug")
-  local state = require("radar.state")
+  local state = require("radar.data.state")
 
   debug.log("create() called")
   debug.log("  locks count =", #state.get_locks())
   debug.log("  recent count =", #state.get_recent_files())
 
   -- Update recent files first
-  local recent = require("radar.recent")
+  local recent = require("radar.data.recent")
   recent.update_state(config)
 
   -- Build content lines
@@ -495,7 +495,7 @@ function M.create(config)
   vim.api.nvim_set_option_value("modifiable", false, { buf = bufnr })
 
   -- Set up buffer-local keymaps
-  local keys = require("radar.keys")
+  local keys = require("radar.ui.keys")
   keys.setup_all_keymaps(bufnr, config)
 
   -- Compute cursor position BEFORE creating window (BufEnter autocmds
@@ -592,7 +592,7 @@ end
 ---@param config Radar.Config
 ---@return nil
 function M.toggle_help(config)
-  local state = require("radar.state")
+  local state = require("radar.data.state")
   if
     not state.get_radar_winid()
     or not vim.api.nvim_win_is_valid(state.get_radar_winid())
@@ -612,7 +612,7 @@ end
 ---@param config Radar.Config
 ---@return nil
 function M.show_help(config)
-  local state = require("radar.state")
+  local state = require("radar.data.state")
   if
     not state.get_radar_winid()
     or not vim.api.nvim_win_is_valid(state.get_radar_winid())
@@ -669,7 +669,7 @@ function M.update(config)
   end
 
   -- Update recent files
-  local recent = require("radar.recent")
+  local recent = require("radar.data.recent")
   recent.update_state(config)
 
   -- Close and recreate

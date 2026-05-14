@@ -1,4 +1,4 @@
-local persistence = require("radar.persistence")
+local persistence = require("radar.persist.persistence")
 
 describe("persistence", function()
   local test_data_path = vim.fn.tempname() .. ".json"

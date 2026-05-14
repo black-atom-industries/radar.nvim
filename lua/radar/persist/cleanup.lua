@@ -84,7 +84,7 @@ function M.cleanup(config, opts)
   local dry_run = opts.dry_run or false
   local older_than_days = opts.older_than_days
 
-  local persistence = require("radar.persistence")
+  local persistence = require("radar.persist.persistence")
   local data = persistence.load(config)
 
   if not data or not data.projects then

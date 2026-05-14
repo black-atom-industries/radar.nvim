@@ -79,9 +79,9 @@ function M.setup_common_keymaps(bufnr, config, radar, opts)
 
   -- Lock/unlock file under cursor
   vim.keymap.set("n", config.keys.lock, function()
-    local navigation = require("radar.navigation")
-    local locks = require("radar.locks")
-    local persistence = require("radar.persistence")
+    local navigation = require("radar.ui.navigation")
+    local locks = require("radar.data.locks")
+    local persistence = require("radar.persist.persistence")
 
     local section = radar.get_focused_section_from_cursor()
     if not section then
@@ -121,7 +121,7 @@ function M.setup_common_keymaps(bufnr, config, radar, opts)
   -- Alternative file (defaults to prefix for double-tap behavior)
   local alt_key = config.keys.alternative or config.keys.prefix
   register_split_variants(bufnr, alt_key, function(cmd)
-    local navigation = require("radar.navigation")
+    local navigation = require("radar.ui.navigation")
     navigation.open_alternative(cmd, config, radar)
   end, "Open alternative file", config)
 
@@ -141,7 +141,7 @@ end
 ---@param config Radar.Config
 ---@return nil
 function M.setup_all_keymaps(bufnr, config)
-  local navigation = require("radar.navigation")
+  local navigation = require("radar.ui.navigation")
   local radar = require("radar.ui.radar")
   local opts = { buffer = bufnr, silent = true, noremap = true, nowait = true }
 
