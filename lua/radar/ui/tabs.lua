@@ -26,9 +26,9 @@ function M.close()
 end
 
 ---Toggle tabs help popup
----@param config Radar.Config
+---@param _config Radar.Config
 ---@return nil
-function M.toggle_help(config)
+function M.toggle_help(_config)
   local help = require("radar.ui.help")
   if help.is_open() then
     help.close()
@@ -363,9 +363,9 @@ function M.toggle(config)
 end
 
 ---Update tabs window content
----@param config Radar.Config
+---@param _config Radar.Config
 ---@return nil
-function M.update(config)
+function M.update(_config)
   if not M.exists() then
     return
   end
@@ -457,9 +457,9 @@ function M.delete_line(config)
 end
 
 ---Make the tab or buffer the only one (tabonly/only)
----@param config Radar.Config
+---@param _config Radar.Config
 ---@return nil
-function M.only_line(config)
+function M.only_line(_config)
   if not M.exists() then
     return
   end
@@ -488,9 +488,9 @@ function M.only_line(config)
 end
 
 ---Create a new tab from the current tab header line
----@param config Radar.Config
+---@param _config Radar.Config
 ---@return nil
-function M.new_line(config)
+function M.new_line(_config)
   if not M.exists() then
     return
   end
@@ -511,9 +511,9 @@ function M.new_line(config)
 end
 
 ---Create a vertical split from the current buffer line
----@param config Radar.Config
+---@param _config Radar.Config
 ---@return nil
-function M.vsplit_line(config)
+function M.vsplit_line(_config)
   if not M.exists() then
     return
   end
@@ -534,9 +534,9 @@ function M.vsplit_line(config)
 end
 
 ---Create a horizontal split from the current buffer line
----@param config Radar.Config
+---@param _config Radar.Config
 ---@return nil
-function M.split_line(config)
+function M.split_line(_config)
   if not M.exists() then
     return
   end
@@ -557,9 +557,9 @@ function M.split_line(config)
 end
 
 ---Cut the tab or buffer on the current line (store in clipboard, don't close)
----@param config Radar.Config
+---@param _config Radar.Config
 ---@return nil
-function M.cut_line(config)
+function M.cut_line(_config)
   if not M.exists() then
     return
   end
