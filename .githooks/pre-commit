@@ -8,12 +8,6 @@ if [ -z "$staged_lua" ]; then
   exit 0
 fi
 
-# StyLua: check Lua file formatting
-if command -v stylua >/dev/null 2>&1; then
-  echo "$staged_lua" | tr '\n' '\0' | xargs -0 stylua --check
-fi
-
-# Selene: lint Lua files
-if command -v selene >/dev/null 2>&1; then
-  echo "$staged_lua" | tr '\n' '\0' | xargs -0 selene
-fi
+# Run all checks (lint, typecheck, selene)
+# Each tool skips gracefully if not installed, warns about what's missing
+make check
