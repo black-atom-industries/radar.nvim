@@ -1,32 +1,27 @@
 # Makefile for radar.nvim
 
-.PHONY: test test-watch test-path test-verbose lint typecheck selene check clean help
+.PHONY: test test-watch test-verbose lint typecheck selene check format install-hooks clean validate help
 
 # Default target
 help:
 	@echo "Available targets:"
-	@echo "  test        - Run all tests (using mini.test)"
-	@echo "  test-path   - Run only path utility tests"
-	@echo "  test-watch  - Run tests in watch mode (requires entr)"
-	@echo "  test-verbose - Run tests with verbose output"
-	@echo "  validate    - Validate test setup"
-	@echo "  check       - Run all linters and formatters (lint, typecheck, selene)"
-	@echo "  lint        - Run lua linting (requires stylua)"
-	@echo "  typecheck   - Run type checking (requires lua-language-server)"
-	@echo "  selene      - Run selene linter (requires selene)"
-	@echo "  format      - Format Lua files (requires stylua)"
-	@echo "  clean       - Clean test artifacts"
-	@echo "  help        - Show this help message"
+	@echo "  test          - Run all tests (using mini.test)"
+	@echo "  test-watch    - Run tests in watch mode (requires entr)"
+	@echo "  test-verbose  - Run tests with verbose output"
+	@echo "  check         - Run all linters (lint + typecheck + selene)"
+	@echo "  lint          - Check Lua formatting with stylua"
+	@echo "  typecheck     - Run type checking (requires lua-language-server)"
+	@echo "  selene        - Run selene linter (requires selene)"
+	@echo "  format        - Format Lua files with stylua"
+	@echo "  install-hooks - Enable pre-commit hooks (git config core.hooksPath .githooks)"
+	@echo "  clean         - Clean test artifacts"
+	@echo "  validate      - Validate test setup"
+	@echo "  help          - Show this help message"
 
 # Run all tests
 test:
 	@echo "Running radar.nvim tests..."
 	nvim --headless -l test/run.lua
-
-# Run only path utility tests
-test-path:
-	@echo "Running path utility tests..."
-	nvim --headless -l test/run.lua --file test/spec/utils_path_spec.lua
 
 # Run tests with verbose output (same as regular for mini.test)
 test-verbose:
@@ -51,10 +46,10 @@ test-watch:
 		exit 1; \
 	fi
 
-# Lint Lua files (requires stylua: brew install stylua)
+# Check Lua formatting with stylua (requires stylua: brew install stylua)
 lint:
 	@if command -v stylua >/dev/null 2>&1; then \
-		echo "Linting Lua files..."; \
+		echo "Checking Lua formatting..."; \
 		stylua --check lua/ test/; \
 	else \
 		echo "Error: 'stylua' is not installed. Install with: brew install stylua"; \
@@ -90,11 +85,8 @@ selene:
 		exit 1; \
 	fi
 
-# Format Lua files
+# Format Lua files with stylua
 format:
-	echo "Formatting markdown files..."
-	npx prettier --write "**/*.md"
-
 	@if command -v stylua >/dev/null 2>&1; then \
 		echo "Formatting Lua files..."; \
 		stylua lua/ test/; \
@@ -103,15 +95,19 @@ format:
 		exit 1; \
 	fi
 
-# Run all checks (linters and formatters)
+# Run all linters (read-only, does not modify files)
 check:
 	@echo "Running all checks..."
 	@$(MAKE) --no-print-directory lint
 	@$(MAKE) --no-print-directory typecheck
 	@$(MAKE) --no-print-directory selene
-	@$(MAKE) --no-print-directory format
 	@echo ""
 	@echo "✓ All checks passed!"
+
+# Enable pre-commit hooks for collaborators
+install-hooks:
+	git config core.hooksPath .githooks
+	@echo "Hooks installed. Pre-commit checks run on every commit."
 
 # Clean test artifacts
 clean:
