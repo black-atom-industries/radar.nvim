@@ -1,5 +1,7 @@
 local M = {}
 
+local indicators = require("radar.ui.indicators")
+
 ---Format file path to relative path from cwd
 ---@param path string
 ---@return string
@@ -101,7 +103,7 @@ local function build_content(config)
         content_width
           - vim.fn.strdisplaywidth(locks_title)
           - vim.fn.strdisplaywidth(tostring(locks_count))
-          - 4,
+          - 1,
         0
       )
     )
@@ -112,7 +114,12 @@ local function build_content(config)
   if locks_count > 0 then
     for _, lock in ipairs(state.locks) do
       local path = vim.fn.fnamemodify(lock.filename, ":p:.")
-      add_line(string.format(" [%s] %s", lock.label, path))
+      local left = string.format(" [%s] %s", lock.label, path)
+      local abs_path = vim.fn.fnamemodify(lock.filename, ":p")
+      local bufnr = vim.fn.bufnr(abs_path)
+      local buf_indicators = indicators.get_buffer_indicators(bufnr)
+      local line = indicators.right_align_line(left, buf_indicators, content_width, 0)
+      add_line(line)
     end
   elseif config.radar.show_empty_message then
     add_line(" No locks yet — press l to lock files")
@@ -132,7 +139,7 @@ local function build_content(config)
         content_width
           - vim.fn.strdisplaywidth(recent_title)
           - vim.fn.strdisplaywidth(tostring(recent_count))
-          - 4,
+          - 1,
         0
       )
     )
@@ -144,11 +151,16 @@ local function build_content(config)
     for i, filename in ipairs(state.recent_files) do
       local label = config.keys.recent[i]
       local path = vim.fn.fnamemodify(filename, ":p:.")
+      local left
       if label then
-        add_line(string.format(" [%s] %s", label, path))
+        left = string.format(" [%s] %s", label, path)
       else
-        add_line(string.format("     %s", path))
+        left = string.format("     %s", path)
       end
+      local bufnr = vim.fn.bufnr(filename)
+      local buf_indicators = indicators.get_buffer_indicators(bufnr)
+      local line = indicators.right_align_line(left, buf_indicators, content_width, 0)
+      add_line(line)
     end
   elseif config.radar.show_empty_message then
     add_line(" No recent files yet")
@@ -300,6 +312,9 @@ local function apply_highlights(bufnr, config)
       end
     end
   end
+
+  -- ── Indicator highlighting ──
+  indicators.highlight_indicators(bufnr, ns, lines)
 end
 
 ---Check if radar exists (window valid)

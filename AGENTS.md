@@ -39,6 +39,7 @@ lua/radar/
 └── ui/
     ├── radar.lua         -- Main radar grid UI (3-section layout)
     ├── tabs.lua          -- Tabs sidebar UI (tab/buffer tree)
+    ├── indicators.lua    -- Shared git/LSP indicator utilities
     ├── edit.lua          -- Lock label editor UI
     └── path.lua          -- Path shortening utility
 ```
