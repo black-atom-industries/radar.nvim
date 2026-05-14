@@ -276,8 +276,11 @@ local function apply_highlights(bufnr, config)
 
   -- ── Current file highlighting ──
 
-  -- Get current file for highlighting
-  local curr_filepath = vim.api.nvim_buf_get_name(vim.api.nvim_get_current_buf())
+  -- Get current file for highlighting (use the source buffer, not the radar buffer)
+  local curr_filepath = ""
+  if state.source_bufnr and vim.api.nvim_buf_is_valid(state.source_bufnr) then
+    curr_filepath = vim.api.nvim_buf_get_name(state.source_bufnr)
+  end
   local curr_filepath_formatted = ""
   if curr_filepath ~= "" then
     curr_filepath_formatted = vim.fn.fnamemodify(curr_filepath, ":p:.")
@@ -497,6 +500,44 @@ function M.create(config)
   local keys = require("radar.keys")
   keys.setup_all_keymaps(bufnr, config)
 
+  -- Compute cursor position BEFORE creating window (BufEnter autocmds
+  -- triggered by nvim_open_win can mutate state.recent_files via
+  -- get_alternative_file() returning the source buffer as alt file)
+  local cursor_line = nil
+  local focused_section = "locks"
+
+  local src_buf = state.source_bufnr
+  if src_buf and vim.api.nvim_buf_is_valid(src_buf) then
+    local buf_name = vim.api.nvim_buf_get_name(src_buf)
+    local src_filepath = vim.fn.fnamemodify(buf_name, ":p:.")
+    if src_filepath ~= "" then
+      -- Check locks first
+      for i, lock in ipairs(state.locks) do
+        if lock.filename == src_filepath then
+          cursor_line = section_ranges.locks.start + i
+          focused_section = "locks"
+          break
+        end
+      end
+
+      -- Check recent files if not found in locks
+      if not cursor_line then
+        for i, filename in ipairs(state.recent_files) do
+          if filename == buf_name then
+            cursor_line = section_ranges.recent.start + i
+            focused_section = "recent"
+            break
+          end
+        end
+      end
+    end
+  end
+
+  -- Fallback to first locks entry
+  if not cursor_line then
+    cursor_line = section_ranges.locks.start + 1
+  end
+
   -- Create window
   local win_opts = {
     relative = "editor",
@@ -531,13 +572,13 @@ function M.create(config)
 
   -- Store in state
   state.radar_winid = winid
-  state.focused_section = "locks"
+  state.focused_section = focused_section
 
-  -- Set cursor to first locks entry
-  local first_lock_line = section_ranges.locks.start + 1
-  if first_lock_line <= #lines then
-    vim.api.nvim_win_set_cursor(winid, { first_lock_line, 0 })
+  if cursor_line <= #lines then
+    vim.api.nvim_win_set_cursor(winid, { cursor_line, 0 })
   end
+
+  debug.flush()
 
   debug.log("  radar window created, winid =", winid)
   debug.flush()
