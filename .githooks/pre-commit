@@ -1,10 +1,19 @@
 #!/usr/bin/env sh
 set -e
 
+# Gather staged Lua files
+staged_lua=$(git diff --cached --name-only --diff-filter=ACM | grep '\.lua$' || true)
+
+if [ -z "$staged_lua" ]; then
+  exit 0
+fi
+
 # StyLua: check Lua file formatting
 if command -v stylua >/dev/null 2>&1; then
-  staged_lua=$(git diff --cached --name-only --diff-filter=ACM | grep '\.lua$' || true)
-  if [ -n "$staged_lua" ]; then
-    echo "$staged_lua" | tr '\n' '\0' | xargs -0 stylua --check
-  fi
+  echo "$staged_lua" | tr '\n' '\0' | xargs -0 stylua --check
+fi
+
+# Selene: lint Lua files
+if command -v selene >/dev/null 2>&1; then
+  echo "$staged_lua" | tr '\n' '\0' | xargs -0 selene
 fi
