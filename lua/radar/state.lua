@@ -13,6 +13,10 @@ local M = {
   session_files = {},
   ---@type integer?
   radar_winid = nil,
+  ---@type integer?
+  radar_help_winid = nil,
+  ---@type integer?
+  radar_help_bufid = nil,
   ---@type "locks" | "recent"?
   focused_section = nil,
   ---@type Radar.SectionRanges?
@@ -33,6 +37,10 @@ local M = {
   tabs_bufid = nil,
   ---@type Radar.TabsLineMapping[]
   tabs_line_mapping = {},
+  ---@type integer?
+  tabs_help_winid = nil,
+  ---@type integer?
+  tabs_help_bufid = nil,
 }
 
 ---Check if radar window is valid
@@ -47,6 +55,12 @@ function M.close_all_radar_windows()
   if M.radar_winid and vim.api.nvim_win_is_valid(M.radar_winid) then
     vim.api.nvim_win_close(M.radar_winid, false)
   end
+
+  if M.radar_help_winid and vim.api.nvim_win_is_valid(M.radar_help_winid) then
+    vim.api.nvim_win_close(M.radar_help_winid, false)
+  end
+  M.radar_help_winid = nil
+  M.radar_help_bufid = nil
 
   M.radar_winid = nil
   M.focused_section = nil
@@ -78,6 +92,13 @@ function M.close_tabs_window()
   if M.tabs_winid and vim.api.nvim_win_is_valid(M.tabs_winid) then
     vim.api.nvim_win_close(M.tabs_winid, false)
   end
+  -- Close help window if open
+  if M.tabs_help_winid and vim.api.nvim_win_is_valid(M.tabs_help_winid) then
+    vim.api.nvim_win_close(M.tabs_help_winid, false)
+  end
+  M.tabs_help_winid = nil
+  M.tabs_help_bufid = nil
+
   M.tabs_winid = nil
   M.tabs_bufid = nil
   M.tabs_line_mapping = {}

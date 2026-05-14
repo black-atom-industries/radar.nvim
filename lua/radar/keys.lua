@@ -129,6 +129,11 @@ function M.setup_common_keymaps(bufnr, config, radar, opts)
   vim.keymap.set("n", "e", function()
     require("radar.ui.edit").edit_locks(config, radar)
   end, vim.tbl_extend("force", opts, { desc = "Edit radar locks" }))
+
+  -- Help
+  vim.keymap.set("n", "?", function()
+    radar.toggle_help(config)
+  end, vim.tbl_extend("force", opts, { desc = "Toggle radar help" }))
 end
 
 ---Setup all keymaps on a single buffer (unified window)

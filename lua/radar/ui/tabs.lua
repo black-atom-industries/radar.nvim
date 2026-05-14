@@ -25,6 +25,123 @@ function M.close()
   state.close_tabs_window()
 end
 
+---Toggle tabs help popup
+---@param config Radar.Config
+---@return nil
+function M.toggle_help(config)
+  if state.tabs_help_winid and vim.api.nvim_win_is_valid(state.tabs_help_winid) then
+    M.close_help()
+  else
+    M.show_help()
+  end
+end
+
+---Close tabs help popup and return focus to tabs window
+---@return nil
+function M.close_help()
+  if state.tabs_help_winid and vim.api.nvim_win_is_valid(state.tabs_help_winid) then
+    vim.api.nvim_win_close(state.tabs_help_winid, true)
+  end
+  state.tabs_help_winid = nil
+  state.tabs_help_bufid = nil
+
+  if state.tabs_winid and vim.api.nvim_win_is_valid(state.tabs_winid) then
+    pcall(vim.api.nvim_set_current_win, state.tabs_winid)
+  end
+end
+
+---Show tabs help popup centered over the tabs window
+---@return nil
+function M.show_help()
+  if not state.tabs_winid or not vim.api.nvim_win_is_valid(state.tabs_winid) then
+    return
+  end
+
+  local lines = {
+    "                          ",
+    "  Navigation              ",
+    "    <CR>   Jump to tab/buffer ",
+    "    <Esc>  Close tabs window  ",
+    "    r      Return to radar    ",
+    "                          ",
+    "  Actions                 ",
+    "    x      Close buffer/tab   ",
+    "    o      Tab/window only    ",
+    "    v      Vertical split     ",
+    "    s      Horizontal split   ",
+    "                          ",
+    "  Management              ",
+    "    n      New tab            ",
+    "    dd     Cut tab/buffer     ",
+    "    p      Paste after        ",
+    "    P      Paste before       ",
+    "    q/?    Close this help    ",
+    "                          ",
+  }
+
+  -- Calculate content width from longest line
+  local content_width = 34
+
+  -- Pad lines to uniform width (avoids right-border overlap)
+  for i, line in ipairs(lines) do
+    if #line < content_width then
+      lines[i] = line .. string.rep(" ", content_width - #line)
+    end
+  end
+
+  -- Create buffer
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_set_option_value("buftype", "nofile", { buf = buf })
+  vim.api.nvim_set_option_value("bufhidden", "wipe", { buf = buf })
+  vim.api.nvim_set_option_value("swapfile", false, { buf = buf })
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+
+  -- Center over the tabs window
+  local tabs_width = vim.api.nvim_win_get_width(state.tabs_winid)
+  local tabs_height = vim.api.nvim_win_get_height(state.tabs_winid)
+  local help_width = content_width
+  local help_height = #lines
+  local tabs_config = vim.api.nvim_win_get_config(state.tabs_winid)
+  local help_row = tabs_config.row + math.max(math.floor((tabs_height - help_height) / 2), 0)
+  local help_col = tabs_config.col + math.max(math.floor((tabs_width - help_width) / 2), 0)
+
+  local win_config = {
+    relative = "editor",
+    row = help_row,
+    col = help_col,
+    width = help_width,
+    height = help_height,
+    style = "minimal",
+    border = "single",
+    title = "  TABS HELP  ",
+    title_pos = "center",
+    focusable = true,
+    zindex = 150,
+  }
+
+  local winid = vim.api.nvim_open_win(buf, true, win_config)
+  vim.api.nvim_set_option_value(
+    "winhighlight",
+    "Normal:NormalFloat",
+    { win = winid }
+  )
+
+  state.tabs_help_winid = winid
+  state.tabs_help_bufid = buf
+
+  -- Close help on q, <Esc>, ?
+  local help_opts = { buffer = buf, silent = true, noremap = true, nowait = true }
+  vim.keymap.set("n", "q", function()
+    M.close_help()
+  end, vim.tbl_extend("force", help_opts, { desc = "Close help" }))
+  vim.keymap.set("n", "<Esc>", function()
+    M.close_help()
+  end, vim.tbl_extend("force", help_opts, { desc = "Close help" }))
+  vim.keymap.set("n", "?", function()
+    M.close_help()
+  end, vim.tbl_extend("force", help_opts, { desc = "Close help" }))
+end
+
 ---Create tab header highlight groups from theme colors
 local function setup_tab_highlights()
   local function get_attr(group, attr)
@@ -210,6 +327,11 @@ local function setup_keymaps(bufnr, config)
   vim.keymap.set("n", "P", function()
     M.paste_line_before(config)
   end, vim.tbl_extend("force", opts, { desc = "Paste cut tab/buffer before" }))
+
+  -- Help
+  vim.keymap.set("n", "?", function()
+    M.toggle_help(config)
+  end, vim.tbl_extend("force", opts, { desc = "Toggle help" }))
 end
 
 ---Open the tabs floating window
@@ -230,8 +352,6 @@ function M.open(config)
   local tabs_opts = vim.tbl_extend("force", row_override, {
     title = "  ☰ TABS ",
     title_pos = "left",
-    footer = " [CR]jump [x]close [o]only [v]vsp [s]hsp [n]tab [dd]cut [p]paste [q]quit ",
-    footer_pos = "left",
     border = "solid",
   })
   local win_config = window.resolve_config(config, config.tabs.win_preset, tabs_opts)

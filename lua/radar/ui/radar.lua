@@ -167,17 +167,6 @@ local function build_content(config)
   end
   section_ranges.recent["end"] = #lines
 
-  -- ── Spacer before footer ──
-  add_line("")
-
-  -- ── Footer ──
-  local alt_footer = config.keys.alternative or config.keys.prefix
-  add_line(
-    "  [1-9] lock  [a-g] recents  ["
-      .. alt_footer
-      .. "] alt  [Tab]  [l]  [e]  [t] tabs  [q] quit"
-  )
-
   return lines, section_ranges
 end
 
@@ -334,6 +323,12 @@ function M.close()
   if state.radar_winid and vim.api.nvim_win_is_valid(state.radar_winid) then
     vim.api.nvim_win_close(state.radar_winid, false)
   end
+  -- Close help window if open
+  if state.radar_help_winid and vim.api.nvim_win_is_valid(state.radar_help_winid) then
+    vim.api.nvim_win_close(state.radar_help_winid, false)
+  end
+  state.radar_help_winid = nil
+  state.radar_help_bufid = nil
   state.radar_winid = nil
   state.focused_section = nil
   state.section_line_ranges = nil
@@ -582,6 +577,131 @@ function M.create(config)
 
   debug.log("  radar window created, winid =", winid)
   debug.flush()
+end
+
+---Close radar help window
+---@return nil
+function M.close_help()
+  local state = require("radar.state")
+  if state.radar_help_winid and vim.api.nvim_win_is_valid(state.radar_help_winid) then
+    vim.api.nvim_win_close(state.radar_help_winid, true)
+  end
+  state.radar_help_winid = nil
+  state.radar_help_bufid = nil
+
+  if state.radar_winid and vim.api.nvim_win_is_valid(state.radar_winid) then
+    pcall(vim.api.nvim_set_current_win, state.radar_winid)
+  end
+end
+
+---Toggle radar help popup
+---@param config Radar.Config
+---@return nil
+function M.toggle_help(config)
+  local state = require("radar.state")
+  if state.radar_help_winid and vim.api.nvim_win_is_valid(state.radar_help_winid) then
+    M.close_help()
+  else
+    M.show_help(config)
+  end
+end
+
+---Show radar help popup centered over the radar window
+---@param config Radar.Config
+---@return nil
+function M.show_help(config)
+  local state = require("radar.state")
+  if not state.radar_winid or not vim.api.nvim_win_is_valid(state.radar_winid) then
+    return
+  end
+
+  local alt_label = config.keys.alternative or config.keys.prefix
+
+  local lines = {
+    "                          ",
+    "  File Keys               ",
+    "    1-9    Open lock        ",
+    "    a-g    Open recent      ",
+    "    <Spc>  Alternative file ",
+    "    <CR>   Open file        ",
+    "    V      Window vertically",
+    "    S      Window horizontally",
+    "    T      Open in new tab  ",
+    "    F      Float            ",
+    "                          ",
+    "  Actions                 ",
+    "    l      Lock/unlock      ",
+    "    e      Edit locks       ",
+    "    t      Tabs sidebar     ",
+    "    <Tab>  Cycle section    ",
+    "    q      Close radar      ",
+    "                          ",
+  }
+
+  -- Substitute actual alt key
+  for i, line in ipairs(lines) do
+    lines[i] = line:gsub("<Spc>", "[" .. alt_label .. "]")
+  end
+
+  -- Pad lines to uniform width
+  local content_width = 34
+  for i, line in ipairs(lines) do
+    if #line < content_width then
+      lines[i] = line .. string.rep(" ", content_width - #line)
+    end
+  end
+
+  -- Create buffer
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_set_option_value("buftype", "nofile", { buf = buf })
+  vim.api.nvim_set_option_value("bufhidden", "wipe", { buf = buf })
+  vim.api.nvim_set_option_value("swapfile", false, { buf = buf })
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+
+  -- Center over the radar window
+  local radar_width = vim.api.nvim_win_get_width(state.radar_winid)
+  local radar_height = vim.api.nvim_win_get_height(state.radar_winid)
+  local help_width = content_width
+  local help_height = #lines
+  local radar_config = vim.api.nvim_win_get_config(state.radar_winid)
+  local help_row = radar_config.row + math.max(math.floor((radar_height - help_height) / 2), 0)
+  local help_col = radar_config.col + math.max(math.floor((radar_width - help_width) / 2), 0)
+
+  local win_config = {
+    relative = "editor",
+    row = help_row,
+    col = help_col,
+    width = help_width,
+    height = help_height,
+    style = "minimal",
+    border = "single",
+    title = "  RADAR HELP  ",
+    title_pos = "center",
+    focusable = true,
+    zindex = 150,
+  }
+
+  local winid = vim.api.nvim_open_win(buf, true, win_config)
+  vim.api.nvim_set_option_value(
+    "winhighlight",
+    "Normal:NormalFloat",
+    { win = winid }
+  )
+
+  state.radar_help_winid = winid
+  state.radar_help_bufid = buf
+
+  -- Close help on q, <Esc>, ?
+  local help_opts = { buffer = buf, silent = true, noremap = true, nowait = true }
+  vim.keymap.set("n", "q", function()
+    M.close_help()
+  end, vim.tbl_extend("force", help_opts, { desc = "Close help" }))
+  vim.keymap.set("n", "<Esc>", function()
+    M.close_help()
+  end, vim.tbl_extend("force", help_opts, { desc = "Close help" }))
+  vim.keymap.set("n", "?", function()
+    M.close_help()
+  end, vim.tbl_extend("force", help_opts, { desc = "Close help" }))
 end
 
 ---Update radar window (close and recreate)
