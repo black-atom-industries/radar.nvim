@@ -14,9 +14,9 @@ end
 ---Pill/badge style: labels use Comment fg on DiffChange/VirtualTextHint bg,
 ---values use semantic sign colors (mini.diff / diagnostic) with matching bg.
 function M.setup_highlights()
-  local git_bg = get_attr("DiffChange", "")
-  local lsp_bg = get_attr("DiagnosticVirtualTextHint", "")
-  local muted = get_attr("Comment", "fg")
+  local git_bg = get_attr("Normal", "bg")
+  local lsp_bg = get_attr("Normal", "bg")
+  local muted = get_attr("@keyword", "fg")
 
   -- Git indicator groups
   vim.api.nvim_set_hl(0, "RadarTabsGitSection", { bg = git_bg })
@@ -35,6 +35,13 @@ function M.setup_highlights()
     0,
     "RadarTabsGitDelete",
     { fg = get_attr("MiniDiffSignDelete", "fg"), bg = git_bg }
+  )
+
+  -- Bracket indicator (neutral punctuation for pills)
+  vim.api.nvim_set_hl(
+    0,
+    "RadarTabsBracket",
+    { fg = get_attr("@punctuation.bracket", "fg") }
   )
 
   -- LSP indicator groups
@@ -207,6 +214,17 @@ function M.highlight_indicators(bufnr, ns, lines)
               pos_start, pos_end = line:find(token.pattern, pos_end + 1)
             end
           end
+
+          -- Step 4: Overlay brackets with a neutral punctuation color
+          -- so [ and ] don't inherit the semantic colors of content
+          vim.api.nvim_buf_set_extmark(bufnr, ns, line_num - 1, start_pos - 1, {
+            end_col = start_pos,
+            hl_group = "RadarTabsBracket",
+          })
+          vim.api.nvim_buf_set_extmark(bufnr, ns, line_num - 1, end_pos - 1, {
+            end_col = end_pos,
+            hl_group = "RadarTabsBracket",
+          })
         end
       end
     end
