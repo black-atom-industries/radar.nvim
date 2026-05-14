@@ -33,7 +33,8 @@ M.default = {
   -- Main radar window
   radar = {
     size = { width = 50, height = 75 },
-    border = "shadow",
+    padding = { x = 2, y = 1 },
+    border = "single",
     position = "center",
     winblend = 0,
     max_recent_files = 10,

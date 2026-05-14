@@ -20,29 +20,6 @@ local function resolve_dimension(value, terminal_size, min_size)
   return math.max(resolved, min_size)
 end
 
----Calculate window origin based on config position setting
----@param config Radar.Config
----@param width integer Resolved window width
----@param height integer Resolved window height
----@return { row: integer, col: integer }
-local function calculate_origin(config, width, height)
-  local positions = {
-    center = {
-      row = math.floor((vim.o.lines - height) / 2),
-      col = math.floor((vim.o.columns - width) / 2),
-    },
-    top_left = { row = 0, col = 0 },
-    top_right = { row = 0, col = vim.o.columns - width },
-    bottom_left = { row = vim.o.lines - height, col = 0 },
-    bottom_right = {
-      row = vim.o.lines - height,
-      col = vim.o.columns - width,
-    },
-  }
-
-  return positions[config.radar.position] or positions.center
-end
-
 ---Build the content lines and section line ranges for the unified buffer
 ---@param config Radar.Config
 ---@return string[], Radar.SectionRanges
@@ -50,12 +27,19 @@ local function build_content(config)
   local state = require("radar.data.state")
   local width = resolve_dimension(config.radar.size.width, vim.o.columns, 80)
   -- Account for window border (2 cells) + internal padding (left + right)
-  local pad = 1
-  local content_width = math.max(width - 2 - pad * 2, 40)
-  local pad_str = string.rep(" ", pad)
+  local pad_x = config.radar.padding and config.radar.padding.x or 1
+  local pad_y = config.radar.padding and config.radar.padding.y or 1
+  local content_width = math.max(width - 2 - pad_x * 2, 40)
+  local pad_str = string.rep(" ", pad_x)
 
   ---@type string[]
   local lines = {}
+
+  -- Top vertical padding
+  for _ = 1, pad_y do
+    table.insert(lines, pad_str)
+  end
+
   ---@type Radar.SectionRanges
   local section_ranges = {
     alt = { start = 0, ["end"] = 0 },
@@ -159,6 +143,11 @@ local function build_content(config)
     add_line(" No recent files yet")
   end
   section_ranges.recent["end"] = #lines
+
+  -- Bottom vertical padding
+  for _ = 1, pad_y do
+    table.insert(lines, pad_str)
+  end
 
   return lines, section_ranges
 end
@@ -468,21 +457,24 @@ function M.create(config)
     content_height,
     resolve_dimension(config.radar.size.height, vim.o.lines, 12)
   )
-  local origin = calculate_origin(config, width, total_height)
 
-  debug.log(
-    "  window: ",
-    width,
-    "x",
-    total_height,
-    "at",
-    origin.row,
-    ",",
-    origin.col
-  )
+  -- Resolve window config from preset
+  local window = require("radar.ui.window")
+  local win_config = window.resolve_config(config, config.radar.position, {
+    width = width,
+    height = total_height,
+    title = " " .. config.radar.titles.main .. " ",
+    title_pos = "left",
+    border = config.radar.border,
+  })
 
-  -- Store for tabs/edit to reuse
-  state.set_radar_origin(origin)
+  debug.log("  window: ", width, "x", total_height)
+
+  -- Store origin for tabs/edit to reuse
+  state.set_radar_origin({
+    row = math.floor(win_config.row or 0),
+    col = math.floor(win_config.col or 0),
+  })
 
   -- Create buffer
   local bufnr = vim.api.nvim_create_buf(false, true)
@@ -538,26 +530,11 @@ function M.create(config)
     cursor_line = section_ranges.locks.start + 1
   end
 
-  -- Create window
-  local win_opts = {
-    relative = "editor",
-    row = origin.row,
-    col = origin.col,
-    width = width,
-    height = total_height,
-    style = "minimal",
-    border = config.radar.border,
-    title = " " .. config.radar.titles.main .. " ",
-    title_pos = "left",
-    focusable = true,
-    zindex = 100,
-  }
-
-  local winid = vim.api.nvim_open_win(bufnr, true, win_opts)
+  -- Create window from resolved preset config
+  local winid = vim.api.nvim_open_win(bufnr, true, win_config)
 
   -- Apply window options
   vim.api.nvim_set_option_value("winblend", config.radar.winblend, { win = winid })
-  -- Ensure solid non-transparent background
   vim.api.nvim_set_option_value(
     "winhighlight",
     "Normal:NormalFloat",

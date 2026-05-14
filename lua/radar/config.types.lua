@@ -35,8 +35,13 @@
 ---@field locks string
 ---@field recent string
 
+---@class Radar.Config.Padding
+---@field x integer Horizontal padding (cells on each side)
+---@field y integer Vertical padding (empty lines top and bottom)
+
 ---@class Radar.Config.Radar
 ---@field size Radar.Config.Size
+---@field padding? Radar.Config.Padding
 ---@field border? string Border style (see |nvim_open_win()| 'border' option)
 ---@field position Radar.Config.Position
 ---@field winblend integer

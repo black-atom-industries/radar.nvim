@@ -113,6 +113,51 @@ local BASE_PRESETS = {
       zindex = 100,
     }
   end,
+
+  top_left = function(_config)
+    return {
+      relative = "editor",
+      anchor = "NW",
+      width = 75,
+      height = 10,
+      row = 0,
+      col = 0,
+      border = "solid",
+      style = "minimal",
+      focusable = true,
+      zindex = 100,
+    }
+  end,
+
+  bottom_left = function(_config)
+    return {
+      relative = "editor",
+      anchor = "SW",
+      width = 75,
+      height = 10,
+      row = vim.o.lines,
+      col = 0,
+      border = "solid",
+      style = "minimal",
+      focusable = true,
+      zindex = 100,
+    }
+  end,
+
+  bottom_right = function(_config)
+    return {
+      relative = "editor",
+      anchor = "SE",
+      width = 75,
+      height = 10,
+      row = vim.o.lines,
+      col = vim.o.columns,
+      border = "solid",
+      style = "minimal",
+      focusable = true,
+      zindex = 100,
+    }
+  end,
 }
 
 ---Resolve window configuration from preset name
