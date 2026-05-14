@@ -49,8 +49,10 @@ end
 local function build_content(config)
   local state = require("radar.data.state")
   local width = resolve_dimension(config.radar.size.width, vim.o.columns, 80)
-  -- Account for left + right window border (2 cells)
-  local content_width = math.max(width - 2, 40)
+  -- Account for window border (2 cells) + internal padding (left + right)
+  local pad = 1
+  local content_width = math.max(width - 2 - pad * 2, 40)
+  local pad_str = string.rep(" ", pad)
 
   ---@type string[]
   local lines = {}
@@ -80,7 +82,7 @@ local function build_content(config)
   section_ranges.alt["end"] = #lines
 
   -- ── Section divider ──
-  add_line("")
+  add_line(pad_str)
 
   -- ── Locks section ──
   local locks_count = #state.get_locks()
@@ -117,7 +119,7 @@ local function build_content(config)
   section_ranges.locks["end"] = #lines
 
   -- ── Section divider ──
-  add_line("")
+  add_line(pad_str)
 
   -- ── Recent section ──
   local recent_count = #state.get_recent_files()
