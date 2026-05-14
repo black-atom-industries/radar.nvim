@@ -462,7 +462,7 @@ function M.create(config)
 
   -- Resolve window config from preset
   local window = require("radar.ui.window")
-  local win_config = window.resolve_config(config, config.radar.position, {
+  local win_config = window.resolve_config(config, config.radar.win_preset, {
     width = width,
     height = total_height,
     title = " " .. config.radar.titles.main .. " ",

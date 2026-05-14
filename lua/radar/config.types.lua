@@ -41,6 +41,7 @@
 
 ---@class Radar.Config.Radar
 ---@field size Radar.Config.Size
+---@field win_preset Radar.Config.WinPreset|string
 ---@field padding? Radar.Config.Padding
 ---@field border? string Border style (see |nvim_open_win()| 'border' option)
 ---@field position Radar.Config.Position

@@ -33,6 +33,7 @@ M.default = {
   -- Main radar window
   radar = {
     size = { width = 50, height = 75 },
+    win_preset = "center",
     padding = { x = 2, y = 1 },
     border = "solid",
     position = "center",
