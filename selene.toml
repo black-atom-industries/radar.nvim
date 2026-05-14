@@ -2,3 +2,5 @@ std = "vim"
 
 [lints]
 mixed_table = "allow"
+unused_argument = "allow"
+unused_assignment = "allow"

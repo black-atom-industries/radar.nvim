@@ -66,17 +66,6 @@ local function build_content(config)
     return #lines
   end
 
-  local function build_header(text, fill_char)
-    local fill_width = math.max(content_width - vim.fn.strdisplaywidth(text) - 2, 0)
-    local fill = fill_width > 0
-        and string.rep(
-          fill_char,
-          math.floor(fill_width / vim.fn.strdisplaywidth(fill_char))
-        )
-      or ""
-    return " " .. text .. fill .. " "
-  end
-
   -- ── Alternative file ──
   local alt_label = config.keys.alternative or config.keys.prefix
   local alt_file = state.get_source_alt_file()
@@ -174,8 +163,7 @@ end
 
 ---Apply highlights to the unified buffer
 ---@param bufnr integer
----@param config Radar.Config
-local function apply_highlights(bufnr, config)
+local function apply_highlights(bufnr)
   local ns = vim.api.nvim_create_namespace("radar.ui")
   local locks_ns = vim.api.nvim_create_namespace("radar.locks")
   local recent_ns = vim.api.nvim_create_namespace("radar.recent")
@@ -578,7 +566,7 @@ function M.create(config)
   end
 
   -- Apply highlights
-  apply_highlights(bufnr, config)
+  apply_highlights(bufnr)
 
   -- Store in state
   state.set_radar_winid(winid)
@@ -679,8 +667,6 @@ function M.update(config)
     M.create(config)
     return
   end
-
-  local state = require("radar.state")
 
   -- Update recent files
   local recent = require("radar.recent")

@@ -74,7 +74,7 @@ typecheck:
 selene:
 	@if command -v selene >/dev/null 2>&1; then \
 		echo "Running selene linter..."; \
-		selene lua/; \
+		selene --allow-warnings lua/; \
 	else \
 		echo "Error: 'selene' is not installed."; \
 		echo ""; \

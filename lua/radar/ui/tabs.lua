@@ -283,7 +283,6 @@ function M.open(config)
   local source_tabid = vim.api.nvim_get_current_tabpage()
 
   -- Resolve window config from preset (before building content to get width)
-  local state = require("radar.state")
   local row_override = {}
   if state.get_radar_origin() then
     row_override.row = state.get_radar_origin().row
@@ -654,9 +653,9 @@ function M.paste_line(config)
     end
 
     -- Calculate target position (0-indexed) for tabmove
-    local tabs = vim.api.nvim_list_tabpages()
+    local tabpages = vim.api.nvim_list_tabpages()
     local target_pos = nil
-    for i, tabid in ipairs(tabs) do
+    for i, tabid in ipairs(tabpages) do
       if tabid == item.tabid then
         target_pos = i - 1 -- 0-indexed
         break
@@ -722,9 +721,9 @@ function M.paste_line_before(config)
     end
 
     -- Calculate target position (0-indexed) for tabmove
-    local tabs = vim.api.nvim_list_tabpages()
+    local tabpages = vim.api.nvim_list_tabpages()
     local target_pos = nil
-    for i, tabid in ipairs(tabs) do
+    for i, tabid in ipairs(tabpages) do
       if tabid == item.tabid then
         target_pos = i - 1 -- 0-indexed
         break

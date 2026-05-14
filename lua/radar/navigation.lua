@@ -1,10 +1,10 @@
 local M = {}
 
 ---Get file path from current line in radar window
----@param config Radar.Config
+---@param _config Radar.Config
 ---@param section "locks" | "recent"
 ---@return string? filepath
-function M.get_file_from_line(config, section)
+function M.get_file_from_line(_config, section)
   local state = require("radar.state")
 
   if

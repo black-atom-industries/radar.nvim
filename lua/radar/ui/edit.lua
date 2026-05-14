@@ -190,7 +190,7 @@ function M.edit_locks(radar_config, radar_module)
 
   -- Set buffer options — set name before other options to catch E95 early
   -- Use pcall because a race with BufUnload/wipe can leave a ghost name
-  local ok, err = pcall(vim.api.nvim_buf_set_name, edit_buf, "radar-locks")
+  local ok = pcall(vim.api.nvim_buf_set_name, edit_buf, "radar-locks")
   if not ok then
     -- Force-remove any lingering buffer with that name and retry
     local ghost = vim.fn.bufnr("radar-locks")
@@ -198,7 +198,7 @@ function M.edit_locks(radar_config, radar_module)
       pcall(vim.api.nvim_buf_delete, ghost, { force = true })
     end
     -- Retry once — if it still fails, use a unique fallback name
-    local ok2, err2 = pcall(vim.api.nvim_buf_set_name, edit_buf, "radar-locks")
+    local ok2 = pcall(vim.api.nvim_buf_set_name, edit_buf, "radar-locks")
     if not ok2 then
       vim.api.nvim_buf_set_name(edit_buf, "radar-locks-" .. edit_buf)
     end

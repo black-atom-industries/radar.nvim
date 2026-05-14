@@ -55,8 +55,8 @@ function M.migrate(data)
   -- v1 format (current)
   if version == 1 then
     -- Ensure all branch entries have lastAccessed
-    for project_path, branches in pairs(data.projects or {}) do
-      for branch_name, branch_data in pairs(branches) do
+    for _, branches in pairs(data.projects or {}) do
+      for _, branch_data in pairs(branches) do
         M.ensure_last_accessed(branch_data)
       end
     end

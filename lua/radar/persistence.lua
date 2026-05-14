@@ -25,11 +25,8 @@ function M.pretty_print(path)
     escaped_path
   )
   vim.fn.jobstart(jq_cmd, {
-    on_exit = function(_, exit_code)
-      if exit_code ~= 0 then
-        -- jq failed or not installed, silently continue with minified JSON
-      end
-    end,
+    -- jq failed or not installed, silently continue with minified JSON
+    on_exit = function() end,
   })
 end
 
