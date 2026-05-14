@@ -47,7 +47,7 @@ This spatial keyboard layout gives you instant access to **15 files** without mo
   opts = {
     radar = {
       position = "top_right",  -- "center", "top_left", "top_right", "bottom_left", "bottom_right"
-      grid_size = { width = 140, height = 25 },
+      size = { width = 140, height = 25 },
       max_recent_files = 10,
       titles = {
         main = "MY RADAR",
@@ -89,7 +89,7 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 | `keys.alternative`                                  | `nil` (= prefix)                      | Key for alternative file; nil defaults to prefix                                |
 | `keys.vertical` / `.horizontal` / `.tab` / `.float` | `<C-v>` / `<C-s>` / `<C-t>` / `<C-f>` | Split mode modifiers                                                            |
 | `radar.position`                                    | `"center"`                            | Grid position: `center`, `top_left`, `top_right`, `bottom_left`, `bottom_right` |
-| `radar.grid_size`                                   | `{ width = 125, height = 20 }`        | Total grid dimensions                                                           |
+| `radar.size`                                   | `{ width = 125, height = 20 }`        | Total window dimensions                                                           |
 | `radar.border`                                      | `"single"`                            | Border style (see `:h nvim_open_win`)                                           |
 | `radar.max_recent_files`                            | `25`                                  | Max recent files shown                                                          |
 | `radar.titles`                                      | (nerd font icons)                     | Section titles for main, locks, alternative, recent, hints                      |
@@ -176,18 +176,33 @@ This plugin includes tests using [mini.test](https://github.com/echasnovski/mini
 
 ### Available Commands
 
+### Development Dependencies
+
+Some `make` targets require additional tools. Install them with:
+
+| Tool | Purpose | Install |
+|---|---|---|
+| **StyLua** | Lua formatter | `brew install stylua` or `mise install stylua` |
+| **lua-language-server** | Type checking | `brew install lua-language-server` or `mise install lua-language-server` |
+| **Selene** | Lua linter | `cargo install selene` |
+| **entr** | Test watch mode | `brew install entr` |
+
+If you use [mise](https://mise.jdx.dev), run `mise install` to install `lua-language-server` and `stylua` automatically.
+
+### Available Commands
+
 | Command             | Description                     | Dependencies                              |
 | ------------------- | ------------------------------- | ----------------------------------------- |
 | `make test`         | Run all tests                   | None                                      |
-| `make test-path`    | Run only path utility tests     | None                                      |
 | `make test-verbose` | Run tests with verbose output   | None                                      |
 | `make test-watch`   | Watch for changes and run tests | `entr` (`brew install entr`)              |
 | `make validate`     | Validate test setup             | None                                      |
 | `make check`        | Run all linters and type checks | `stylua`, `lua-language-server`, `selene` |
-| `make lint`         | Lint Lua files                  | `stylua` (`brew install stylua`)          |
+| `make lint`         | Check Lua formatting            | `stylua` (`brew install stylua`)          |
 | `make typecheck`    | Run type checking               | `lua-language-server`                     |
 | `make selene`       | Run selene linter               | `selene` (`cargo install selene`)         |
 | `make format`       | Format Lua files                | `stylua` (`brew install stylua`)          |
+| `make install-hooks`| Enable pre-commit hooks         | None                                      |
 | `make clean`        | Clean test artifacts            | None                                      |
 | `make help`         | Show all available commands     | None                                      |
 
