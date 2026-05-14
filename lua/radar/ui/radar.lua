@@ -48,7 +48,7 @@ end
 ---@return { lines: string[], section_ranges: Radar.SectionRanges }
 local function build_content(config)
   local state = require("radar.state")
-  local width = resolve_dimension(config.radar.grid_size.width, vim.o.columns, 80)
+  local width = resolve_dimension(config.radar.size.width, vim.o.columns, 80)
   -- Account for left + right window border (2 cells)
   local content_width = math.max(width - 2, 40)
 
@@ -79,7 +79,7 @@ local function build_content(config)
 
   -- ── Alternative file ──
   local alt_label = config.keys.alternative or config.keys.prefix
-  local alt_file = state.source_alt_file
+  local alt_file = state.get_source_alt_file()
   local alt_text
   if alt_file then
     alt_text =
@@ -94,7 +94,7 @@ local function build_content(config)
   add_line("")
 
   -- ── Locks section ──
-  local locks_count = #state.locks
+  local locks_count = #state.get_locks()
   local locks_title = " " .. config.radar.titles.locks
   local locks_header_full = locks_title
     .. string.rep(
@@ -112,13 +112,14 @@ local function build_content(config)
   section_ranges.locks.start = add_line(locks_header_full)
 
   if locks_count > 0 then
-    for _, lock in ipairs(state.locks) do
+    for _, lock in ipairs(state.get_locks()) do
       local path = vim.fn.fnamemodify(lock.filename, ":p:.")
       local left = string.format(" [%s] %s", lock.label, path)
       local abs_path = vim.fn.fnamemodify(lock.filename, ":p")
       local bufnr = vim.fn.bufnr(abs_path)
       local buf_indicators = indicators.get_buffer_indicators(bufnr)
-      local line = indicators.right_align_line(left, buf_indicators, content_width, 0)
+      local line =
+        indicators.right_align_line(left, buf_indicators, content_width, 0)
       add_line(line)
     end
   elseif config.radar.show_empty_message then
@@ -130,7 +131,7 @@ local function build_content(config)
   add_line("")
 
   -- ── Recent section ──
-  local recent_count = #state.recent_files
+  local recent_count = #state.get_recent_files()
   local recent_title = " " .. config.radar.titles.recent
   local recent_header_full = recent_title
     .. string.rep(
@@ -148,7 +149,7 @@ local function build_content(config)
   section_ranges.recent.start = add_line(recent_header_full)
 
   if recent_count > 0 then
-    for i, filename in ipairs(state.recent_files) do
+    for i, filename in ipairs(state.get_recent_files()) do
       local label = config.keys.recent[i]
       local path = vim.fn.fnamemodify(filename, ":p:.")
       local left
@@ -159,7 +160,8 @@ local function build_content(config)
       end
       local bufnr = vim.fn.bufnr(filename)
       local buf_indicators = indicators.get_buffer_indicators(bufnr)
-      local line = indicators.right_align_line(left, buf_indicators, content_width, 0)
+      local line =
+        indicators.right_align_line(left, buf_indicators, content_width, 0)
       add_line(line)
     end
   elseif config.radar.show_empty_message then
@@ -185,7 +187,7 @@ local function apply_highlights(bufnr, config)
   vim.api.nvim_buf_clear_namespace(bufnr, recent_ns, 0, -1)
 
   local state = require("radar.state")
-  local section_ranges = state.section_line_ranges
+  local section_ranges = state.get_section_line_ranges()
   if not section_ranges then
     return
   end
@@ -267,8 +269,10 @@ local function apply_highlights(bufnr, config)
 
   -- Get current file for highlighting (use the source buffer, not the radar buffer)
   local curr_filepath = ""
-  if state.source_bufnr and vim.api.nvim_buf_is_valid(state.source_bufnr) then
-    curr_filepath = vim.api.nvim_buf_get_name(state.source_bufnr)
+  if
+    state.get_source_bufnr() and vim.api.nvim_buf_is_valid(state.get_source_bufnr())
+  then
+    curr_filepath = vim.api.nvim_buf_get_name(state.get_source_bufnr())
   end
   local curr_filepath_formatted = ""
   if curr_filepath ~= "" then
@@ -278,7 +282,7 @@ local function apply_highlights(bufnr, config)
   -- Highlight locks entries that match current file
   if section_ranges.locks and section_ranges.locks.start > 0 then
     local lock_start = section_ranges.locks.start
-    for i, lock in ipairs(state.locks) do
+    for i, lock in ipairs(state.get_locks()) do
       local line_nr = lock_start + i
       local line = lines[line_nr]
       if line and lock.filename == curr_filepath_formatted then
@@ -293,7 +297,7 @@ local function apply_highlights(bufnr, config)
   -- Highlight recent entries that match current file
   if section_ranges.recent and section_ranges.recent.start > 0 then
     local recent_start = section_ranges.recent.start
-    for i, filename in ipairs(state.recent_files) do
+    for i, filename in ipairs(state.get_recent_files()) do
       local line_nr = recent_start + i
       local line = lines[line_nr]
       if line and filename == curr_filepath then
@@ -313,25 +317,24 @@ end
 ---@return boolean
 function M.exists()
   local state = require("radar.state")
-  return state.radar_winid ~= nil and vim.api.nvim_win_is_valid(state.radar_winid)
+  return state.get_radar_winid() ~= nil
+    and vim.api.nvim_win_is_valid(state.get_radar_winid())
 end
 
 ---Close radar window
 ---@return nil
 function M.close()
   local state = require("radar.state")
-  if state.radar_winid and vim.api.nvim_win_is_valid(state.radar_winid) then
-    vim.api.nvim_win_close(state.radar_winid, false)
+  if
+    state.get_radar_winid() and vim.api.nvim_win_is_valid(state.get_radar_winid())
+  then
+    vim.api.nvim_win_close(state.get_radar_winid(), false)
   end
   -- Close help window if open
-  if state.radar_help_winid and vim.api.nvim_win_is_valid(state.radar_help_winid) then
-    vim.api.nvim_win_close(state.radar_help_winid, false)
-  end
-  state.radar_help_winid = nil
-  state.radar_help_bufid = nil
-  state.radar_winid = nil
-  state.focused_section = nil
-  state.section_line_ranges = nil
+  require("radar.ui.help").close()
+  state.set_radar_winid(nil)
+  state.set_focused_section(nil)
+  state.set_section_line_ranges(nil)
 end
 
 ---Toggle radar visibility
@@ -353,16 +356,19 @@ function M.open(config)
   local state = require("radar.state")
 
   -- Store the buffer we're opening from
-  state.source_bufnr = vim.api.nvim_get_current_buf()
+  state.set_source_bufnr(vim.api.nvim_get_current_buf())
   debug.log("=== radar.open() ===")
-  debug.log("  source_bufnr set to =", state.source_bufnr)
-  debug.log("  source buf name =", vim.api.nvim_buf_get_name(state.source_bufnr))
+  debug.log("  source_bufnr set to =", state.get_source_bufnr())
+  debug.log(
+    "  source buf name =",
+    vim.api.nvim_buf_get_name(state.get_source_bufnr())
+  )
   debug.log("  current buffer =", vim.api.nvim_get_current_buf())
   debug.flush()
 
   -- Capture the alternate file before focus changes
   local alternative = require("radar.alternative")
-  state.source_alt_file = alternative.get_alternative_file()
+  state.set_source_alt_file(alternative.get_alternative_file())
 
   if not M.exists() then
     M.create(config)
@@ -373,22 +379,28 @@ end
 ---@return integer?
 function M.get_focused_bufid()
   local state = require("radar.state")
-  if not state.radar_winid or not vim.api.nvim_win_is_valid(state.radar_winid) then
+  if
+    not state.get_radar_winid()
+    or not vim.api.nvim_win_is_valid(state.get_radar_winid())
+  then
     return nil
   end
-  return vim.api.nvim_win_get_buf(state.radar_winid)
+  return vim.api.nvim_win_get_buf(state.get_radar_winid())
 end
 
 ---Determine current section from cursor position
 ---@return "locks" | "recent" | nil
 function M.get_focused_section_from_cursor()
   local state = require("radar.state")
-  if not state.radar_winid or not vim.api.nvim_win_is_valid(state.radar_winid) then
+  if
+    not state.get_radar_winid()
+    or not vim.api.nvim_win_is_valid(state.get_radar_winid())
+  then
     return nil
   end
 
-  local cursor_line = vim.api.nvim_win_get_cursor(state.radar_winid)[1]
-  local ranges = state.section_line_ranges
+  local cursor_line = vim.api.nvim_win_get_cursor(state.get_radar_winid())[1]
+  local ranges = state.get_section_line_ranges()
 
   if not ranges then
     return nil
@@ -408,12 +420,15 @@ end
 ---@return nil
 function M.cycle_focus_next()
   local state = require("radar.state")
-  if not state.radar_winid or not vim.api.nvim_win_is_valid(state.radar_winid) then
+  if
+    not state.get_radar_winid()
+    or not vim.api.nvim_win_is_valid(state.get_radar_winid())
+  then
     return
   end
 
-  local current = state.focused_section or "locks"
-  local ranges = state.section_line_ranges
+  local current = state.get_focused_section() or "locks"
+  local ranges = state.get_section_line_ranges()
   if not ranges then
     return
   end
@@ -422,8 +437,8 @@ function M.cycle_focus_next()
   local next_section = current == "locks" and "recent" or "locks"
   local target_range = ranges[next_section]
   if target_range and target_range.start > 0 then
-    vim.api.nvim_win_set_cursor(state.radar_winid, { target_range.start, 0 })
-    state.focused_section = next_section
+    vim.api.nvim_win_set_cursor(state.get_radar_winid(), { target_range.start, 0 })
+    state.set_focused_section(next_section)
   end
 end
 
@@ -442,8 +457,8 @@ function M.create(config)
   local state = require("radar.state")
 
   debug.log("create() called")
-  debug.log("  locks count =", #state.locks)
-  debug.log("  recent count =", #state.recent_files)
+  debug.log("  locks count =", #state.get_locks())
+  debug.log("  recent count =", #state.get_recent_files())
 
   -- Update recent files first
   local recent = require("radar.recent")
@@ -451,17 +466,17 @@ function M.create(config)
 
   -- Build content lines
   local lines, section_ranges = build_content(config)
-  state.section_line_ranges = section_ranges
+  state.set_section_line_ranges(section_ranges)
 
   debug.log("  content lines =", #lines)
   debug.log("  section_ranges =", section_ranges)
 
   -- Calculate window dimensions
-  local width = resolve_dimension(config.radar.grid_size.width, vim.o.columns, 80)
+  local width = resolve_dimension(config.radar.size.width, vim.o.columns, 80)
   local content_height = #lines
   local total_height = math.min(
     content_height,
-    resolve_dimension(config.radar.grid_size.height, vim.o.lines, 12)
+    resolve_dimension(config.radar.size.height, vim.o.lines, 12)
   )
   local origin = calculate_origin(config, width, total_height)
 
@@ -477,7 +492,7 @@ function M.create(config)
   )
 
   -- Store for tabs/edit to reuse
-  state.radar_origin = origin
+  state.set_radar_origin(origin)
 
   -- Create buffer
   local bufnr = vim.api.nvim_create_buf(false, true)
@@ -496,18 +511,18 @@ function M.create(config)
   keys.setup_all_keymaps(bufnr, config)
 
   -- Compute cursor position BEFORE creating window (BufEnter autocmds
-  -- triggered by nvim_open_win can mutate state.recent_files via
+  -- triggered by nvim_open_win can mutate state.get_recent_files() via
   -- get_alternative_file() returning the source buffer as alt file)
   local cursor_line = nil
   local focused_section = "locks"
 
-  local src_buf = state.source_bufnr
+  local src_buf = state.get_source_bufnr()
   if src_buf and vim.api.nvim_buf_is_valid(src_buf) then
     local buf_name = vim.api.nvim_buf_get_name(src_buf)
     local src_filepath = vim.fn.fnamemodify(buf_name, ":p:.")
     if src_filepath ~= "" then
       -- Check locks first
-      for i, lock in ipairs(state.locks) do
+      for i, lock in ipairs(state.get_locks()) do
         if lock.filename == src_filepath then
           cursor_line = section_ranges.locks.start + i
           focused_section = "locks"
@@ -517,7 +532,7 @@ function M.create(config)
 
       -- Check recent files if not found in locks
       if not cursor_line then
-        for i, filename in ipairs(state.recent_files) do
+        for i, filename in ipairs(state.get_recent_files()) do
           if filename == buf_name then
             cursor_line = section_ranges.recent.start + i
             focused_section = "recent"
@@ -566,8 +581,8 @@ function M.create(config)
   apply_highlights(bufnr, config)
 
   -- Store in state
-  state.radar_winid = winid
-  state.focused_section = focused_section
+  state.set_radar_winid(winid)
+  state.set_focused_section(focused_section)
 
   if cursor_line <= #lines then
     vim.api.nvim_win_set_cursor(winid, { cursor_line, 0 })
@@ -582,16 +597,7 @@ end
 ---Close radar help window
 ---@return nil
 function M.close_help()
-  local state = require("radar.state")
-  if state.radar_help_winid and vim.api.nvim_win_is_valid(state.radar_help_winid) then
-    vim.api.nvim_win_close(state.radar_help_winid, true)
-  end
-  state.radar_help_winid = nil
-  state.radar_help_bufid = nil
-
-  if state.radar_winid and vim.api.nvim_win_is_valid(state.radar_winid) then
-    pcall(vim.api.nvim_set_current_win, state.radar_winid)
-  end
+  require("radar.ui.help").close()
 end
 
 ---Toggle radar help popup
@@ -599,8 +605,16 @@ end
 ---@return nil
 function M.toggle_help(config)
   local state = require("radar.state")
-  if state.radar_help_winid and vim.api.nvim_win_is_valid(state.radar_help_winid) then
-    M.close_help()
+  if
+    not state.get_radar_winid()
+    or not vim.api.nvim_win_is_valid(state.get_radar_winid())
+  then
+    return
+  end
+
+  local help = require("radar.ui.help")
+  if help.is_open() then
+    help.close()
   else
     M.show_help(config)
   end
@@ -611,7 +625,10 @@ end
 ---@return nil
 function M.show_help(config)
   local state = require("radar.state")
-  if not state.radar_winid or not vim.api.nvim_win_is_valid(state.radar_winid) then
+  if
+    not state.get_radar_winid()
+    or not vim.api.nvim_win_is_valid(state.get_radar_winid())
+  then
     return
   end
 
@@ -643,65 +660,11 @@ function M.show_help(config)
     lines[i] = line:gsub("<Spc>", "[" .. alt_label .. "]")
   end
 
-  -- Pad lines to uniform width
-  local content_width = 34
-  for i, line in ipairs(lines) do
-    if #line < content_width then
-      lines[i] = line .. string.rep(" ", content_width - #line)
-    end
-  end
-
-  -- Create buffer
-  local buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_set_option_value("buftype", "nofile", { buf = buf })
-  vim.api.nvim_set_option_value("bufhidden", "wipe", { buf = buf })
-  vim.api.nvim_set_option_value("swapfile", false, { buf = buf })
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-
-  -- Center over the radar window
-  local radar_width = vim.api.nvim_win_get_width(state.radar_winid)
-  local radar_height = vim.api.nvim_win_get_height(state.radar_winid)
-  local help_width = content_width
-  local help_height = #lines
-  local radar_config = vim.api.nvim_win_get_config(state.radar_winid)
-  local help_row = radar_config.row + math.max(math.floor((radar_height - help_height) / 2), 0)
-  local help_col = radar_config.col + math.max(math.floor((radar_width - help_width) / 2), 0)
-
-  local win_config = {
-    relative = "editor",
-    row = help_row,
-    col = help_col,
-    width = help_width,
-    height = help_height,
-    style = "minimal",
-    border = "single",
+  require("radar.ui.help").show({
+    parent_winid = state.get_radar_winid(),
     title = "  RADAR HELP  ",
-    title_pos = "center",
-    focusable = true,
-    zindex = 150,
-  }
-
-  local winid = vim.api.nvim_open_win(buf, true, win_config)
-  vim.api.nvim_set_option_value(
-    "winhighlight",
-    "Normal:NormalFloat",
-    { win = winid }
-  )
-
-  state.radar_help_winid = winid
-  state.radar_help_bufid = buf
-
-  -- Close help on q, <Esc>, ?
-  local help_opts = { buffer = buf, silent = true, noremap = true, nowait = true }
-  vim.keymap.set("n", "q", function()
-    M.close_help()
-  end, vim.tbl_extend("force", help_opts, { desc = "Close help" }))
-  vim.keymap.set("n", "<Esc>", function()
-    M.close_help()
-  end, vim.tbl_extend("force", help_opts, { desc = "Close help" }))
-  vim.keymap.set("n", "?", function()
-    M.close_help()
-  end, vim.tbl_extend("force", help_opts, { desc = "Close help" }))
+    lines = lines,
+  })
 end
 
 ---Update radar window (close and recreate)

@@ -8,6 +8,11 @@ describe("persistence", function()
     },
   }
 
+  before_each(function()
+    -- Mock pretty_print to be a no-op so tests don't depend on jq
+    persistence.pretty_print = function() end
+  end)
+
   after_each(function()
     -- Clean up test file
     vim.fn.delete(test_data_path)
@@ -41,11 +46,9 @@ describe("persistence", function()
 
       -- Write data twice
       persistence.write(test_data_path, test_data)
-      vim.wait(2500) -- Wait for jq to finish
       local first_output = vim.fn.readfile(test_data_path)
 
       persistence.write(test_data_path, test_data)
-      vim.wait(2500) -- Wait for jq to finish
       local second_output = vim.fn.readfile(test_data_path)
 
       -- Compare line by line
@@ -69,7 +72,6 @@ describe("persistence", function()
       }
 
       persistence.write(test_data_path, test_data)
-      vim.wait(2500)
       local lines = vim.fn.readfile(test_data_path)
       local content = table.concat(lines, "\n")
 
@@ -98,7 +100,6 @@ describe("persistence", function()
       }
 
       persistence.write(test_data_path, test_data)
-      vim.wait(2500)
       local lines = vim.fn.readfile(test_data_path)
 
       -- Find the lock object and check property order
@@ -134,7 +135,6 @@ describe("persistence", function()
       }
 
       persistence.write(test_data_path, test_data)
-      vim.wait(2500)
       local lines = vim.fn.readfile(test_data_path)
       local content = table.concat(lines, "\n")
 

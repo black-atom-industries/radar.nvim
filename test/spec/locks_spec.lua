@@ -7,7 +7,7 @@ describe("locks", function()
 
   local function setup_test_state()
     test_config = vim.deepcopy(config.default)
-    state.locks = {}
+    state.set_locks({})
   end
 
   describe("get_next_unused_label", function()
@@ -20,10 +20,10 @@ describe("locks", function()
 
     it("skips used labels and returns next available", function()
       -- Add some locks
-      state.locks = {
+      state.set_locks({
         { label = "1", filename = "file1.lua" },
         { label = "3", filename = "file3.lua" },
-      }
+      })
 
       local label = locks.get_next_unused_label(test_config)
       MiniTest.expect.equality(label, "2")
@@ -33,7 +33,7 @@ describe("locks", function()
       -- Fill up first few slots
       for i = 1, 5 do
         table.insert(
-          state.locks,
+          state.get_locks(),
           { label = tostring(i), filename = "file" .. i .. ".lua" }
         )
       end
@@ -46,7 +46,7 @@ describe("locks", function()
       -- Fill up all lock slots
       for _, label in ipairs(test_config.keys.locks) do
         table.insert(
-          state.locks,
+          state.get_locks(),
           { label = label, filename = "file_" .. label .. ".lua" }
         )
       end
@@ -68,13 +68,13 @@ describe("locks", function()
       MiniTest.expect.equality(lock.filename, "test.lua")
     end)
 
-    it("adds lock to state.locks", function()
-      MiniTest.expect.equality(#state.locks, 0)
+    it("adds lock to state.get_locks()", function()
+      MiniTest.expect.equality(#state.get_locks(), 0)
 
       locks.add("test.lua", test_config)
 
-      MiniTest.expect.equality(#state.locks, 1)
-      MiniTest.expect.equality(state.locks[1].filename, "test.lua")
+      MiniTest.expect.equality(#state.get_locks(), 1)
+      MiniTest.expect.equality(state.get_locks()[1].filename, "test.lua")
     end)
 
     it("assigns unique labels for multiple locks", function()
@@ -83,7 +83,7 @@ describe("locks", function()
 
       MiniTest.expect.equality(lock1.label, "1")
       MiniTest.expect.equality(lock2.label, "2")
-      MiniTest.expect.equality(#state.locks, 2)
+      MiniTest.expect.equality(#state.get_locks(), 2)
     end)
   end)
 
@@ -93,13 +93,13 @@ describe("locks", function()
     it("removes lock by filename", function()
       locks.add("file1.lua", test_config)
       locks.add("file2.lua", test_config)
-      MiniTest.expect.equality(#state.locks, 2)
+      MiniTest.expect.equality(#state.get_locks(), 2)
 
       local removed = locks.remove("file1.lua")
 
-      MiniTest.expect.equality(#state.locks, 1)
+      MiniTest.expect.equality(#state.get_locks(), 1)
       MiniTest.expect.equality(removed.filename, "file1.lua")
-      MiniTest.expect.equality(state.locks[1].filename, "file2.lua")
+      MiniTest.expect.equality(state.get_locks()[1].filename, "file2.lua")
     end)
 
     it("returns nil when file not found", function()
@@ -108,7 +108,7 @@ describe("locks", function()
       local removed = locks.remove("nonexistent.lua")
 
       MiniTest.expect.equality(removed, nil)
-      MiniTest.expect.equality(#state.locks, 1)
+      MiniTest.expect.equality(#state.get_locks(), 1)
     end)
 
     it("handles empty state gracefully", function()
@@ -129,7 +129,7 @@ describe("locks", function()
     it("adds lock when file not locked", function()
       local lock = locks.toggle("new.lua", test_config, mock_persistence)
 
-      MiniTest.expect.equality(#state.locks, 1)
+      MiniTest.expect.equality(#state.get_locks(), 1)
       MiniTest.expect.equality(lock.filename, "new.lua")
       MiniTest.expect.equality(lock.label, "1")
     end)
@@ -137,12 +137,12 @@ describe("locks", function()
     it("removes lock when file is locked", function()
       -- Add a lock first
       locks.add("existing.lua", test_config)
-      MiniTest.expect.equality(#state.locks, 1)
+      MiniTest.expect.equality(#state.get_locks(), 1)
 
       local removed_lock =
         locks.toggle("existing.lua", test_config, mock_persistence)
 
-      MiniTest.expect.equality(#state.locks, 0)
+      MiniTest.expect.equality(#state.get_locks(), 0)
       MiniTest.expect.equality(removed_lock.filename, "existing.lua")
     end)
   end)
@@ -183,10 +183,10 @@ describe("locks", function()
     it("uses current buffer when buf_nr is nil", function()
       locks.lock_current_buffer(nil, test_config, mock_persistence, mock_mini_radar)
 
-      MiniTest.expect.equality(#state.locks, 1)
+      MiniTest.expect.equality(#state.get_locks(), 1)
       -- Should use normalized filename (relative to cwd)
       MiniTest.expect.equality(
-        state.locks[1].filename,
+        state.get_locks()[1].filename,
         vim.fn.fnamemodify("/test/path/file.lua", ":p:.")
       )
     end)

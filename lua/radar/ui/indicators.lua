@@ -14,8 +14,8 @@ end
 ---Pill/badge style: labels use Comment fg on DiffChange/VirtualTextHint bg,
 ---values use semantic sign colors (mini.diff / diagnostic) with matching bg.
 function M.setup_highlights()
-  local git_bg = get_attr("DiffChange", "bg")
-  local lsp_bg = get_attr("DiagnosticVirtualTextHint", "bg")
+  local git_bg = get_attr("DiffChange", "")
+  local lsp_bg = get_attr("DiagnosticVirtualTextHint", "")
   local muted = get_attr("Comment", "fg")
 
   -- Git indicator groups

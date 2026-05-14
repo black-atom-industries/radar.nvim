@@ -15,7 +15,7 @@ function M.get_files(config)
 
   local state = require("radar.state")
   -- Create lookup table for locked files (normalize to absolute paths)
-  for _, lock in ipairs(state.locks) do
+  for _, lock in ipairs(state.get_locks()) do
     local abs_path = vim.fn.fnamemodify(lock.filename, ":p")
     excluded_files[abs_path] = true
   end
@@ -28,8 +28,8 @@ function M.get_files(config)
   end
 
   -- Add current session files first (most recent)
-  for i = #state.session_files, 1, -1 do
-    local filepath = state.session_files[i]
+  for i = #state.get_session_files(), 1, -1 do
+    local filepath = state.get_session_files()[i]
 
     if not excluded_files[filepath] and not seen_files[filepath] then
       if vim.startswith(filepath, cwd) and vim.fn.filereadable(filepath) == 1 then
@@ -78,19 +78,19 @@ function M.track_current_file(config)
 
   local state = require("radar.state")
   -- Remove if already exists (we'll add it to the end)
-  for i = #state.session_files, 1, -1 do
-    if state.session_files[i] == abs_path then
-      table.remove(state.session_files, i)
+  for i = #state.get_session_files(), 1, -1 do
+    if state.get_session_files()[i] == abs_path then
+      table.remove(state.get_session_files(), i)
       break
     end
   end
 
   -- Add to end (most recent)
-  table.insert(state.session_files, abs_path)
+  table.insert(state.get_session_files(), abs_path)
 
   -- Keep only last N session files
-  if #state.session_files > config.radar.max_recent_files then
-    table.remove(state.session_files, 1)
+  if #state.get_session_files() > config.radar.max_recent_files then
+    table.remove(state.get_session_files(), 1)
   end
 end
 
@@ -102,7 +102,7 @@ function M.update_state(config)
     return
   end
   local state = require("radar.state")
-  state.recent_files = M.get_files(config)
+  state.set_recent_files(M.get_files(config))
 end
 
 return M

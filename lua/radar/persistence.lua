@@ -1,6 +1,38 @@
 local M = {}
 local utils = require("radar.utils")
 
+---Pretty-print a JSON file using jq (async, non-blocking).
+---Falls back silently to minified JSON if jq is not installed.
+---Recursively sorts all object keys for deterministic output.
+---@param path string Path to the JSON file to pretty-print
+function M.pretty_print(path)
+  local escaped_path = vim.fn.shellescape(path)
+  -- Explicit object construction to ensure consistent key order:
+  -- Top level: version, projects
+  -- Project level: alphabetically sorted project paths
+  -- Branch level: alphabetically sorted branch names
+  -- Branch data: locks, lastAccessed
+  -- Lock objects: filename, label
+  local jq_filter = [[ {version:.version,projects:(.projects|to_entries|sort_by(.key)|map(.value=(]]
+    .. [[.value|to_entries|sort_by(.key)|map(.value={locks:(.value.locks|map({filename,label})),]]
+    .. [[lastAccessed:.value.lastAccessed})|from_entries))|from_entries)} ]]
+  local jq_cmd = string.format(
+    "jq '%s' %s > %s.tmp && mv %s.tmp %s",
+    jq_filter,
+    escaped_path,
+    escaped_path,
+    escaped_path,
+    escaped_path
+  )
+  vim.fn.jobstart(jq_cmd, {
+    on_exit = function(_, exit_code)
+      if exit_code ~= 0 then
+        -- jq failed or not installed, silently continue with minified JSON
+      end
+    end,
+  })
+end
+
 ---Write table to file as JSON
 ---@param path string
 ---@param tbl table
@@ -13,33 +45,8 @@ function M.write(path, tbl)
   end)
 
   -- Pretty-print with jq if available (async, non-blocking)
-  -- Recursively sort all object keys for deterministic output
   if ok then
-    local escaped_path = vim.fn.shellescape(path)
-    -- Explicit object construction to ensure consistent key order:
-    -- Top level: version, projects
-    -- Project level: alphabetically sorted project paths
-    -- Branch level: alphabetically sorted branch names
-    -- Branch data: locks, lastAccessed
-    -- Lock objects: filename, label
-    local jq_filter = [[ {version:.version,projects:(.projects|to_entries|sort_by(.key)|map(.value=(]]
-      .. [[.value|to_entries|sort_by(.key)|map(.value={locks:(.value.locks|map({filename,label})),]]
-      .. [[lastAccessed:.value.lastAccessed})|from_entries))|from_entries)} ]]
-    local jq_cmd = string.format(
-      "jq '%s' %s > %s.tmp && mv %s.tmp %s",
-      jq_filter,
-      escaped_path,
-      escaped_path,
-      escaped_path,
-      escaped_path
-    )
-    vim.fn.jobstart(jq_cmd, {
-      on_exit = function(_, exit_code)
-        if exit_code ~= 0 then
-          -- jq failed or not installed, silently continue with minified JSON
-        end
-      end,
-    })
+    M.pretty_print(path)
   end
 
   return ok
@@ -119,7 +126,7 @@ function M.persist(config)
       projects = {
         [project_path] = {
           [git_branch] = {
-            locks = state.locks,
+            locks = state.get_locks(),
             lastAccessed = current_time,
           },
         },
@@ -139,7 +146,7 @@ function M.persist(config)
       vim.tbl_deep_extend("force", persisted_data.projects or {}, {
         [project_path] = {
           [git_branch] = {
-            locks = state.locks,
+            locks = state.get_locks(),
             lastAccessed = current_time,
           },
         },
@@ -171,7 +178,7 @@ function M.populate(config)
 
     if locks ~= nil then
       local state = require("radar.state")
-      state.locks = locks
+      state.set_locks(locks)
 
       -- Update lastAccessed for current project/branch
       local current_time = os.time()

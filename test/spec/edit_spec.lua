@@ -9,12 +9,12 @@ describe("edit", function()
 
   local function setup_test_state()
     test_config = vim.deepcopy(config.default)
-    state.locks = {
+    state.set_locks({
       { label = "1", filename = "/test/file1.lua" },
       { label = "2", filename = "/test/file2.lua" },
-    }
-    state.edit_winid = nil
-    state.edit_bufid = nil
+    })
+    state.set_edit_winid(nil)
+    state.set_edit_bufid(nil)
 
     -- Mock dependencies
     mock_mini_radar = {
@@ -168,11 +168,11 @@ describe("edit", function()
 
       edit.save_buffer(buf_id, test_config, mock_mini_radar)
 
-      MiniTest.expect.equality(#state.locks, 2)
-      MiniTest.expect.equality(state.locks[1].filename, "/test/newfile.lua")
-      MiniTest.expect.equality(state.locks[1].label, "1")
-      MiniTest.expect.equality(state.locks[2].filename, "/test/file2.lua")
-      MiniTest.expect.equality(state.locks[2].label, "2")
+      MiniTest.expect.equality(#state.get_locks(), 2)
+      MiniTest.expect.equality(state.get_locks()[1].filename, "/test/newfile.lua")
+      MiniTest.expect.equality(state.get_locks()[1].label, "1")
+      MiniTest.expect.equality(state.get_locks()[2].filename, "/test/file2.lua")
+      MiniTest.expect.equality(state.get_locks()[2].label, "2")
     end)
 
     it("skips empty lines", function()
@@ -186,7 +186,7 @@ describe("edit", function()
 
       edit.save_buffer(buf_id, test_config, mock_mini_radar)
 
-      MiniTest.expect.equality(#state.locks, 2)
+      MiniTest.expect.equality(#state.get_locks(), 2)
     end)
 
     it("shows errors for non-existent files", function()
@@ -205,25 +205,25 @@ describe("edit", function()
 
     it("closes edit window and clears state", function()
       local win_id = vim.api.nvim_open_win(1, false, {})
-      state.edit_winid = win_id
-      state.edit_bufid = 1
+      state.set_edit_winid(win_id)
+      state.set_edit_bufid(1)
 
       edit.cleanup()
 
-      MiniTest.expect.equality(state.edit_winid, nil)
-      MiniTest.expect.equality(state.edit_bufid, nil)
+      MiniTest.expect.equality(state.get_edit_winid(), nil)
+      MiniTest.expect.equality(state.get_edit_bufid(), nil)
       MiniTest.expect.equality(vim.api.nvim_win_is_valid(win_id), false)
     end)
 
     it("handles invalid window gracefully", function()
-      state.edit_winid = 9999 -- Invalid window
-      state.edit_bufid = 1
+      state.set_edit_winid(9999) -- Invalid window
+      state.set_edit_bufid(1)
 
       -- Should not error
       edit.cleanup()
 
-      MiniTest.expect.equality(state.edit_winid, nil)
-      MiniTest.expect.equality(state.edit_bufid, nil)
+      MiniTest.expect.equality(state.get_edit_winid(), nil)
+      MiniTest.expect.equality(state.get_edit_bufid(), nil)
     end)
   end)
 
@@ -238,16 +238,16 @@ describe("edit", function()
     it("creates edit buffer with current locks", function()
       edit.edit_locks(test_config, mock_mini_radar)
 
-      MiniTest.expect.equality(state.edit_bufid ~= nil, true)
-      MiniTest.expect.equality(state.edit_winid ~= nil, true)
+      MiniTest.expect.equality(state.get_edit_bufid() ~= nil, true)
+      MiniTest.expect.equality(state.get_edit_winid() ~= nil, true)
 
       -- Check buffer content
-      local lines = vim.api.nvim_buf_get_lines(state.edit_bufid, 0, -1, false)
+      local lines = vim.api.nvim_buf_get_lines(state.get_edit_bufid(), 0, -1, false)
       MiniTest.expect.equality(#lines, 2)
     end)
 
     it("shows warning when no locks exist", function()
-      state.locks = {}
+      state.set_locks({})
       local notify_called = false
       local original_notify = vim.notify
       vim.notify = function(msg, level)
@@ -260,7 +260,7 @@ describe("edit", function()
 
       vim.notify = original_notify
       MiniTest.expect.equality(notify_called, true)
-      MiniTest.expect.equality(state.edit_bufid, nil)
+      MiniTest.expect.equality(state.get_edit_bufid(), nil)
     end)
 
     it("sets correct buffer options", function()
@@ -290,7 +290,7 @@ describe("edit", function()
     it("opens file from current cursor line", function()
       local buf_id = vim.api.nvim_create_buf()
       local win_id = vim.api.nvim_open_win(buf_id, false, {})
-      state.edit_winid = win_id
+      state.set_edit_winid(win_id)
 
       vim.api.nvim_buf_set_lines(buf_id, 0, -1, false, {
         "/test/file1.lua",
@@ -313,13 +313,13 @@ describe("edit", function()
       vim.notify = original_notify
 
       MiniTest.expect.equality(cmd_executed, "edit /test/file1.lua")
-      MiniTest.expect.equality(state.edit_winid, nil) -- Should cleanup
+      MiniTest.expect.equality(state.get_edit_winid(), nil) -- Should cleanup
     end)
 
     it("handles empty lines gracefully", function()
       local buf_id = vim.api.nvim_create_buf()
       local win_id = vim.api.nvim_open_win(buf_id, false, {})
-      state.edit_winid = win_id
+      state.set_edit_winid(win_id)
 
       vim.api.nvim_buf_set_lines(buf_id, 0, -1, false, { "" })
 

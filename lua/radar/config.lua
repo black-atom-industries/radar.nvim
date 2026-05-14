@@ -32,7 +32,7 @@ M.default = {
 
   -- Main radar window
   radar = {
-    grid_size = { width = 50, height = 75 },
+    size = { width = 50, height = 75 },
     border = "solid",
     position = "center",
     winblend = 0,
@@ -41,9 +41,7 @@ M.default = {
     titles = {
       main = "󰐷  RADAR",
       locks = "󰋱  LOCKED IN",
-      alternative = "  OTHER",
       recent = "󰽏  NEAR",
-      hints = "  KEYS",
     },
     win_opts = {
       number = false,

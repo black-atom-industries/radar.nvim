@@ -29,8 +29,9 @@ end
 ---@param config Radar.Config
 ---@return nil
 function M.toggle_help(config)
-  if state.tabs_help_winid and vim.api.nvim_win_is_valid(state.tabs_help_winid) then
-    M.close_help()
+  local help = require("radar.ui.help")
+  if help.is_open() then
+    help.close()
   else
     M.show_help()
   end
@@ -39,21 +40,16 @@ end
 ---Close tabs help popup and return focus to tabs window
 ---@return nil
 function M.close_help()
-  if state.tabs_help_winid and vim.api.nvim_win_is_valid(state.tabs_help_winid) then
-    vim.api.nvim_win_close(state.tabs_help_winid, true)
-  end
-  state.tabs_help_winid = nil
-  state.tabs_help_bufid = nil
-
-  if state.tabs_winid and vim.api.nvim_win_is_valid(state.tabs_winid) then
-    pcall(vim.api.nvim_set_current_win, state.tabs_winid)
-  end
+  require("radar.ui.help").close()
 end
 
 ---Show tabs help popup centered over the tabs window
 ---@return nil
 function M.show_help()
-  if not state.tabs_winid or not vim.api.nvim_win_is_valid(state.tabs_winid) then
+  if
+    not state.get_tabs_winid()
+    or not vim.api.nvim_win_is_valid(state.get_tabs_winid())
+  then
     return
   end
 
@@ -79,67 +75,11 @@ function M.show_help()
     "                          ",
   }
 
-  -- Calculate content width from longest line
-  local content_width = 34
-
-  -- Pad lines to uniform width (avoids right-border overlap)
-  for i, line in ipairs(lines) do
-    if #line < content_width then
-      lines[i] = line .. string.rep(" ", content_width - #line)
-    end
-  end
-
-  -- Create buffer
-  local buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_set_option_value("buftype", "nofile", { buf = buf })
-  vim.api.nvim_set_option_value("bufhidden", "wipe", { buf = buf })
-  vim.api.nvim_set_option_value("swapfile", false, { buf = buf })
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-
-  -- Center over the tabs window
-  local tabs_width = vim.api.nvim_win_get_width(state.tabs_winid)
-  local tabs_height = vim.api.nvim_win_get_height(state.tabs_winid)
-  local help_width = content_width
-  local help_height = #lines
-  local tabs_config = vim.api.nvim_win_get_config(state.tabs_winid)
-  local help_row = tabs_config.row + math.max(math.floor((tabs_height - help_height) / 2), 0)
-  local help_col = tabs_config.col + math.max(math.floor((tabs_width - help_width) / 2), 0)
-
-  local win_config = {
-    relative = "editor",
-    row = help_row,
-    col = help_col,
-    width = help_width,
-    height = help_height,
-    style = "minimal",
-    border = "single",
+  require("radar.ui.help").show({
+    parent_winid = state.get_tabs_winid(),
     title = "  TABS HELP  ",
-    title_pos = "center",
-    focusable = true,
-    zindex = 150,
-  }
-
-  local winid = vim.api.nvim_open_win(buf, true, win_config)
-  vim.api.nvim_set_option_value(
-    "winhighlight",
-    "Normal:NormalFloat",
-    { win = winid }
-  )
-
-  state.tabs_help_winid = winid
-  state.tabs_help_bufid = buf
-
-  -- Close help on q, <Esc>, ?
-  local help_opts = { buffer = buf, silent = true, noremap = true, nowait = true }
-  vim.keymap.set("n", "q", function()
-    M.close_help()
-  end, vim.tbl_extend("force", help_opts, { desc = "Close help" }))
-  vim.keymap.set("n", "<Esc>", function()
-    M.close_help()
-  end, vim.tbl_extend("force", help_opts, { desc = "Close help" }))
-  vim.keymap.set("n", "?", function()
-    M.close_help()
-  end, vim.tbl_extend("force", help_opts, { desc = "Close help" }))
+    lines = lines,
+  })
 end
 
 ---Create tab header highlight groups from theme colors
@@ -176,8 +116,6 @@ vim.api.nvim_create_autocmd("ColorScheme", {
   desc = "Rebuild tabs UI and indicator highlights on theme change",
 })
 
-
-
 ---Build the content lines and line mapping
 ---@param tabs_data Radar.TabData[]
 ---@param win_width integer Width of the window in columns (excluding border)
@@ -200,7 +138,8 @@ local function build_content(tabs_data, win_width)
       local bufnr = vim.fn.bufnr(buf.filepath)
       local buf_indicators = indicators.get_buffer_indicators(bufnr)
       local left = "    " .. filepath
-      local buf_line = indicators.right_align_line(left, buf_indicators, win_width, 4)
+      local buf_line =
+        indicators.right_align_line(left, buf_indicators, win_width, 4)
       table.insert(lines, buf_line)
       table.insert(line_mapping, {
         tabid = tab.tabid,
@@ -346,8 +285,8 @@ function M.open(config)
   -- Resolve window config from preset (before building content to get width)
   local state = require("radar.state")
   local row_override = {}
-  if state.radar_origin then
-    row_override.row = state.radar_origin.row
+  if state.get_radar_origin() then
+    row_override.row = state.get_radar_origin().row
   end
   local tabs_opts = vim.tbl_extend("force", row_override, {
     title = "  ☰ TABS ",
@@ -362,7 +301,7 @@ function M.open(config)
   -- Build content with right-aligned indicators
   local content_width = win_config.width - 2 -- subtract border
   local lines, line_mapping = build_content(tabs_data, content_width)
-  state.tabs_line_mapping = line_mapping
+  state.set_tabs_line_mapping(line_mapping)
 
   -- Create buffer
   local bufnr = vim.api.nvim_create_buf(false, true)
@@ -378,12 +317,12 @@ function M.open(config)
   setup_keymaps(bufnr, config)
 
   -- Store buffer id
-  state.tabs_bufid = bufnr
+  state.set_tabs_bufid(bufnr)
 
   local winid = vim.api.nvim_open_win(bufnr, true, win_config)
 
   -- Store window id
-  state.tabs_winid = winid
+  state.set_tabs_winid(winid)
 
   -- Apply window options
   for opt, value in pairs(config.tabs.win_opts) do
@@ -437,14 +376,16 @@ function M.update(config)
 
   -- Determine window width for alignment
   local content_width = 73 -- fallback
-  if state.tabs_winid and vim.api.nvim_win_is_valid(state.tabs_winid) then
-    content_width = vim.api.nvim_win_get_width(state.tabs_winid) - 2
+  if
+    state.get_tabs_winid() and vim.api.nvim_win_is_valid(state.get_tabs_winid())
+  then
+    content_width = vim.api.nvim_win_get_width(state.get_tabs_winid()) - 2
   end
 
   local lines, line_mapping = build_content(tabs_data, content_width)
-  state.tabs_line_mapping = line_mapping
+  state.set_tabs_line_mapping(line_mapping)
 
-  local bufnr = state.tabs_bufid
+  local bufnr = state.get_tabs_bufid()
   if not bufnr or not vim.api.nvim_buf_is_valid(bufnr) then
     return
   end
@@ -466,9 +407,9 @@ function M.delete_line(config)
     return
   end
 
-  local cursor = vim.api.nvim_win_get_cursor(state.tabs_winid)
+  local cursor = vim.api.nvim_win_get_cursor(state.get_tabs_winid())
   local line_num = cursor[1]
-  local item = state.tabs_line_mapping[line_num]
+  local item = state.get_tabs_line_mapping()[line_num]
 
   if not item or not item.tabid then
     return
@@ -503,12 +444,15 @@ function M.delete_line(config)
   -- Clamp cursor if past the new last line
   if
     M.exists()
-    and state.tabs_bufid
-    and vim.api.nvim_buf_is_valid(state.tabs_bufid)
+    and state.get_tabs_bufid()
+    and vim.api.nvim_buf_is_valid(state.get_tabs_bufid())
   then
-    local new_count = vim.api.nvim_buf_line_count(state.tabs_bufid)
+    local new_count = vim.api.nvim_buf_line_count(state.get_tabs_bufid())
     if line_num > new_count then
-      vim.api.nvim_win_set_cursor(state.tabs_winid, { math.max(1, new_count), 0 })
+      vim.api.nvim_win_set_cursor(
+        state.get_tabs_winid(),
+        { math.max(1, new_count), 0 }
+      )
     end
   end
 end
@@ -521,9 +465,9 @@ function M.only_line(config)
     return
   end
 
-  local cursor = vim.api.nvim_win_get_cursor(state.tabs_winid)
+  local cursor = vim.api.nvim_win_get_cursor(state.get_tabs_winid())
   local line_num = cursor[1]
-  local item = state.tabs_line_mapping[line_num]
+  local item = state.get_tabs_line_mapping()[line_num]
 
   if not item or not item.tabid then
     return
@@ -552,9 +496,9 @@ function M.new_line(config)
     return
   end
 
-  local cursor = vim.api.nvim_win_get_cursor(state.tabs_winid)
+  local cursor = vim.api.nvim_win_get_cursor(state.get_tabs_winid())
   local line_num = cursor[1]
-  local item = state.tabs_line_mapping[line_num]
+  local item = state.get_tabs_line_mapping()[line_num]
 
   if not item or not item.tabid or item.winid then
     return
@@ -575,9 +519,9 @@ function M.vsplit_line(config)
     return
   end
 
-  local cursor = vim.api.nvim_win_get_cursor(state.tabs_winid)
+  local cursor = vim.api.nvim_win_get_cursor(state.get_tabs_winid())
   local line_num = cursor[1]
-  local item = state.tabs_line_mapping[line_num]
+  local item = state.get_tabs_line_mapping()[line_num]
 
   if not item or not item.winid then
     return
@@ -598,9 +542,9 @@ function M.split_line(config)
     return
   end
 
-  local cursor = vim.api.nvim_win_get_cursor(state.tabs_winid)
+  local cursor = vim.api.nvim_win_get_cursor(state.get_tabs_winid())
   local line_num = cursor[1]
-  local item = state.tabs_line_mapping[line_num]
+  local item = state.get_tabs_line_mapping()[line_num]
 
   if not item or not item.winid then
     return
@@ -621,9 +565,9 @@ function M.cut_line(config)
     return
   end
 
-  local cursor = vim.api.nvim_win_get_cursor(state.tabs_winid)
+  local cursor = vim.api.nvim_win_get_cursor(state.get_tabs_winid())
   local line_num = cursor[1]
-  local item = state.tabs_line_mapping[line_num]
+  local item = state.get_tabs_line_mapping()[line_num]
 
   if not item or not item.tabid then
     return
@@ -654,11 +598,11 @@ function M.cut_line(config)
   -- Re-apply highlights to visually mark the cut line
   if
     M.exists()
-    and state.tabs_bufid
-    and vim.api.nvim_buf_is_valid(state.tabs_bufid)
+    and state.get_tabs_bufid()
+    and vim.api.nvim_buf_is_valid(state.get_tabs_bufid())
   then
     local tabs_data = tabs.get_tabs_data()
-    apply_highlights(state.tabs_bufid, tabs_data)
+    apply_highlights(state.get_tabs_bufid(), tabs_data)
   end
 
   vim.notify(
@@ -675,9 +619,9 @@ function M.paste_line(config)
     return
   end
 
-  local cursor = vim.api.nvim_win_get_cursor(state.tabs_winid)
+  local cursor = vim.api.nvim_win_get_cursor(state.get_tabs_winid())
   local line_num = cursor[1]
-  local item = state.tabs_line_mapping[line_num]
+  local item = state.get_tabs_line_mapping()[line_num]
 
   if not item or not item.tabid then
     return
@@ -697,7 +641,7 @@ function M.paste_line(config)
 
     -- Return focus to the tabs floating window
     if M.exists() then
-      pcall(vim.api.nvim_set_current_win, state.tabs_winid)
+      pcall(vim.api.nvim_set_current_win, state.get_tabs_winid())
     end
 
     -- THEN close the original window
@@ -730,7 +674,7 @@ function M.paste_line(config)
 
     -- Return focus to the tabs floating window
     if M.exists() then
-      pcall(vim.api.nvim_set_current_win, state.tabs_winid)
+      pcall(vim.api.nvim_set_current_win, state.get_tabs_winid())
     end
   end
 
@@ -743,12 +687,15 @@ function M.paste_line(config)
   -- Clamp cursor if past the new last line
   if
     M.exists()
-    and state.tabs_bufid
-    and vim.api.nvim_buf_is_valid(state.tabs_bufid)
+    and state.get_tabs_bufid()
+    and vim.api.nvim_buf_is_valid(state.get_tabs_bufid())
   then
-    local new_count = vim.api.nvim_buf_line_count(state.tabs_bufid)
+    local new_count = vim.api.nvim_buf_line_count(state.get_tabs_bufid())
     if line_num > new_count then
-      vim.api.nvim_win_set_cursor(state.tabs_winid, { math.max(1, new_count), 0 })
+      vim.api.nvim_win_set_cursor(
+        state.get_tabs_winid(),
+        { math.max(1, new_count), 0 }
+      )
     end
   end
 end
@@ -761,9 +708,9 @@ function M.paste_line_before(config)
     return
   end
 
-  local cursor = vim.api.nvim_win_get_cursor(state.tabs_winid)
+  local cursor = vim.api.nvim_win_get_cursor(state.get_tabs_winid())
   local line_num = cursor[1]
-  local item = state.tabs_line_mapping[line_num]
+  local item = state.get_tabs_line_mapping()[line_num]
 
   if not item or not item.tabid then
     return
@@ -795,7 +742,7 @@ function M.paste_line_before(config)
 
     -- Return focus to the tabs floating window
     if M.exists() then
-      pcall(vim.api.nvim_set_current_win, state.tabs_winid)
+      pcall(vim.api.nvim_set_current_win, state.get_tabs_winid())
     end
 
     cut_item = nil
@@ -807,12 +754,15 @@ function M.paste_line_before(config)
     -- Clamp cursor if past the new last line
     if
       M.exists()
-      and state.tabs_bufid
-      and vim.api.nvim_buf_is_valid(state.tabs_bufid)
+      and state.get_tabs_bufid()
+      and vim.api.nvim_buf_is_valid(state.get_tabs_bufid())
     then
-      local new_count = vim.api.nvim_buf_line_count(state.tabs_bufid)
+      local new_count = vim.api.nvim_buf_line_count(state.get_tabs_bufid())
       if line_num > new_count then
-        vim.api.nvim_win_set_cursor(state.tabs_winid, { math.max(1, new_count), 0 })
+        vim.api.nvim_win_set_cursor(
+          state.get_tabs_winid(),
+          { math.max(1, new_count), 0 }
+        )
       end
     end
   else
@@ -829,9 +779,9 @@ function M.jump_to_line(config)
     return
   end
 
-  local cursor = vim.api.nvim_win_get_cursor(state.tabs_winid)
+  local cursor = vim.api.nvim_win_get_cursor(state.get_tabs_winid())
   local line_num = cursor[1]
-  local item = state.tabs_line_mapping[line_num]
+  local item = state.get_tabs_line_mapping()[line_num]
 
   if not item or not item.tabid then
     return

@@ -8,9 +8,9 @@ describe("recent", function()
 
   local function setup_test_state()
     test_config = vim.deepcopy(config.default)
-    state.locks = {}
-    state.recent_files = {}
-    state.session_files = {}
+    state.set_locks({})
+    state.set_recent_files({})
+    state.set_session_files({})
 
     -- Mock vim.uv.cwd() to return a test directory
     original_cwd = vim.uv.cwd
@@ -61,12 +61,12 @@ describe("recent", function()
 
     it("excludes locked files", function()
       -- Add a lock for one of the files
-      state.locks = {
+      state.set_locks({
         {
           label = "1",
           filename = vim.fn.fnamemodify("/test/project/file1.lua", ":p:."),
         },
-      }
+      })
 
       local files = recent.get_files(test_config)
 
@@ -83,10 +83,10 @@ describe("recent", function()
 
     it("prioritizes session files over oldfiles", function()
       -- Add session files
-      state.session_files = {
+      state.set_session_files({
         "/test/project/session1.lua",
         "/test/project/session2.lua",
-      }
+      })
 
       local files = recent.get_files(test_config)
 
@@ -97,7 +97,7 @@ describe("recent", function()
 
     it("removes duplicates between session and oldfiles", function()
       -- Add file that exists in both session and oldfiles
-      state.session_files = { "/test/project/file1.lua" }
+      state.set_session_files({ "/test/project/file1.lua" })
 
       local files = recent.get_files(test_config)
 
@@ -149,41 +149,47 @@ describe("recent", function()
     it("adds current file to session tracking", function()
       recent.track_current_file(test_config)
 
-      MiniTest.expect.equality(#state.session_files, 1)
-      MiniTest.expect.equality(state.session_files[1], "/test/project/current.lua")
+      MiniTest.expect.equality(#state.get_session_files(), 1)
+      MiniTest.expect.equality(
+        state.get_session_files()[1],
+        "/test/project/current.lua"
+      )
     end)
 
     it("moves existing file to end when accessed again", function()
       -- Add some files
-      state.session_files = {
+      state.set_session_files({
         "/test/project/old1.lua",
         "/test/project/current.lua",
         "/test/project/old2.lua",
-      }
+      })
 
       recent.track_current_file(test_config)
 
       -- Current file should be moved to end
-      MiniTest.expect.equality(#state.session_files, 3)
-      MiniTest.expect.equality(state.session_files[3], "/test/project/current.lua")
+      MiniTest.expect.equality(#state.get_session_files(), 3)
+      MiniTest.expect.equality(
+        state.get_session_files()[3],
+        "/test/project/current.lua"
+      )
     end)
 
     it("limits session files to max_session_files", function()
       -- Fill up session files to max
       for i = 1, test_config.radar.max_recent_files do
-        table.insert(state.session_files, "/test/project/file" .. i .. ".lua")
+        table.insert(state.get_session_files(), "/test/project/file" .. i .. ".lua")
       end
 
       recent.track_current_file(test_config)
 
       -- Should not exceed max
       MiniTest.expect.equality(
-        #state.session_files,
+        #state.get_session_files(),
         test_config.radar.max_recent_files
       )
       -- Current file should be at the end
       MiniTest.expect.equality(
-        state.session_files[#state.session_files],
+        state.get_session_files()[#state.get_session_files()],
         "/test/project/current.lua"
       )
     end)
@@ -195,7 +201,7 @@ describe("recent", function()
 
       recent.track_current_file(test_config)
 
-      MiniTest.expect.equality(#state.session_files, 0)
+      MiniTest.expect.equality(#state.get_session_files(), 0)
     end)
 
     it("ignores non-file buffers", function()
@@ -203,7 +209,7 @@ describe("recent", function()
 
       recent.track_current_file(test_config)
 
-      MiniTest.expect.equality(#state.session_files, 0)
+      MiniTest.expect.equality(#state.get_session_files(), 0)
     end)
 
     it("ignores help files", function()
@@ -211,7 +217,7 @@ describe("recent", function()
 
       recent.track_current_file(test_config)
 
-      MiniTest.expect.equality(#state.session_files, 0)
+      MiniTest.expect.equality(#state.get_session_files(), 0)
     end)
   end)
 
@@ -219,12 +225,12 @@ describe("recent", function()
     before_each(setup_test_state)
     after_each(teardown_mocks)
 
-    it("updates state.recent_files", function()
-      MiniTest.expect.equality(#state.recent_files, 0)
+    it("updates state.get_recent_files()", function()
+      MiniTest.expect.equality(#state.get_recent_files(), 0)
 
       recent.update_state(test_config)
 
-      MiniTest.expect.equality(#state.recent_files > 0, true)
+      MiniTest.expect.equality(#state.get_recent_files() > 0, true)
     end)
 
     it("handles nil config gracefully", function()

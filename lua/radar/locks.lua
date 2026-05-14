@@ -6,7 +6,7 @@ local M = {}
 function M.get_next_unused_label(config)
   local state = require("radar.state")
   local used_labels = {}
-  for _, lock in ipairs(state.locks) do
+  for _, lock in ipairs(state.get_locks()) do
     table.insert(used_labels, lock.label)
   end
 
@@ -33,7 +33,7 @@ function M.add(filename, config)
   }
 
   local state = require("radar.state")
-  table.insert(state.locks, lock)
+  table.insert(state.get_locks(), lock)
   return lock
 end
 
@@ -45,10 +45,10 @@ function M.remove(filename)
   local removed_lock
 
   local state = require("radar.state")
-  for i, lock in ipairs(state.locks) do
+  for i, lock in ipairs(state.get_locks()) do
     if lock.filename == filename then
       removed_lock = lock
-      table.remove(state.locks, i)
+      table.remove(state.get_locks(), i)
       break
     end
   end
@@ -68,7 +68,7 @@ function M.toggle(filename, config, persistence_module)
 
   debug.log("toggle(", filename, ")")
   debug.log("  exists =", exists)
-  debug.log("  locks before =", #state.locks, vim.inspect(state.locks))
+  debug.log("  locks before =", #state.get_locks(), vim.inspect(state.get_locks()))
 
   local lock
 
@@ -80,8 +80,8 @@ function M.toggle(filename, config, persistence_module)
     debug.log("  action = REMOVE, removed =", lock)
   end
 
-  debug.log("  locks after =", #state.locks, vim.inspect(state.locks))
-  debug.log("  section_ranges =", state.section_line_ranges)
+  debug.log("  locks after =", #state.get_locks(), vim.inspect(state.get_locks()))
+  debug.log("  section_ranges =", state.get_section_line_ranges())
 
   vim.defer_fn(function()
     persistence_module.persist(config)
@@ -103,13 +103,13 @@ function M.lock_current_buffer(buf_nr, config, persistence_module, radar_module)
 
   debug.log("=== lock_current_buffer ===")
   debug.log("  source_bufnr (passed) =", buf_nr)
-  debug.log("  state.source_bufnr =", state.source_bufnr)
+  debug.log("  state.get_source_bufnr() =", state.get_source_bufnr())
   debug.log("  nvim_get_current_buf() =", vim.api.nvim_get_current_buf())
   debug.log(
     "  nvim_get_current_buf name =",
     vim.api.nvim_buf_get_name(vim.api.nvim_get_current_buf())
   )
-  debug.log("  state.recent_files =", state.recent_files)
+  debug.log("  state.get_recent_files() =", state.get_recent_files())
 
   buf_nr = buf_nr or vim.api.nvim_get_current_buf()
   debug.log("  resolved buf_nr =", buf_nr)

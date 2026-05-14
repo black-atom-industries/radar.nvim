@@ -8,7 +8,7 @@ local function calculate_window_width(radar_module)
 
   local state = require("radar.state")
   -- Check locked files
-  for _, lock in ipairs(state.locks) do
+  for _, lock in ipairs(state.get_locks()) do
     local formatted_path = radar_module.get_formatted_filepath(lock.filename)
     local entry_text = string.format("   [%s] %s  ", lock.label, formatted_path)
     max_width = math.max(max_width, vim.fn.strdisplaywidth(entry_text))
@@ -91,7 +91,7 @@ function M.save_buffer(edit_buf, radar_config, radar_module)
   -- Update locks and persist
   local state = require("radar.state")
   local persistence = require("radar.persistence")
-  state.locks = new_locks
+  state.set_locks(new_locks)
   persistence.persist(radar_config)
   radar_module.update(radar_config)
 
@@ -108,7 +108,7 @@ end
 ---@return nil
 function M.open_file_from_edit(edit_buf, open_cmd, radar_config, radar_module)
   local state = require("radar.state")
-  local cursor = vim.api.nvim_win_get_cursor(state.edit_winid)
+  local cursor = vim.api.nvim_win_get_cursor(state.get_edit_winid())
   local line_nr = cursor[1]
   local lines = vim.api.nvim_buf_get_lines(edit_buf, 0, -1, false)
 
@@ -151,15 +151,17 @@ end
 ---@return nil
 function M.cleanup()
   local state = require("radar.state")
-  if state.edit_winid and vim.api.nvim_win_is_valid(state.edit_winid) then
-    vim.api.nvim_win_close(state.edit_winid, true)
+  if
+    state.get_edit_winid() and vim.api.nvim_win_is_valid(state.get_edit_winid())
+  then
+    vim.api.nvim_win_close(state.get_edit_winid(), true)
   end
 
   -- Close all radar windows
   state.close_all_radar_windows()
 
-  state.edit_winid = nil
-  state.edit_bufid = nil
+  state.set_edit_winid(nil)
+  state.set_edit_bufid(nil)
 end
 
 ---Create editable buffer for managing locks
@@ -184,7 +186,7 @@ function M.edit_locks(radar_config, radar_module)
 
   -- Create editable buffer
   local edit_buf = vim.api.nvim_create_buf(false, false)
-  state.edit_bufid = edit_buf
+  state.set_edit_bufid(edit_buf)
 
   -- Set buffer options — set name before other options to catch E95 early
   -- Use pcall because a race with BufUnload/wipe can leave a ghost name
@@ -207,7 +209,7 @@ function M.edit_locks(radar_config, radar_module)
 
   -- Create buffer lines: just the filepaths (labels assigned by line order)
   local lines = {}
-  for _, lock in ipairs(state.locks) do
+  for _, lock in ipairs(state.get_locks()) do
     local formatted_path = radar_module.get_formatted_filepath(lock.filename)
     table.insert(lines, formatted_path)
   end
@@ -222,8 +224,8 @@ function M.edit_locks(radar_config, radar_module)
   -- Resolve window config from preset with dynamic width/height
   local window = require("radar.window")
   local row_override = {}
-  if state.radar_origin then
-    row_override.row = state.radar_origin.row
+  if state.get_radar_origin() then
+    row_override.row = state.get_radar_origin().row
   end
   local win_opts = window.resolve_config(
     radar_config,
@@ -237,7 +239,7 @@ function M.edit_locks(radar_config, radar_module)
   )
 
   local edit_win = vim.api.nvim_open_win(edit_buf, true, win_opts)
-  state.edit_winid = edit_win
+  state.set_edit_winid(edit_win)
 
   -- Apply window-local options
   for opt, value in pairs(radar_config.radar_edit.win_opts) do
@@ -248,10 +250,18 @@ function M.edit_locks(radar_config, radar_module)
   setup_edit_autocmds(edit_buf, radar_config, radar_module)
 
   -- Set up buffer-local keymaps
-  vim.api.nvim_buf_set_keymap(edit_buf, "n", "q", "<cmd>w<bar>q<CR>", {
+  vim.api.nvim_buf_set_keymap(edit_buf, "n", "q", "", {
     noremap = true,
     silent = true,
     desc = "Save and quit radar edit buffer",
+    callback = function()
+      -- Save changes first (this also updates radar via radar_module.update())
+      M.save_buffer(edit_buf, radar_config, radar_module)
+      -- Close the edit window (BufUnload calls M.cleanup())
+      if vim.api.nvim_win_is_valid(edit_win) then
+        vim.api.nvim_win_close(edit_win, true)
+      end
+    end,
   })
 
   -- Navigation keymaps

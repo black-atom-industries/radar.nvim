@@ -2,24 +2,15 @@ local state = require("radar.state")
 
 describe("state", function()
   local function setup_test_locks()
-    state.locks = {
+    state.set_locks({
       { label = "1", filename = "file1.lua" },
       { label = "2", filename = "file2.lua" },
       { label = "3", filename = "file3.lua" },
-    }
+    })
   end
 
   local function clear_test_state()
-    state.locks = {}
-    state.recent_files = {}
-    state.session_files = {}
-    state.radar_winid = nil
-    state.focused_section = nil
-    state.section_line_ranges = nil
-    state.edit_winid = nil
-    state.edit_bufid = nil
-    state.source_bufnr = nil
-    state.source_alt_file = nil
+    state.reset()
   end
 
   describe("get_lock_by_field", function()
@@ -51,25 +42,26 @@ describe("state", function()
     end)
 
     it("handles empty locks array", function()
-      state.locks = {}
+      state.set_locks({})
       local lock = state.get_lock_by_field("label", "1")
       MiniTest.expect.equality(lock, nil)
     end)
   end)
 
   describe("state initialization", function()
+    before_each(clear_test_state)
+
     it("has correct initial structure", function()
-      -- Test that state has all expected fields with correct types
-      MiniTest.expect.equality(type(state.locks), "table")
-      MiniTest.expect.equality(type(state.recent_files), "table")
-      MiniTest.expect.equality(type(state.session_files), "table")
-      MiniTest.expect.equality(state.radar_winid, nil)
-      MiniTest.expect.equality(state.focused_section, nil)
-      MiniTest.expect.equality(state.section_line_ranges, nil)
-      MiniTest.expect.equality(state.edit_winid, nil)
-      MiniTest.expect.equality(state.edit_bufid, nil)
-      MiniTest.expect.equality(state.source_bufnr, nil)
-      MiniTest.expect.equality(state.source_alt_file, nil)
+      MiniTest.expect.equality(type(state.get_locks()), "table")
+      MiniTest.expect.equality(type(state.get_recent_files()), "table")
+      MiniTest.expect.equality(type(state.get_session_files()), "table")
+      MiniTest.expect.equality(state.get_radar_winid(), nil)
+      MiniTest.expect.equality(state.get_focused_section(), nil)
+      MiniTest.expect.equality(state.get_section_line_ranges(), nil)
+      MiniTest.expect.equality(state.get_edit_winid(), nil)
+      MiniTest.expect.equality(state.get_edit_bufid(), nil)
+      MiniTest.expect.equality(state.get_source_bufnr(), nil)
+      MiniTest.expect.equality(state.get_source_alt_file(), nil)
     end)
   end)
 end)
