@@ -114,12 +114,12 @@ function M.get_buffer_indicators(bufnr)
   local diag_parts = {}
   local severities = { ERROR = "E", WARN = "W", INFO = "I", HINT = "H" }
   for severity, label in pairs(severities) do
-    local ok, count = pcall(function()
+    local diag_ok, count = pcall(function()
       return #vim.diagnostic.get(bufnr, {
         severity = vim.diagnostic.severity[severity],
       })
     end)
-    if ok and count and count > 0 then
+    if diag_ok and count and count > 0 then
       table.insert(diag_parts, label .. count)
     end
   end
@@ -139,7 +139,7 @@ end
 ---@param total_width integer Total columns available
 ---@param indent integer Leading indentation in spaces (unused currently, kept for API compatibility)
 ---@return string
-function M.right_align_line(left, suffix, total_width, indent)
+function M.right_align_line(left, suffix, total_width, _indent)
   if suffix == "" then
     return left
   end
