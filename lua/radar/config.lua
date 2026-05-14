@@ -34,7 +34,7 @@ M.default = {
   radar = {
     size = { width = 50, height = 75 },
     padding = { x = 2, y = 1 },
-    border = "single",
+    border = "solid",
     position = "center",
     winblend = 0,
     max_recent_files = 10,
@@ -65,7 +65,7 @@ M.default = {
 
   -- File float window
   file_float = {
-    win_preset = "center_large",
+    win_preset = "center_narrow",
     win_opts = {
       number = true,
       relativenumber = true,

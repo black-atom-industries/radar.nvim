@@ -26,10 +26,10 @@ end
 local function build_content(config)
   local state = require("radar.data.state")
   local width = resolve_dimension(config.radar.size.width, vim.o.columns, 80)
-  -- Account for window border (2 cells) + internal padding (left + right)
+  -- Account for internal padding on both sides (window width excludes border already)
   local pad_x = config.radar.padding and config.radar.padding.x or 1
   local pad_y = config.radar.padding and config.radar.padding.y or 1
-  local content_width = math.max(width - 2 - pad_x * 2, 40)
+  local content_width = math.max(width - pad_x, 40)
   local pad_str = string.rep(" ", pad_x)
 
   ---@type string[]
@@ -57,10 +57,10 @@ local function build_content(config)
   local alt_file = state.get_source_alt_file()
   local alt_text
   if alt_file then
-    alt_text =
-      string.format(" [%s] %s", alt_label, vim.fn.fnamemodify(alt_file, ":p:."))
+    alt_text = pad_str
+      .. string.format("[%s] %s", alt_label, vim.fn.fnamemodify(alt_file, ":p:."))
   else
-    alt_text = string.format(" [%s] - No other file yet", alt_label)
+    alt_text = pad_str .. string.format("[%s] - No other file yet", alt_label)
   end
   section_ranges.alt.start = add_line(alt_text)
   section_ranges.alt["end"] = #lines
@@ -70,7 +70,7 @@ local function build_content(config)
 
   -- ── Locks section ──
   local locks_count = #state.get_locks()
-  local locks_title = " " .. config.radar.titles.locks
+  local locks_title = pad_str .. config.radar.titles.locks
   local locks_header_full = locks_title
     .. string.rep(
       "─",
@@ -89,7 +89,7 @@ local function build_content(config)
   if locks_count > 0 then
     for _, lock in ipairs(state.get_locks()) do
       local path = vim.fn.fnamemodify(lock.filename, ":p:.")
-      local left = string.format(" [%s] %s", lock.label, path)
+      local left = pad_str .. string.format("[%s] %s", lock.label, path)
       local abs_path = vim.fn.fnamemodify(lock.filename, ":p")
       local bufnr = vim.fn.bufnr(abs_path)
       local buf_indicators = indicators.get_buffer_indicators(bufnr)
@@ -98,7 +98,7 @@ local function build_content(config)
       add_line(line)
     end
   elseif config.radar.show_empty_message then
-    add_line(" No locks yet — press l to lock files")
+    add_line(pad_str .. "No locks yet — press l to lock files")
   end
   section_ranges.locks["end"] = #lines
 
@@ -107,7 +107,7 @@ local function build_content(config)
 
   -- ── Recent section ──
   local recent_count = #state.get_recent_files()
-  local recent_title = " " .. config.radar.titles.recent
+  local recent_title = pad_str .. config.radar.titles.recent
   local recent_header_full = recent_title
     .. string.rep(
       "─",
@@ -129,7 +129,7 @@ local function build_content(config)
       local path = vim.fn.fnamemodify(filename, ":p:.")
       local left
       if label then
-        left = string.format(" [%s] %s", label, path)
+        left = pad_str .. string.format("[%s] %s", label, path)
       else
         left = string.format("     %s", path)
       end
@@ -140,7 +140,7 @@ local function build_content(config)
       add_line(line)
     end
   elseif config.radar.show_empty_message then
-    add_line(" No recent files yet")
+    add_line(pad_str .. "No recent files yet")
   end
   section_ranges.recent["end"] = #lines
 
@@ -154,7 +154,8 @@ end
 
 ---Apply highlights to the unified buffer
 ---@param bufnr integer
-local function apply_highlights(bufnr)
+---@param config Radar.Config
+local function apply_highlights(bufnr, config)
   local ns = vim.api.nvim_create_namespace("radar.ui")
   local locks_ns = vim.api.nvim_create_namespace("radar.locks")
   local recent_ns = vim.api.nvim_create_namespace("radar.recent")
@@ -189,7 +190,8 @@ local function apply_highlights(bufnr)
         -- Find label end: the text before the ── fill
         local label_end = line:find("[─━]")
         if label_end then
-          vim.api.nvim_buf_set_extmark(bufnr, ns, line_idx, 0, {
+          local pad_x = config.radar.padding and config.radar.padding.x or 0
+          vim.api.nvim_buf_set_extmark(bufnr, ns, line_idx, pad_x, {
             end_col = label_end - 1,
             hl_group = "@function.builtin",
           })
@@ -545,7 +547,7 @@ function M.create(config)
   end
 
   -- Apply highlights
-  apply_highlights(bufnr)
+  apply_highlights(bufnr, config)
 
   -- Store in state
   state.set_radar_winid(winid)

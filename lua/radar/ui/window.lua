@@ -60,6 +60,27 @@ local BASE_PRESETS = {
     }
   end,
 
+  center_narrow = function(config)
+    local width = math.floor(vim.o.columns * 0.5)
+    -- local height = math.floor(vim.o.lines * 0.8)
+    local height = 75
+
+    return {
+      relative = "editor",
+      anchor = "NW",
+      width = width,
+      height = height,
+      row = math.floor(vim.o.lines - height),
+      col = math.floor((vim.o.columns - width) / 2),
+      border = "solid",
+      style = "minimal",
+      title = config.radar.titles.main,
+      title_pos = "center",
+      focusable = true,
+      zindex = 100,
+    }
+  end,
+
   top_right = function(config)
     return {
       relative = "editor",
