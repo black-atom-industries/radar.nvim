@@ -20,9 +20,20 @@ function M.get_files(config)
     excluded_files[abs_path] = true
   end
 
-  -- Exclude alternative file
-  local alternative = require("radar.data.alternative")
-  local alt_file = alternative.get_alternative_file()
+  -- Exclude alternative file — use stored source alt file when available
+  -- (set during radar.open()) to ensure consistent exclusion before and after
+  -- BufEnter during nvim_open_win, where re-evaluating get_alternative_file()
+  -- gives different results (radar buffer vs source buffer)
+  local alt_file = state.get_source_alt_file()
+  if not alt_file then
+    local ok, result = pcall(function()
+      local alternative = require("radar.data.alternative")
+      return alternative.get_alternative_file()
+    end)
+    if ok then
+      alt_file = result
+    end
+  end
   if alt_file then
     excluded_files[alt_file] = true
   end

@@ -479,8 +479,11 @@ function M.create(config)
   debug.log("  window: ", width, "x", total_height)
 
   -- Store origin for tabs/edit to reuse
+  ---@diagnostic disable-next-line: undefined-field
   state.set_radar_origin({
+    ---@diagnostic disable-next-line: undefined-field
     row = math.floor(win_config.row or 0),
+    ---@diagnostic disable-next-line: undefined-field
     col = math.floor(win_config.col or 0),
   })
 

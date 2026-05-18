@@ -297,6 +297,7 @@ function M.open(config)
   local tabs_data = tabs.get_tabs_data()
 
   -- Build content with right-aligned indicators
+  ---@diagnostic disable-next-line: undefined-field
   local content_width = win_config.width - 2 -- subtract border
   local lines, line_mapping = build_content(tabs_data, content_width)
   state.set_tabs_line_mapping(line_mapping)
