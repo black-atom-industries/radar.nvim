@@ -26,9 +26,17 @@ function M.get_file_from_line(_config, section)
   local section_start = ranges[section].start
   local entry_index = current_line_nr - section_start
 
+  -- Compute visible entries, matching the filter in build_content
   if section == "locks" then
-    if entry_index > 0 and entry_index <= #state.get_locks() then
-      return state.get_locks()[entry_index].filename
+    local visible_locks = {}
+    for _, lock in ipairs(state.get_locks()) do
+      local abs_path = vim.fn.fnamemodify(lock.filename, ":p")
+      if lock.filename:match("^%w+://") or vim.fn.filereadable(abs_path) == 1 then
+        table.insert(visible_locks, lock)
+      end
+    end
+    if entry_index > 0 and entry_index <= #visible_locks then
+      return visible_locks[entry_index].filename
     end
   elseif section == "recent" then
     if entry_index > 0 and entry_index <= #state.get_recent_files() then
@@ -48,6 +56,14 @@ end
 function M.open_file(filepath, open_cmd, config, radar_module)
   if not filepath then
     return
+  end
+
+  -- Skip stale entries whose files no longer exist
+  if not filepath:match("^%w+://") then
+    local abs_path = vim.fn.fnamemodify(filepath, ":p")
+    if vim.fn.filereadable(abs_path) == 0 then
+      return
+    end
   end
 
   -- Close radar first, so file opens in the previous window

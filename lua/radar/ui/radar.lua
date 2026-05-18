@@ -86,18 +86,24 @@ local function build_content(config)
     .. locks_count
   section_ranges.locks.start = add_line(locks_header_full)
 
+  local has_visible_locks = false
   if locks_count > 0 then
     for _, lock in ipairs(state.get_locks()) do
-      local path = vim.fn.fnamemodify(lock.filename, ":p:.")
-      local left = pad_str .. string.format("[%s] %s", lock.label, path)
+      -- Skip stale locks whose files no longer exist
       local abs_path = vim.fn.fnamemodify(lock.filename, ":p")
-      local bufnr = vim.fn.bufnr(abs_path)
-      local buf_indicators = indicators.get_buffer_indicators(bufnr)
-      local line =
-        indicators.right_align_line(left, buf_indicators, content_width, 0)
-      add_line(line)
+      if lock.filename:match("^%w+://") or vim.fn.filereadable(abs_path) == 1 then
+        local path = vim.fn.fnamemodify(lock.filename, ":p:.")
+        local left = pad_str .. string.format("[%s] %s", lock.label, path)
+        local bufnr = vim.fn.bufnr(abs_path)
+        local buf_indicators = indicators.get_buffer_indicators(bufnr)
+        local line =
+          indicators.right_align_line(left, buf_indicators, content_width, 0)
+        add_line(line)
+        has_visible_locks = true
+      end
     end
-  elseif config.radar.show_empty_message then
+  end
+  if not has_visible_locks and config.radar.show_empty_message then
     add_line(pad_str .. "No locks yet — press l to lock files")
   end
   section_ranges.locks["end"] = #lines
