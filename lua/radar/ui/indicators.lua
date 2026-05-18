@@ -1,19 +1,19 @@
 local M = {}
 
----Helper to get a color attribute from a highlight group
----@param group string
----@param attr string
----@return string?
-local function get_attr(group, attr)
-  local hl = vim.api.nvim_get_hl(0, { name = group, link = false })
-  local val = hl[attr]
-  return val and string.format("#%06x", val) or nil
-end
-
 ---Create highlight groups for git and LSP indicators from theme colors.
 ---Pill/badge style: labels use Comment fg on DiffChange/VirtualTextHint bg,
 ---values use semantic sign colors (mini.diff / diagnostic) with matching bg.
 function M.setup_highlights()
+  ---Helper to get a color attribute from a highlight group
+  ---@param group string
+  ---@param attr string
+  ---@return string?
+  local function get_attr(group, attr)
+    local hl = vim.api.nvim_get_hl(0, { name = group, link = false })
+    local val = hl[attr]
+    return val and string.format("#%06x", val) or nil
+  end
+
   local git_bg = get_attr("Normal", "bg")
   local lsp_bg = get_attr("Normal", "bg")
   local muted = get_attr("@keyword", "fg")
@@ -68,17 +68,6 @@ function M.setup_highlights()
     { fg = get_attr("DiagnosticSignHint", "fg"), bg = lsp_bg }
   )
 end
-
--- Create highlight groups on module load so they're always available
-M.setup_highlights()
-
--- Rebuild on theme change
-local ind_augroup = vim.api.nvim_create_augroup("RadarIndicators", { clear = true })
-vim.api.nvim_create_autocmd("ColorScheme", {
-  group = ind_augroup,
-  callback = M.setup_highlights,
-  desc = "Rebuild git/LSP indicator highlights on theme change",
-})
 
 ---Build git and LSP indicator string for a buffer
 ---@param bufnr integer
@@ -155,35 +144,37 @@ function M.right_align_line(left, suffix, total_width, _indent)
   return left .. string.rep(" ", padding) .. suffix
 end
 
+-- Indicator section definitions for pill/badge extmark highlighting
+---@type {label:string,section_hl:string,label_hl:string,tokens:{pattern:string,hl:string}[]}[]
+local indicator_sections = {
+  {
+    label = "[GIT",
+    section_hl = "RadarTabsGitSection",
+    label_hl = "RadarTabsGitLabel",
+    tokens = {
+      { pattern = "([+])%d+", hl = "RadarTabsGitAdd" },
+      { pattern = "([~])%d+", hl = "RadarTabsGitChange" },
+      { pattern = "([-])%d+", hl = "RadarTabsGitDelete" },
+    },
+  },
+  {
+    label = "[LSP",
+    section_hl = "RadarTabsLspSection",
+    label_hl = "RadarTabsLspLabel",
+    tokens = {
+      { pattern = "([E])%d+", hl = "RadarTabsLspError" },
+      { pattern = "([W])%d+", hl = "RadarTabsLspWarn" },
+      { pattern = "([I])%d+", hl = "RadarTabsLspInfo" },
+      { pattern = "([H])%d+", hl = "RadarTabsLspHint" },
+    },
+  },
+}
+
 ---Apply pill/badge extmark highlighting for git and LSP indicator sections
 ---@param bufnr integer
 ---@param ns integer Extmark namespace
 ---@param lines string[] Buffer lines
 function M.highlight_indicators(bufnr, ns, lines)
-  local indicator_sections = {
-    {
-      label = "[GIT",
-      section_hl = "RadarTabsGitSection",
-      label_hl = "RadarTabsGitLabel",
-      tokens = {
-        { pattern = "([+])%d+", hl = "RadarTabsGitAdd" },
-        { pattern = "([~])%d+", hl = "RadarTabsGitChange" },
-        { pattern = "([-])%d+", hl = "RadarTabsGitDelete" },
-      },
-    },
-    {
-      label = "[LSP",
-      section_hl = "RadarTabsLspSection",
-      label_hl = "RadarTabsLspLabel",
-      tokens = {
-        { pattern = "([E])%d+", hl = "RadarTabsLspError" },
-        { pattern = "([W])%d+", hl = "RadarTabsLspWarn" },
-        { pattern = "([I])%d+", hl = "RadarTabsLspInfo" },
-        { pattern = "([H])%d+", hl = "RadarTabsLspHint" },
-      },
-    },
-  }
-
   for line_num, line in ipairs(lines) do
     for _, section in ipairs(indicator_sections) do
       local start_pos = line:find(section.label, 1, true)
@@ -230,5 +221,14 @@ function M.highlight_indicators(bufnr, ns, lines)
     end
   end
 end
+
+-- Create highlight groups on module load so they're always available
+local ind_augroup = vim.api.nvim_create_augroup("RadarIndicators", { clear = true })
+M.setup_highlights()
+vim.api.nvim_create_autocmd("ColorScheme", {
+  group = ind_augroup,
+  callback = M.setup_highlights,
+  desc = "Rebuild git/LSP indicator highlights on theme change",
+})
 
 return M
