@@ -2,6 +2,8 @@ local M = {}
 
 ---@class Radar.Config
 M.default = {
+  debug = false,
+
   keys = {
     prefix = "<space>",
     lock = "l",

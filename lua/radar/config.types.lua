@@ -65,6 +65,7 @@
 ---@field win_opts table<string, any> Window-local options (see |options-list|)
 
 ---@class Radar.Config
+---@field debug boolean Enable verbose debug logging
 ---@field keys Radar.Config.Keys
 ---@field persist Radar.Config.Persist
 ---@field win_presets table<Radar.Config.WinPreset|string, table|fun(config: Radar.Config): vim.api.keyset.win_config>

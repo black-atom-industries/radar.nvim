@@ -9,6 +9,7 @@ function M.setup(opts)
   opts = opts or {}
   config = vim.tbl_deep_extend("force", require("radar.config").default, opts)
 
+  require("radar.debug").setup(config)
   require("radar.autocmd").setup(config)
   require("radar.ui.keys").setup(config)
   require("radar.persist.persistence").populate(config, require("radar.ui.radar"))
