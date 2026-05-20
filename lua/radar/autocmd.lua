@@ -48,6 +48,25 @@ function M.setup(config)
     end,
   })
 
+  -- Reload state when directory changes (e.g., worktree switches, :cd)
+  autocmd("DirChanged", {
+    group = autogrp("radar.DirChanged", { clear = true }),
+    callback = function()
+      local persistence = require("radar.persist.persistence")
+      local recent = require("radar.data.recent")
+      local radar = require("radar.ui.radar")
+
+      -- Reload locks for the new project/branch
+      persistence.populate(config)
+      -- Reload recent files filtered by the new cwd
+      recent.update_state(config)
+      -- Refresh radar if open
+      if radar.exists() then
+        radar.update(config)
+      end
+    end,
+  })
+
   -- Tabs sidebar updates
   autocmd({ "BufEnter", "TabEnter", "TabClosed", "WinEnter" }, {
     group = autogrp("radar.TabsUpdate", { clear = true }),

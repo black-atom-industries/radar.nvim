@@ -102,6 +102,7 @@ state.radar_windows = {
 ### 7. `/Users/nbr/repos/black-atom-industries/radar.nvim/lua/radar/autocmd.lua`
 
 - Update to handle multiple windows in `radar.exists()` calls
+- **DirChanged**: Reloads locks and recent files when working directory changes (e.g., `:cd`, worktree switches)
 
 ---
 

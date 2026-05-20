@@ -211,11 +211,14 @@ end
 ---Close radar window
 ---@return nil
 function M.close_all_radar_windows()
-  if _state.radar_winid and vim.api.nvim_win_is_valid(_state.radar_winid) then
-    vim.api.nvim_win_close(_state.radar_winid, false)
+  -- Clear winid BEFORE closing the window so BufEnter autocmds don't
+  -- see a valid radar and trigger a spurious update().
+  local winid = _state.radar_winid
+  _state.radar_winid = nil
+  if winid and vim.api.nvim_win_is_valid(winid) then
+    vim.api.nvim_win_close(winid, false)
   end
 
-  _state.radar_winid = nil
   _state.focused_section = nil
   _state.section_line_ranges = nil
   _state.radar_origin = nil

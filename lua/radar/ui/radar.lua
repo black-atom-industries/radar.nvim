@@ -312,14 +312,15 @@ end
 ---@return nil
 function M.close()
   local state = require("radar.data.state")
-  if
-    state.get_radar_winid() and vim.api.nvim_win_is_valid(state.get_radar_winid())
-  then
-    vim.api.nvim_win_close(state.get_radar_winid(), false)
+  -- Clear winid BEFORE closing the window so BufEnter autocmds don't
+  -- see a valid radar and trigger a spurious update().
+  local winid = state.get_radar_winid()
+  state.set_radar_winid(nil)
+  if winid and vim.api.nvim_win_is_valid(winid) then
+    vim.api.nvim_win_close(winid, false)
   end
   -- Close help window if open
   require("radar.ui.help").close()
-  state.set_radar_winid(nil)
   state.set_focused_section(nil)
   state.set_section_line_ranges(nil)
 end

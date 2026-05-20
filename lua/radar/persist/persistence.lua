@@ -165,6 +165,7 @@ end
 ---@return nil
 function M.populate(config)
   local data = M.load(config)
+  local state = require("radar.data.state")
 
   if data ~= nil then
     local project_path = M.get_project_path()
@@ -173,25 +174,25 @@ function M.populate(config)
     -- Access data through projects structure
     local locks = vim.tbl_get(data, "projects", project_path, git_branch, "locks")
 
+    -- Always update locks to reflect the current project/branch.
+    -- Clears to {} when the new project/branch has no saved locks (e.g.,
+    -- switching worktrees) — prevents stale locks from the previous directory.
+    state.set_locks(locks or {})
+
+    -- Update lastAccessed for existing project/branch entries
     if locks ~= nil then
-      local state = require("radar.data.state")
-      state.set_locks(locks)
-
-      -- Update lastAccessed for current project/branch
       local current_time = os.time()
-      if data.projects[project_path] and data.projects[project_path][git_branch] then
-        data.projects[project_path][git_branch].lastAccessed = current_time
+      data.projects[project_path][git_branch].lastAccessed = current_time
 
-        -- Reconstruct data with version first and sorted projects
-        local updated_data = {
-          version = data.version or 1,
-          projects = utils.sort_projects(data.projects),
-        }
+      -- Reconstruct data with version first and sorted projects
+      local updated_data = {
+        version = data.version or 1,
+        projects = utils.sort_projects(data.projects),
+      }
 
-        -- Write updated data back to file
-        vim.fn.mkdir(vim.fn.fnamemodify(config.persist.path, ":h"), "p")
-        M.write(config.persist.path, updated_data)
-      end
+      -- Write updated data back to file
+      vim.fn.mkdir(vim.fn.fnamemodify(config.persist.path, ":h"), "p")
+      M.write(config.persist.path, updated_data)
     end
   end
 end
