@@ -5,10 +5,12 @@ local config = require("radar.config")
 describe("edit", function()
   local test_config
   local mock_mini_radar, mock_persistence
-  local original_api
+  local original_api, original_persistence_module
 
   local function setup_test_state()
     test_config = vim.deepcopy(config.default)
+    test_config.persist.path = vim.fn.tempname() .. ".json"
+    original_persistence_module = package.loaded["radar.persist.persistence"]
     state.set_locks({
       { label = "1", filename = "/test/file1.lua" },
       { label = "2", filename = "/test/file2.lua" },
@@ -147,6 +149,8 @@ describe("edit", function()
         vim.fn[func] = original
       end
     end
+    package.loaded["radar.persist.persistence"] = original_persistence_module
+    vim.fn.delete(test_config.persist.path)
   end
 
   describe("save_buffer", function()
@@ -261,6 +265,25 @@ describe("edit", function()
       vim.notify = original_notify
       MiniTest.expect.equality(notify_called, true)
       MiniTest.expect.equality(state.get_edit_bufid(), nil)
+    end)
+
+    it("keeps Oil lock URLs intact in the editable buffer", function()
+      local oil_url = "oil://" .. vim.uv.cwd() .. "/"
+      state.set_locks({ { label = "1", filename = oil_url } })
+      mock_mini_radar.get_formatted_filepath =
+        require("radar.ui.radar").get_formatted_filepath
+
+      edit.edit_locks(test_config, mock_mini_radar)
+
+      local edit_buf = state.get_edit_bufid()
+      local lines = vim.api.nvim_buf_get_lines(edit_buf, 0, -1, false)
+      MiniTest.expect.equality(mock_mini_radar.get_formatted_filepath(oil_url), "./")
+      MiniTest.expect.equality(lines, { oil_url })
+
+      package.loaded["radar.persist.persistence"] = mock_persistence
+      edit.save_buffer(edit_buf, test_config, mock_mini_radar)
+
+      MiniTest.expect.equality(state.get_locks()[1].filename, oil_url)
     end)
 
     it("sets correct buffer options", function()

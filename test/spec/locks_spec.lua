@@ -215,5 +215,22 @@ describe("locks", function()
 
       MiniTest.expect.equality(update_called, true)
     end)
+
+    it("preserves Oil and other protocol URLs as lock names", function()
+      for _, filename in ipairs({
+        "oil:///test/project/",
+        "gh://owner/repo/blob/main/file.lua",
+        "fugitive:///test/project/.git/index",
+      }) do
+        state.set_locks({})
+        vim.api.nvim_buf_get_name = function()
+          return filename
+        end
+
+        locks.lock_current_buffer(1, test_config, mock_persistence, mock_mini_radar)
+
+        MiniTest.expect.equality(state.get_locks()[1].filename, filename)
+      end
+    end)
   end)
 end)

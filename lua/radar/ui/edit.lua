@@ -1,4 +1,5 @@
 local M = {}
+local path = require("radar.path")
 
 ---Calculate optimal window width based on longest file path
 ---@param radar_module table
@@ -9,7 +10,10 @@ local function calculate_window_width(radar_module)
   local state = require("radar.data.state")
   -- Check locked files
   for _, lock in ipairs(state.get_locks()) do
-    local formatted_path = radar_module.get_formatted_filepath(lock.filename)
+    local formatted_path = lock.filename
+    if not path.is_oil_url(lock.filename) then
+      formatted_path = radar_module.get_formatted_filepath(lock.filename)
+    end
     local entry_text = string.format("   [%s] %s  ", lock.label, formatted_path)
     max_width = math.max(max_width, vim.fn.strdisplaywidth(entry_text))
   end
@@ -210,7 +214,10 @@ function M.edit_locks(radar_config, radar_module)
   -- Create buffer lines: just the filepaths (labels assigned by line order)
   local lines = {}
   for _, lock in ipairs(state.get_locks()) do
-    local formatted_path = radar_module.get_formatted_filepath(lock.filename)
+    local formatted_path = lock.filename
+    if not path.is_oil_url(lock.filename) then
+      formatted_path = radar_module.get_formatted_filepath(lock.filename)
+    end
     table.insert(lines, formatted_path)
   end
 

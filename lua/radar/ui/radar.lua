@@ -1,12 +1,22 @@
 local M = {}
 
 local indicators = require("radar.ui.indicators")
+local path_utils = require("radar.path")
 
 ---Format file path to relative path from cwd
----@param path string
+---@param filename string
 ---@return string
-function M.get_formatted_filepath(path)
-  return vim.fn.fnamemodify(path, ":p:.")
+function M.get_formatted_filepath(filename)
+  if path_utils.is_oil_url(filename) then
+    local filesystem_path = path_utils.to_filesystem_path(filename)
+    local relative_path = vim.fn.fnamemodify(filesystem_path, ":p:.")
+    if relative_path == "" or relative_path == "." then
+      return "./"
+    end
+    return relative_path:gsub("/+$", "") .. "/"
+  end
+
+  return vim.fn.fnamemodify(filename, ":p:.")
 end
 
 ---Resolve a grid dimension value (float 0-1 = percentage, integer = absolute)
@@ -92,7 +102,7 @@ local function build_content(config)
       -- Skip stale locks whose files no longer exist
       local abs_path = vim.fn.fnamemodify(lock.filename, ":p")
       if lock.filename:match("^%w+://") or vim.fn.filereadable(abs_path) == 1 then
-        local path = vim.fn.fnamemodify(lock.filename, ":p:.")
+        local path = M.get_formatted_filepath(lock.filename)
         local left = pad_str .. string.format("[%s] %s", lock.label, path)
         local bufnr = vim.fn.bufnr(abs_path)
         local buf_indicators = indicators.get_buffer_indicators(bufnr)
@@ -132,7 +142,7 @@ local function build_content(config)
   if recent_count > 0 then
     for i, filename in ipairs(state.get_recent_files()) do
       local label = config.keys.recent[i]
-      local path = vim.fn.fnamemodify(filename, ":p:.")
+      local path = M.get_formatted_filepath(filename)
       local left
       if label then
         left = pad_str .. string.format("[%s] %s", label, path)

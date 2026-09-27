@@ -1,4 +1,5 @@
 local persistence = require("radar.persist.persistence")
+local original_filereadable = vim.fn.filereadable
 
 describe("persistence", function()
   local test_data_path = vim.fn.tempname() .. ".json"
@@ -148,6 +149,30 @@ describe("persistence", function()
       MiniTest.expect.truthy(zebra_pos)
       MiniTest.expect.truthy(alpha_pos < beta_pos)
       MiniTest.expect.truthy(beta_pos < zebra_pos)
+    end)
+  end)
+
+  describe("Oil lock persistence", function()
+    local current_filereadable
+
+    before_each(function()
+      current_filereadable = vim.fn.filereadable
+      vim.fn.filereadable = original_filereadable
+    end)
+
+    after_each(function()
+      vim.fn.filereadable = current_filereadable
+    end)
+
+    it("preserves Oil URLs when locks are reloaded", function()
+      local state = require("radar.data.state")
+      local oil_url = "oil:///test/project/"
+      state.set_locks({ { label = "1", filename = oil_url } })
+      persistence.persist(test_config)
+      state.set_locks({})
+      persistence.populate(test_config)
+
+      MiniTest.expect.equality(state.get_locks()[1].filename, oil_url)
     end)
   end)
 end)

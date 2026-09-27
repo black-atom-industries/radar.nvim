@@ -4,7 +4,7 @@ local config = require("radar.config")
 
 describe("recent", function()
   local test_config
-  local original_cwd, original_oldfiles, original_filereadable
+  local original_cwd, original_oldfiles, original_filereadable, original_isdirectory
 
   local function setup_test_state()
     test_config = vim.deepcopy(config.default)
@@ -32,6 +32,13 @@ describe("recent", function()
     vim.fn.filereadable = function(path)
       return vim.startswith(path, "/test/project") and 1 or 0
     end
+
+    original_isdirectory = vim.fn.isdirectory
+    vim.fn.isdirectory = function(path)
+      return (path == "/test/project/subdir/" or path == "/other/project/oil-dir/")
+          and 1
+        or 0
+    end
   end
 
   local function teardown_mocks()
@@ -43,6 +50,9 @@ describe("recent", function()
     end
     if original_filereadable then
       vim.fn.filereadable = original_filereadable
+    end
+    if original_isdirectory then
+      vim.fn.isdirectory = original_isdirectory
     end
   end
 
@@ -111,6 +121,62 @@ describe("recent", function()
       MiniTest.expect.equality(count, 1)
     end)
 
+    it("includes Oil directories from session history", function()
+      local oil_url = "oil:///test/project/subdir/"
+      state.set_session_files({ oil_url })
+
+      local files = recent.get_files(test_config)
+
+      MiniTest.expect.equality(files[1], oil_url)
+    end)
+
+    it("does not include Oil URLs for missing directories", function()
+      vim.v.oldfiles = {}
+      state.set_session_files({ "oil:///test/project/missing/" })
+
+      MiniTest.expect.equality(#recent.get_files(test_config), 0)
+    end)
+
+    it("does not include Oil directories outside cwd", function()
+      vim.v.oldfiles = {}
+      state.set_session_files({ "oil:///other/project/oil-dir/" })
+
+      MiniTest.expect.equality(#recent.get_files(test_config), 0)
+    end)
+
+    it("includes Oil URLs from oldfiles when the directory exists", function()
+      local oil_url = "oil:///test/project/subdir/"
+      vim.v.oldfiles = { oil_url }
+
+      MiniTest.expect.equality(recent.get_files(test_config), { oil_url })
+    end)
+
+    it("deduplicates Oil session entries against filesystem history", function()
+      local oil_url = "oil:///test/project/subdir/"
+      state.set_session_files({ oil_url })
+      vim.v.oldfiles = { "/test/project/subdir/" }
+
+      local files = recent.get_files(test_config)
+
+      MiniTest.expect.equality(files, { oil_url })
+    end)
+
+    it("does not include paths that only share the cwd prefix", function()
+      vim.v.oldfiles = { "/test/project-other/file.lua" }
+
+      MiniTest.expect.equality(#recent.get_files(test_config), 0)
+    end)
+
+    it("excludes Oil directories that are locked", function()
+      local oil_url = "oil:///test/project/subdir/"
+      state.set_session_files({ oil_url })
+      state.set_locks({ { label = "1", filename = oil_url } })
+
+      local files = recent.get_files(test_config)
+
+      MiniTest.expect.equality(vim.tbl_contains(files, oil_url), false)
+    end)
+
     it("returns empty array when cwd is nil", function()
       vim.uv.cwd = function()
         return nil
@@ -154,6 +220,18 @@ describe("recent", function()
         state.get_session_files()[1],
         "/test/project/current.lua"
       )
+    end)
+
+    it("tracks Oil directory buffers without normalizing their URLs", function()
+      local oil_url = "oil:///test/project/subdir/"
+      vim.api.nvim_buf_get_name = function()
+        return oil_url
+      end
+      vim.bo = { buftype = "acwrite", filetype = "oil" }
+
+      recent.track_current_file(test_config)
+
+      MiniTest.expect.equality(state.get_session_files(), { oil_url })
     end)
 
     it("moves existing file to end when accessed again", function()
