@@ -3,7 +3,10 @@ local M = {}
 ---Get the alternative file if it exists and is valid
 ---@return string|nil absolute path to alternative file, or nil if not valid
 function M.get_alternative_file()
-  local alt_file = vim.fn.expand("#")
+  local ok, alt_file = pcall(vim.fn.expand, "#")
+  if not ok or type(alt_file) ~= "string" then
+    return nil
+  end
 
   -- Check if alternate file exists and is valid
   if alt_file == "" or alt_file == vim.fn.expand("%") then
