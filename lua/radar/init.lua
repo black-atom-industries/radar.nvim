@@ -12,7 +12,11 @@ function M.setup(opts)
   require("radar.debug").setup(config)
   require("radar.autocmd").setup(config)
   require("radar.ui.keys").setup(config)
-  require("radar.persist.persistence").populate(config, require("radar.ui.radar"))
+
+  -- Defer persistence loading to avoid blocking startup with file I/O
+  vim.schedule(function()
+    require("radar.persist.persistence").populate(config, require("radar.ui.radar"))
+  end)
 
   -- Create user command
   vim.api.nvim_create_user_command("RadarCleanup", function(cmd_opts)
