@@ -77,16 +77,51 @@ function M.get_project_path()
   return vim.fn.fnamemodify(sanitized_path, ":~")
 end
 
----Get current git branch
+---Get current git branch by reading .git/HEAD directly (no subprocess)
 ---@return string?
 function M.get_git_branch()
-  local branch = vim.fn.systemlist("git branch --show-current")[1]
-  if branch == "" then
+  local cwd = vim.uv.cwd()
+  if not cwd then
     return nil
   end
 
-  local sanitized_branch = vim.fn.fnameescape(branch)
-  return sanitized_branch
+  -- Walk up directory tree to find .git/HEAD
+  local dir = cwd
+  local head_path
+  for _ = 1, 10 do
+    local candidate = dir .. "/.git/HEAD"
+    if vim.uv.fs_stat(candidate) then
+      head_path = candidate
+      break
+    end
+    local parent = vim.fn.fnamemodify(dir, ":h")
+    if parent == dir then
+      break
+    end
+    dir = parent
+  end
+
+  if not head_path then
+    return nil
+  end
+
+  local fd = vim.uv.fs_open(head_path, "r", 438)
+  if not fd then
+    return nil
+  end
+  local stat = vim.uv.fs_fstat(fd)
+  if not stat then
+    vim.uv.fs_close(fd)
+    return nil
+  end
+  local data = vim.uv.fs_read(fd, stat.size, 0)
+  vim.uv.fs_close(fd)
+
+  local branch = data and data:match("ref: refs/heads/([^\n]+)")
+  if branch then
+    return vim.fn.fnameescape(branch)
+  end
+  return nil
 end
 
 ---Load persistence data from file
