@@ -67,13 +67,13 @@ describe("edit", function()
       return buf_id
     end
 
-    vim.api.nvim_buf_set_lines = function(buf, start, end_, strict, lines)
+    vim.api.nvim_buf_set_lines = function(buf, _start, _end_, _strict, lines)
       if buffers[buf] then
         buffers[buf].lines = lines
       end
     end
 
-    vim.api.nvim_buf_get_lines = function(buf, start, end_, strict)
+    vim.api.nvim_buf_get_lines = function(buf, _start, _end_, _strict)
       return buffers[buf] and buffers[buf].lines or {}
     end
 
@@ -90,14 +90,14 @@ describe("edit", function()
       end
     end
 
-    vim.api.nvim_open_win = function(buf, enter, opts)
+    vim.api.nvim_open_win = function(buf, _enter, opts)
       local win_id = next_win_id
       next_win_id = next_win_id + 1
       windows[win_id] = { buf = buf, opts = opts }
       return win_id
     end
 
-    vim.api.nvim_win_close = function(win, force)
+    vim.api.nvim_win_close = function(win, _force)
       windows[win] = nil
     end
 
@@ -105,14 +105,14 @@ describe("edit", function()
       return windows[win] ~= nil
     end
 
-    vim.api.nvim_create_augroup = function(name, opts)
+    vim.api.nvim_create_augroup = function(_name, _opts)
       return 1 -- Return dummy augroup id
     end
 
     vim.api.nvim_create_autocmd = function() end
     vim.api.nvim_buf_set_keymap = function() end
 
-    vim.api.nvim_win_get_cursor = function(win)
+    vim.api.nvim_win_get_cursor = function(_win)
       return { 1, 0 } -- Line 1, column 0
     end
 
