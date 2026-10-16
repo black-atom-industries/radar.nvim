@@ -1,67 +1,136 @@
 local M = {}
 local utils = require("radar.utils")
 
----Pretty-print a JSON file using jq (async, non-blocking).
----Falls back silently to minified JSON if jq is not installed.
----Recursively sorts all object keys for deterministic output.
----@param path string Path to the JSON file to pretty-print
-function M.pretty_print(path)
-  local escaped_path = vim.fn.shellescape(path)
-  -- Explicit object construction to ensure consistent key order:
-  -- Top level: version, projects
-  -- Project level: alphabetically sorted project paths
-  -- Branch level: alphabetically sorted branch names
-  -- Branch data: locks, lastAccessed
-  -- Lock objects: filename, label
-  local jq_filter = [[ {version:.version,projects:(.projects|to_entries|sort_by(.key)|map(.value=(]]
-    .. [[.value|to_entries|sort_by(.key)|map(.value={locks:(.value.locks|map({filename,label})),]]
-    .. [[lastAccessed:.value.lastAccessed})|from_entries))|from_entries)} ]]
-  local jq_cmd = string.format(
-    "jq '%s' %s > %s.tmp && mv %s.tmp %s",
-    jq_filter,
-    escaped_path,
-    escaped_path,
-    escaped_path,
-    escaped_path
-  )
-  vim.fn.jobstart(jq_cmd, {
-    -- jq failed or not installed, silently continue with minified JSON
-    on_exit = function() end,
-  })
+---@param value any
+---@return string
+local function encode_scalar(value)
+  return vim.json.encode(value)
 end
 
----Write table to file as JSON
+---@param tbl table
+---@return string[]
+local function sorted_keys(tbl)
+  local keys = vim.tbl_keys(tbl)
+  table.sort(keys)
+  return keys
+end
+
+---@param locks table[]
+---@param indent string
+---@return string
+local function encode_locks(locks, indent)
+  if #locks == 0 then
+    return "[]"
+  end
+  local inner = indent .. "  "
+  local deeper = inner .. "  "
+  local items = {}
+  for _, lock in ipairs(locks) do
+    table.insert(
+      items,
+      string.format(
+        '%s{\n%s"filename": %s,\n%s"label": %s\n%s}',
+        inner,
+        deeper,
+        encode_scalar(lock.filename),
+        deeper,
+        encode_scalar(lock.label),
+        inner
+      )
+    )
+  end
+  return "[\n" .. table.concat(items, ",\n") .. "\n" .. indent .. "]"
+end
+
+---Encode persistence data as pretty JSON with a fixed key order:
+---version, projects (sorted), branches (sorted), {locks, lastAccessed},
+---lock {filename, label}.
+---@param data table
+---@return string
+function M.encode(data)
+  local project_items = {}
+  for _, project in ipairs(sorted_keys(data.projects or {})) do
+    local branch_items = {}
+    local branches = data.projects[project]
+    for _, branch in ipairs(sorted_keys(branches)) do
+      local branch_data = branches[branch]
+      table.insert(
+        branch_items,
+        string.format(
+          '      %s: {\n        "locks": %s,\n        "lastAccessed": %s\n      }',
+          encode_scalar(branch),
+          encode_locks(branch_data.locks or {}, "        "),
+          encode_scalar(branch_data.lastAccessed)
+        )
+      )
+    end
+    local body = #branch_items == 0 and "{}"
+      or "{\n" .. table.concat(branch_items, ",\n") .. "\n    }"
+    table.insert(
+      project_items,
+      string.format("    %s: %s", encode_scalar(project), body)
+    )
+  end
+  local projects = #project_items == 0 and "{}"
+    or "{\n" .. table.concat(project_items, ",\n") .. "\n  }"
+  return string.format(
+    '{\n  "version": %s,\n  "projects": %s\n}\n',
+    encode_scalar(data.version or 1),
+    projects
+  )
+end
+
+---Write table to file as pretty JSON. The content goes to a unique tmp file
+---in the same directory and is renamed over the target (atomic).
 ---@param path string
 ---@param tbl table
 ---@return boolean
 function M.write(path, tbl)
-  local ok, _ = pcall(function()
-    local fd = assert(vim.uv.fs_open(path, "w", 438)) -- 438 = 0666
-    assert(vim.uv.fs_write(fd, vim.json.encode(tbl)))
-    assert(vim.uv.fs_close(fd))
+  local tmp = path .. ".tmp." .. vim.uv.os_getpid() .. "." .. vim.uv.hrtime()
+  local ok = pcall(function()
+    local fd = assert(vim.uv.fs_open(tmp, "w", 438)) -- 438 = 0666
+    local wrote, err = vim.uv.fs_write(fd, M.encode(tbl))
+    local synced = wrote and vim.uv.fs_fsync(fd)
+    vim.uv.fs_close(fd)
+    assert(synced, err)
+    assert(vim.uv.fs_rename(tmp, path))
   end)
 
-  -- Pretty-print with jq if available (async, non-blocking)
-  if ok then
-    M.pretty_print(path)
+  if not ok then
+    vim.uv.fs_unlink(tmp)
   end
 
   return ok
 end
 
----Read JSON file and return table
----@param path string
----@return Radar.PersistenceData?
-function M.read(path)
-  local ok, content = pcall(function()
-    local fd = assert(vim.uv.fs_open(path, "r", 438)) -- 438 = 0666
-    local stat = assert(vim.uv.fs_fstat(fd))
-    local data = assert(vim.uv.fs_read(fd, stat.size, 0))
-    assert(vim.uv.fs_close(fd))
-    return data
-  end)
+---@alias Radar.ReadStatus "missing"|"empty"|"corrupt"|"unreadable"
 
-  return ok and vim.json.decode(content) or nil
+---Read JSON file and return table.
+---Returns nil plus a status when no data could be produced.
+---@param path string
+---@return Radar.PersistenceData?, Radar.ReadStatus?
+function M.read(path)
+  local fd, _, err_name = vim.uv.fs_open(path, "r", 438) -- 438 = 0666
+  if not fd then
+    return nil, err_name == "ENOENT" and "missing" or "unreadable"
+  end
+
+  local stat = vim.uv.fs_fstat(fd)
+  local content = stat and vim.uv.fs_read(fd, stat.size, 0)
+  vim.uv.fs_close(fd)
+
+  if not content then
+    return nil, "unreadable"
+  end
+  if #content == 0 then
+    return nil, "empty"
+  end
+
+  local ok, decoded = pcall(vim.json.decode, content)
+  if not ok or type(decoded) ~= "table" then
+    return nil, "corrupt"
+  end
+  return decoded
 end
 
 ---Get current project path
@@ -142,19 +211,61 @@ function M.get_git_branch()
   return nil
 end
 
----Load persistence data from file
+local warned_no_branch = false
+
+---Warn once per session that locks are not persisted outside a branch
+local function warn_no_branch()
+  if warned_no_branch then
+    return
+  end
+  warned_no_branch = true
+  vim.notify(
+    "radar: locks are not persisted outside a git branch (detached HEAD or non-git directory).",
+    vim.log.levels.WARN
+  )
+end
+
+---Load persistence data from file.
+---A corrupt file is moved to `<path>.bad` and treated as missing. The second
+---return value is true when the file exists but could not be used and was not
+---quarantined; callers must not overwrite it then.
 ---@param config Radar.Config
----@return Radar.PersistenceData?
+---@return Radar.PersistenceData?, boolean?
 function M.load(config)
   local file_path = config.persist.path
-  local is_readable = vim.fn.filereadable(file_path)
-  if is_readable == 1 then
-    local data = M.read(file_path)
-    local migration = require("radar.persist.migration")
-    return migration.migrate(data)
-  else
+  local data, status = M.read(file_path)
+
+  if data then
+    local ok, migrated = pcall(require("radar.persist.migration").migrate, data)
+    if ok and type(migrated) == "table" and type(migrated.projects) == "table" then
+      return migrated
+    end
+    status = "corrupt"
+  end
+
+  if status == "missing" or status == "empty" then
     return nil
   end
+
+  if status == "corrupt" then
+    local bad_path = file_path .. ".bad"
+    if vim.uv.fs_rename(file_path, bad_path) then
+      vim.notify(
+        string.format("radar: %s is corrupt. Moved it to %s.", file_path, bad_path),
+        vim.log.levels.WARN
+      )
+      return nil
+    end
+  end
+
+  vim.notify(
+    string.format(
+      "radar: cannot read %s. Persistence is disabled for this write.",
+      file_path
+    ),
+    vim.log.levels.WARN
+  )
+  return nil, true
 end
 
 ---Persist current state to file
@@ -164,52 +275,32 @@ function M.persist(config)
   local project_path = M.get_project_path()
   local git_branch = M.get_git_branch()
   if not project_path or not git_branch then
+    warn_no_branch()
     return nil
   end
 
-  local persisted_data = M.load(config)
-  local data
+  local persisted_data, load_failed = M.load(config)
+  if load_failed then
+    return nil
+  end
 
   local state = require("radar.data.state")
   local current_time = os.time()
 
-  if persisted_data == nil then
-    data = {
-      version = 1,
-      projects = {
-        [project_path] = {
-          [git_branch] = {
-            locks = state.get_locks(),
-            lastAccessed = current_time,
-          },
+  local merged_projects =
+    vim.tbl_deep_extend("force", persisted_data and persisted_data.projects or {}, {
+      [project_path] = {
+        [git_branch] = {
+          locks = state.get_locks(),
+          lastAccessed = current_time,
         },
       },
-    }
-  else
-    -- Ensure data has the v1 structure
-    if not persisted_data.projects then
-      persisted_data = {
-        version = 1,
-        projects = {},
-      }
-    end
+    })
 
-    -- Construct data with version first, then deep extend projects
-    local merged_projects =
-      vim.tbl_deep_extend("force", persisted_data.projects or {}, {
-        [project_path] = {
-          [git_branch] = {
-            locks = state.get_locks(),
-            lastAccessed = current_time,
-          },
-        },
-      })
-
-    data = {
-      version = 1,
-      projects = utils.sort_projects(merged_projects),
-    }
-  end
+  local data = {
+    version = 1,
+    projects = utils.sort_projects(merged_projects),
+  }
 
   vim.fn.mkdir(vim.fn.fnamemodify(config.persist.path, ":h"), "p")
   M.write(config.persist.path, data)
@@ -220,38 +311,34 @@ end
 ---@param config Radar.Config
 ---@return nil
 function M.populate(config)
+  local project_path = M.get_project_path()
+  local git_branch = M.get_git_branch()
+  if not project_path or not git_branch then
+    warn_no_branch()
+    return
+  end
+
   local data = M.load(config)
   local state = require("radar.data.state")
 
   if data ~= nil then
-    local project_path = M.get_project_path()
-    local git_branch = M.get_git_branch()
-
-    -- Access data through projects structure
     local locks = vim.tbl_get(data, "projects", project_path, git_branch, "locks")
 
-    -- Always update locks to reflect the current project/branch.
     -- Clears to {} when the new project/branch has no saved locks (e.g.,
-    -- switching worktrees) — prevents stale locks from the previous directory.
+    -- switching worktrees) so stale locks from the previous directory go away.
     for i, lock in ipairs(locks or {}) do
       lock.label = config.keys.locks[i] or tostring(i)
     end
     state.set_locks(locks or {})
 
-    -- Update lastAccessed for existing project/branch entries
     if locks ~= nil then
-      local current_time = os.time()
-      data.projects[project_path][git_branch].lastAccessed = current_time
+      data.projects[project_path][git_branch].lastAccessed = os.time()
 
-      -- Reconstruct data with version first and sorted projects
-      local updated_data = {
+      vim.fn.mkdir(vim.fn.fnamemodify(config.persist.path, ":h"), "p")
+      M.write(config.persist.path, {
         version = data.version or 1,
         projects = utils.sort_projects(data.projects),
-      }
-
-      -- Write updated data back to file
-      vim.fn.mkdir(vim.fn.fnamemodify(config.persist.path, ":h"), "p")
-      M.write(config.persist.path, updated_data)
+      })
     end
   end
 end
