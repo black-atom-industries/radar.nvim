@@ -207,16 +207,24 @@ describe("radar rendering", function()
     )
   end)
 
-  it("locks the current file from recent when it has no alternate", function()
-    state.set_session_files({ root .. "/a.lua" })
+  it("leaves the current file out of recent", function()
+    state.set_session_files({ root .. "/b.lua", root .. "/a.lua" })
     require("radar.persist.persistence").populate(test_config)
 
     radar.open(test_config)
-    MiniTest.expect.equality(vim.api.nvim_win_get_cursor(0)[1], line_of("a.lua"))
+    MiniTest.expect.equality(state.get_recent_files(), { root .. "/b.lua" })
+  end)
+
+  it("locks a recent file when there is no alternate", function()
+    state.set_session_files({ root .. "/b.lua", root .. "/a.lua" })
+    require("radar.persist.persistence").populate(test_config)
+
+    radar.open(test_config)
+    vim.api.nvim_win_set_cursor(0, { line_of("b.lua"), 0 })
     vim.api.nvim_feedkeys(test_config.keys.lock, "x", false)
 
     MiniTest.expect.equality(state.get_locks(), {
-      { label = "1", filename = "a.lua" },
+      { label = "1", filename = "b.lua" },
     })
   end)
 
