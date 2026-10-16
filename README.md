@@ -1,8 +1,8 @@
 # radar.nvim
 
-> Navigate your files like a fighter pilot.
+> Jump between your working files with two keystrokes.
 
-A Neovim plugin that treats file navigation like a fighter pilot's radar system. Your most important files are "locked targets" that you can instantly access, while other files appear as "blips" on your radar for quick identification and engagement.
+radar.nvim shows the file you're in, its alternative, your locks and recent files at the bottom of your pane, each one keystroke after `<space>`.
 
 ![Jumping from the HUD: Space 1 opens a lock, Space o goes back to the alternative file, Space a opens a recent file](docs/assets/changelog/0.6.0-hud-jump.webp)
 
@@ -23,7 +23,7 @@ See also [Concept](./docs/concept.md)
 
 ```
 <space> then:
-[1][2][3][4][5][6][7][8][9]  ← Locks (manually locked targets)
+[1][2][3][4][5][6][7][8][9]  ← Locks (files you lock)
 [a][s][d][f][g]              ← Recent files (per project and branch)
 [o]                          ← Alternative file (test ↔ impl)
 ```

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is **Nik's learning project** for Neovim plugin development. The focus is on understanding concepts through hands-on implementation rather than just completing features. Nik writes the code, Claude provides guidance and explanations of the "why" behind decisions.
 
-radar.nvim is a file navigation system inspired by fighter pilot radar displays: a HUD at the bottom of the active pane and `<space>` prefix keys for locks, recent files and the alternative file, a tabs sidebar, and locks and recent files persisted per project and branch.
+radar.nvim is a file navigation plugin: a HUD at the bottom of the active pane and `<space>` prefix keys for locks, recent files and the alternative file, a tabs sidebar, and locks and recent files persisted per project and branch.
 
 ## Architecture Overview
 
@@ -134,7 +134,7 @@ From [docs/concept.md](docs/concept.md):
 
 ```
 <space> then:
-[1][2][3][4][5][6][7][8][9]  ← Locks (manually locked targets)
+[1][2][3][4][5][6][7][8][9]  ← Locks (files you lock)
 [a][s][d][f][g]              ← Recent files (per project and branch)
 [o]                          ← Alternative file (test ↔ impl)
 ```

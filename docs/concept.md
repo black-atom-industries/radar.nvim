@@ -1,10 +1,10 @@
 # radar.nvim - Concept & Design
 
-> Navigate your files at the speed of thought - like a fighter pilot's radar display
+> Jump between your working files with two keystrokes.
 
 ## 🎯 Core Philosophy
 
-`radar.nvim` treats file navigation like a fighter pilot's radar system. Your most important files are "locked targets" that you can instantly access, while other files appear as "blips" on your radar that you can quickly identify and engage.
+`radar.nvim` shows the file you're in, its alternative, your locks and recent files at the bottom of your pane, each one keystroke after `<space>`.
 
 The plugin has two parts that work together:
 
