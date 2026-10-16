@@ -341,6 +341,7 @@ function M.refresh()
       "Normal:NormalFloat",
       { win = hud.winid }
     )
+    vim.api.nvim_set_option_value("winblend", 0, { win = hud.winid })
   end
   hud.corner = "bottom"
   M.dodge()
