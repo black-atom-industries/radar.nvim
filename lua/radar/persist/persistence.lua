@@ -77,7 +77,24 @@ function M.get_project_path()
   return vim.fn.fnamemodify(sanitized_path, ":~")
 end
 
----Get current git branch by reading .git/HEAD directly (no subprocess)
+---@param path string
+---@return string?
+local function read_file(path)
+  local fd = vim.uv.fs_open(path, "r", 438)
+  if not fd then
+    return nil
+  end
+  local stat = vim.uv.fs_fstat(fd)
+  if not stat then
+    vim.uv.fs_close(fd)
+    return nil
+  end
+  local data = vim.uv.fs_read(fd, stat.size, 0)
+  vim.uv.fs_close(fd)
+  return data
+end
+
+---Get current git branch by reading HEAD directly (no subprocess)
 ---@return string?
 function M.get_git_branch()
   local cwd = vim.uv.cwd()
@@ -85,13 +102,24 @@ function M.get_git_branch()
     return nil
   end
 
-  -- Walk up directory tree to find .git/HEAD
+  -- Walk up directory tree to find .git. In worktrees and submodules .git is
+  -- a file containing `gitdir: <path>`, which holds that checkout's HEAD.
   local dir = cwd
   local head_path
   for _ = 1, 10 do
-    local candidate = dir .. "/.git/HEAD"
-    if vim.uv.fs_stat(candidate) then
-      head_path = candidate
+    local dot_git = dir .. "/.git"
+    local stat = vim.uv.fs_stat(dot_git)
+    if stat and stat.type == "directory" then
+      head_path = dot_git .. "/HEAD"
+      break
+    elseif stat and stat.type == "file" then
+      local gitdir = (read_file(dot_git) or ""):match("^gitdir:%s*(.-)%s*$")
+      if gitdir then
+        if not vim.startswith(gitdir, "/") then
+          gitdir = vim.fs.normalize(vim.fs.joinpath(dir, gitdir))
+        end
+        head_path = gitdir .. "/HEAD"
+      end
       break
     end
     local parent = vim.fn.fnamemodify(dir, ":h")
@@ -105,17 +133,7 @@ function M.get_git_branch()
     return nil
   end
 
-  local fd = vim.uv.fs_open(head_path, "r", 438)
-  if not fd then
-    return nil
-  end
-  local stat = vim.uv.fs_fstat(fd)
-  if not stat then
-    vim.uv.fs_close(fd)
-    return nil
-  end
-  local data = vim.uv.fs_read(fd, stat.size, 0)
-  vim.uv.fs_close(fd)
+  local data = read_file(head_path)
 
   local branch = data and data:match("ref: refs/heads/([^\n]+)")
   if branch then
@@ -141,10 +159,13 @@ end
 
 ---Persist current state to file
 ---@param config Radar.Config
----@return Radar.PersistenceData
+---@return Radar.PersistenceData?
 function M.persist(config)
   local project_path = M.get_project_path()
   local git_branch = M.get_git_branch()
+  if not project_path or not git_branch then
+    return nil
+  end
 
   local persisted_data = M.load(config)
   local data
