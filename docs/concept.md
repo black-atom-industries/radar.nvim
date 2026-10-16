@@ -25,7 +25,7 @@ Files are automatically organized into tactical categories:
 
 - **📍 Pins**: Manually locked priority targets (your most important files)
 - **🔄 Modified**: Files with uncommitted changes
-- **📜 Recent**: Recently accessed files from oldfiles
+- **📜 Recent**: Recently opened files, kept per project and branch, with oldfiles as a fallback
 - **🔀 PR Files**: Files changed in the current PR/branch
 
 ### Dual Navigation Modes

@@ -91,6 +91,7 @@
 
 ---@class Radar.BranchData
 ---@field locks Radar.Lock[]
+---@field recent? string[] lock paths, most recent first
 ---@field lastAccessed number
 
 ---@class Radar.ProjectBranches

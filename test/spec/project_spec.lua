@@ -358,6 +358,205 @@ describe("project identity", function()
     end)
   end)
 
+  describe("recent history", function()
+    local recent = require("radar.data.recent")
+    local original_oldfiles
+
+    before_each(function()
+      state.set_session_files({})
+      state.set_history({})
+      state.set_source_alt_file(false)
+      original_oldfiles = vim.v.oldfiles
+      vim.v.oldfiles = {}
+    end)
+
+    after_each(function()
+      state.set_session_files({})
+      state.set_history({})
+      state.set_source_alt_file(nil)
+      vim.v.oldfiles = original_oldfiles
+    end)
+
+    local function write_data(root, branch_data)
+      persistence.write(test_config.persist.path, {
+        version = 2,
+        projects = { [root] = { main = branch_data } },
+      })
+    end
+
+    it("saves session files root-relative and reloads them as history", function()
+      local root = repo()
+      vim.uv.chdir(root)
+      state.set_session_files({
+        root .. "/a.lua",
+        "/elsewhere/x.lua",
+        root .. "/src/b.lua",
+      })
+
+      persistence.persist(test_config, persistence.snapshot())
+      state.set_session_files({})
+      persistence.populate(test_config)
+
+      MiniTest.expect.equality(
+        persistence.read(test_config.persist.path).projects[root].main.recent,
+        { "src/b.lua", "a.lua" }
+      )
+      MiniTest.expect.equality(
+        state.get_history(),
+        { root .. "/src/b.lua", root .. "/a.lua" }
+      )
+    end)
+
+    it("keeps Oil URLs unchanged", function()
+      local root = repo()
+      vim.uv.chdir(root)
+      local oil_url = "oil://" .. root .. "/src/"
+      state.set_session_files({ oil_url })
+
+      persistence.persist(test_config, persistence.snapshot())
+      persistence.populate(test_config)
+
+      MiniTest.expect.equality(state.get_history(), { oil_url })
+    end)
+
+    it("lists session files, then history, then oldfiles", function()
+      local root = repo()
+      vim.fn.writefile({}, root .. "/c.lua")
+      vim.fn.writefile({}, root .. "/d.lua")
+      write_data(
+        root,
+        { locks = {}, recent = { "src/b.lua", "a.lua" }, lastAccessed = 1 }
+      )
+      vim.uv.chdir(root)
+      persistence.populate(test_config)
+      state.set_session_files({ root .. "/c.lua" })
+      vim.v.oldfiles = { root .. "/a.lua", root .. "/d.lua" }
+
+      MiniTest.expect.equality(recent.get_files(test_config), {
+        root .. "/c.lua",
+        root .. "/src/b.lua",
+        root .. "/a.lua",
+        root .. "/d.lua",
+      })
+    end)
+
+    it("merges session files in front of the saved history, capped", function()
+      local root = repo()
+      vim.fn.writefile({}, root .. "/c.lua")
+      write_data(
+        root,
+        { locks = {}, recent = { "src/b.lua", "a.lua" }, lastAccessed = 1 }
+      )
+      vim.uv.chdir(root)
+      test_config.radar.max_recent_files = 2
+
+      persistence.persist(test_config)
+      MiniTest.expect.equality(
+        persistence.read(test_config.persist.path).projects[root].main.recent,
+        { "src/b.lua", "a.lua" }
+      )
+
+      state.set_session_files({ root .. "/c.lua" })
+      persistence.persist(test_config, persistence.snapshot())
+      MiniTest.expect.equality(
+        persistence.read(test_config.persist.path).projects[root].main.recent,
+        { "c.lua", "src/b.lua" }
+      )
+    end)
+
+    it("keeps the saved locks when saving the history", function()
+      local root = repo()
+      write_data(root, {
+        locks = { { label = "1", filename = "a.lua" } },
+        recent = { "src/b.lua" },
+        lastAccessed = 1,
+      })
+      vim.uv.chdir(root)
+      state.set_session_files({ root .. "/a.lua" })
+
+      persistence.persist(test_config, persistence.recent_snapshot())
+
+      local main = persistence.read(test_config.persist.path).projects[root].main
+      MiniTest.expect.equality(main.locks, { { label = "1", filename = "a.lua" } })
+      MiniTest.expect.equality(main.recent, { "a.lua", "src/b.lua" })
+    end)
+
+    it("drops missing files on load and saves", function()
+      local root = repo()
+      write_data(
+        root,
+        { locks = {}, recent = { "gone.lua", "a.lua" }, lastAccessed = 1 }
+      )
+      vim.uv.chdir(root)
+
+      persistence.populate(test_config)
+
+      MiniTest.expect.equality(state.get_history(), { root .. "/a.lua" })
+      MiniTest.expect.equality(
+        persistence.read(test_config.persist.path).projects[root].main.recent,
+        { "a.lua" }
+      )
+    end)
+
+    it("loads data without a recent list", function()
+      local root = repo()
+      vim.fn.writefile({
+        vim.json.encode({
+          version = 2,
+          projects = {
+            [root] = {
+              main = {
+                locks = { { label = "1", filename = "a.lua" } },
+                lastAccessed = 1,
+              },
+            },
+          },
+        }),
+      }, test_config.persist.path)
+      vim.uv.chdir(root)
+
+      persistence.populate(test_config)
+
+      MiniTest.expect.equality(#state.get_locks(), 1)
+      MiniTest.expect.equality(state.get_history(), {})
+      local main = persistence.read(test_config.persist.path).projects[root].main
+      MiniTest.expect.equality(main.recent, {})
+      MiniTest.expect.equality(#main.locks, 1)
+    end)
+
+    it("saves an opened file under the project it was opened in", function()
+      local root = repo()
+      local other = repo()
+      test_config.persist.defer_ms = 50
+      require("radar.autocmd").setup(test_config)
+      vim.cmd.cd(vim.fn.fnameescape(root))
+      persistence.populate(test_config)
+
+      vim.cmd.edit(vim.fn.fnameescape(root .. "/a.lua"))
+      local buf = vim.api.nvim_get_current_buf()
+      vim.cmd.cd(vim.fn.fnameescape(other))
+      vim.wait(1000, function()
+        local data = persistence.read(test_config.persist.path)
+        return data ~= nil and data.projects[root] ~= nil
+      end)
+
+      local data = persistence.read(test_config.persist.path)
+      MiniTest.expect.equality(data.projects[root].main.recent, { "a.lua" })
+      MiniTest.expect.equality(data.projects[other], nil)
+      vim.cmd("bwipeout! " .. buf)
+      for _, group in ipairs({
+        "radar.VimEnter",
+        "radar.VimResized",
+        "radar.BufEnter",
+        "radar.DirChanged",
+        "radar.FocusGained",
+        "radar.TabsUpdate",
+      }) do
+        pcall(vim.api.nvim_del_augroup_by_name, group)
+      end
+    end)
+  end)
+
   describe("migration v1 to v2", function()
     it("unescapes project and branch keys", function()
       local key = vim.fn.fnameescape("/missing dir/x#1")

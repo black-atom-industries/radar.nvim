@@ -19,6 +19,9 @@ local function defaults()
     recent_files = {},
     ---@type string[]
     session_files = {},
+    -- Persisted recent files of the current project and branch, absolute
+    ---@type string[]
+    history = {},
     ---@type integer?
     radar_winid = nil,
     ---@type integer?
@@ -70,6 +73,11 @@ end
 ---@return string[]
 function M.get_session_files()
   return _state.session_files
+end
+
+---@return string[]
+function M.get_history()
+  return _state.history
 end
 
 ---@return integer?
@@ -151,6 +159,11 @@ end
 ---@param session_files string[]
 function M.set_session_files(session_files)
   _state.session_files = session_files or {}
+end
+
+---@param history string[]
+function M.set_history(history)
+  _state.history = history or {}
 end
 
 ---@param winid integer?

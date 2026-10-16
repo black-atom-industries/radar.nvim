@@ -49,28 +49,7 @@ function M.get_files(config)
     excluded_files[absolute(alt_file)] = true
   end
 
-  -- Add current session files first (most recent)
-  for i = #state.get_session_files(), 1, -1 do
-    local filepath = state.get_session_files()[i]
-
-    local filesystem_path = path.to_filesystem_path(filepath)
-    local abs_path = absolute(filepath)
-
-    if not excluded_files[abs_path] and not seen_files[abs_path] then
-      if path.relative_to(abs_path, root) and exists(filepath, filesystem_path) then
-        table.insert(recent_files, filepath)
-        seen_files[abs_path] = true
-
-        if #recent_files >= config.radar.max_recent_files then
-          return recent_files
-        end
-      end
-    end
-  end
-
-  -- Fill remaining slots with vim.v.oldfiles
-  for _, filepath in ipairs(vim.v.oldfiles) do
-    -- Skip if already seen, excluded, or if we're at capacity
+  local function add(filepath)
     local filesystem_path = path.to_filesystem_path(filepath)
     local abs_path = absolute(filepath)
 
@@ -86,12 +65,39 @@ function M.get_files(config)
     end
   end
 
+  -- Current session files first (most recent), then the persisted history,
+  -- then vim.v.oldfiles
+  for i = #state.get_session_files(), 1, -1 do
+    add(state.get_session_files()[i])
+  end
+  for _, filepath in ipairs(state.get_history()) do
+    add(filepath)
+  end
+  for _, filepath in ipairs(vim.v.oldfiles) do
+    add(filepath)
+  end
+
   return recent_files
+end
+
+---This session's files inside `root` as lock paths, most recent first
+---@param root string
+---@return string[]
+function M.session_lock_paths(root)
+  local files = require("radar.data.state").get_session_files()
+  local paths = {}
+  for i = #files, 1, -1 do
+    local relative = path.relative_to(absolute(files[i]), root)
+    if relative then
+      table.insert(paths, path.is_url(files[i]) and files[i] or relative)
+    end
+  end
+  return paths
 end
 
 ---Add current file to session tracking
 ---@param config Radar.Config
----@return nil
+---@return boolean changed false when the file is ignored or already the most recent
 function M.track_current_file(config)
   local current_file = vim.api.nvim_buf_get_name(0)
 
@@ -103,7 +109,7 @@ function M.track_current_file(config)
     or (vim.bo.buftype ~= "" and not is_oil_url)
     or vim.bo.filetype == "help"
   then
-    return
+    return false
   end
 
   -- Get absolute path
@@ -111,6 +117,11 @@ function M.track_current_file(config)
     or vim.fn.fnamemodify(current_file, ":p")
 
   local state = require("radar.data.state")
+  local session_files = state.get_session_files()
+  if session_files[#session_files] == abs_path then
+    return false
+  end
+
   -- Remove if already exists (we'll add it to the end)
   for i = #state.get_session_files(), 1, -1 do
     if state.get_session_files()[i] == abs_path then
@@ -126,6 +137,7 @@ function M.track_current_file(config)
   if #state.get_session_files() > config.radar.max_recent_files then
     table.remove(state.get_session_files(), 1)
   end
+  return true
 end
 
 ---Update recent files in state

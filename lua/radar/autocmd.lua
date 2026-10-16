@@ -39,8 +39,15 @@ function M.setup(config)
       local recent = require("radar.data.recent")
       local radar = require("radar.ui.radar")
 
-      -- Track current file for session recent files
-      recent.track_current_file(config)
+      if recent.track_current_file(config) then
+        local persistence = require("radar.persist.persistence")
+        local snapshot = persistence.recent_snapshot()
+        if snapshot.project and snapshot.branch then
+          vim.defer_fn(function()
+            persistence.persist(config, snapshot)
+          end, config.persist.defer_ms)
+        end
+      end
       -- Update recent files to include current session files
       recent.update_state(config)
       -- Update radar if it exists (this rebuilds content and applies highlights)

@@ -135,6 +135,36 @@ describe("persistence", function()
       MiniTest.expect.equality(filename_line < label_line, true)
     end)
 
+    it("writes recent between locks and lastAccessed as an array", function()
+      persistence.write(test_data_path, {
+        version = 2,
+        projects = {
+          ["~/a"] = {
+            main = { locks = {}, recent = { "x.lua", "y.lua" }, lastAccessed = 1 },
+          },
+          ["~/b"] = { main = { locks = {}, lastAccessed = 1 } },
+        },
+      })
+      local content = table.concat(vim.fn.readfile(test_data_path), "\n")
+
+      MiniTest.expect.equality(
+        content:find(
+          '"locks": [],\n        "recent": [\n          "x.lua",\n          "y.lua"\n        ],\n        "lastAccessed": 1',
+          1,
+          true
+        ) ~= nil,
+        true
+      )
+      MiniTest.expect.equality(
+        content:find(
+          '"locks": [],\n        "recent": [],\n        "lastAccessed": 1',
+          1,
+          true
+        ) ~= nil,
+        true
+      )
+    end)
+
     it("should keep projects in alphabetical order", function()
       local test_data = {
         version = 1,
@@ -282,7 +312,9 @@ describe("persistence", function()
       local path = dir .. "/data.json"
       local data = {
         version = 1,
-        projects = { ["~/p"] = { main = { locks = {}, lastAccessed = 1 } } },
+        projects = {
+          ["~/p"] = { main = { locks = {}, recent = {}, lastAccessed = 1 } },
+        },
       }
 
       MiniTest.expect.equality(persistence.write(path, data), true)

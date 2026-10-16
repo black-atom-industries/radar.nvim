@@ -22,7 +22,7 @@ See also [Concept](./docs/concept.md)
 ```
 <space> then:
 [1][2][3][4][5][6][7][8][9]  ← Locks (manually locked targets)
-[a][s][d][f][g]              ← Recent files (vim.v.oldfiles)
+[a][s][d][f][g]              ← Recent files (per project and branch)
 [o]                          ← Alternative file (test ↔ impl)
 [<space>]                    ← Full radar
 ```
@@ -169,11 +169,12 @@ The HUD sits at the bottom of the active pane, as wide as the pane, and follows 
 
 ### Context-Aware Persistence
 
-Locks are saved and restored per project and git branch, so switching between projects or branches maintains separate lock sets.
+Locks and recent files are saved and restored per project and git branch, so switching between projects or branches maintains separate lock sets and file histories.
 
 - The project is the git root containing the working directory (the worktree root inside a worktree), or the working directory outside git.
-- Lock paths are stored relative to the project root.
-- Detached HEAD and non-git directories keep locks in memory only, until you switch to another project.
+- Lock and recent file paths are stored relative to the project root.
+- Recent files list this session's files first, then the saved history (up to `radar.max_recent_files`), then `vim.v.oldfiles`. Missing files are dropped on load.
+- Detached HEAD and non-git directories keep locks and recent files in memory only, until you switch to another project.
 - A corrupt data file is moved to `data.json.bad`. Writes are atomic.
 
 ### Data Cleanup

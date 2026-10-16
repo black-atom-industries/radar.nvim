@@ -44,8 +44,22 @@ local function encode_locks(locks, indent)
   return "[\n" .. table.concat(items, ",\n") .. "\n" .. indent .. "]"
 end
 
+---@param names string[]
+---@param indent string
+---@return string
+local function encode_names(names, indent)
+  if #names == 0 then
+    return "[]"
+  end
+  local items = {}
+  for _, name in ipairs(names) do
+    table.insert(items, indent .. "  " .. encode_scalar(name))
+  end
+  return "[\n" .. table.concat(items, ",\n") .. "\n" .. indent .. "]"
+end
+
 ---Encode persistence data as pretty JSON with a fixed key order:
----version, projects (sorted), branches (sorted), {locks, lastAccessed},
+---version, projects (sorted), branches (sorted), {locks, recent, lastAccessed},
 ---lock {filename, label}.
 ---@param data table
 ---@return string
@@ -59,9 +73,10 @@ function M.encode(data)
       table.insert(
         branch_items,
         string.format(
-          '      %s: {\n        "locks": %s,\n        "lastAccessed": %s\n      }',
+          '      %s: {\n        "locks": %s,\n        "recent": %s,\n        "lastAccessed": %s\n      }',
           encode_scalar(branch),
           encode_locks(branch_data.locks or {}, "        "),
+          encode_names(branch_data.recent or {}, "        "),
           encode_scalar(branch_data.lastAccessed)
         )
       )
@@ -210,6 +225,7 @@ end
 ---@field project string?
 ---@field branch string?
 ---@field locks Radar.Lock[]?
+---@field recent string[]? this session's files as lock paths, most recent first
 
 ---Project and branch of the cwd
 ---@return Radar.PersistSnapshot
@@ -217,20 +233,66 @@ local function current_context()
   return { project = M.get_project_path(), branch = M.get_git_branch() }
 end
 
----Project, branch and a copy of the locks, for a later persist()
+---Project, branch and this session's files, for a later persist() that
+---keeps the saved locks
+---@return Radar.PersistSnapshot
+function M.recent_snapshot()
+  local snapshot = current_context()
+  local root = path_utils.project_root()
+  snapshot.recent = root and require("radar.data.recent").session_lock_paths(root)
+  return snapshot
+end
+
+---Project, branch, a copy of the locks and this session's files, for a later
+---persist()
 ---@return Radar.PersistSnapshot
 function M.snapshot()
-  local snapshot = current_context()
+  local snapshot = M.recent_snapshot()
   snapshot.locks = vim.deepcopy(require("radar.data.state").get_locks())
   return snapshot
 end
 
----Persist the locks of a project and branch to file
+---Merge recent lock paths, keeping the first occurrence, capped at `max`
+---@param newer string[]
+---@param older string[]
+---@param max integer
+---@return string[]
+local function merge_recent(newer, older, max)
+  local merged, seen = {}, {}
+  for _, list in ipairs({ newer, older }) do
+    for _, name in ipairs(list) do
+      if not seen[name] and #merged < max then
+        seen[name] = true
+        table.insert(merged, name)
+      end
+    end
+  end
+  return merged
+end
+
+---Whether a recent file or Oil directory still exists
+---@param name string
+---@return boolean
+local function recent_exists(name)
+  local target = path_utils.to_absolute(path_utils.to_filesystem_path(name))
+  return vim.uv.fs_stat(target) ~= nil
+end
+
+---Persist the locks of a project and branch to file. Recent files of the
+---snapshot are merged in front of the saved ones.
 ---@param config Radar.Config
----@param snapshot? Radar.PersistSnapshot defaults to the current state
+---@param snapshot? Radar.PersistSnapshot defaults to the current state; without
+---locks the saved locks are kept
 ---@return Radar.PersistenceData?
 function M.persist(config, snapshot)
-  snapshot = snapshot or current_context()
+  local state = require("radar.data.state")
+  local locks
+  if snapshot then
+    locks = snapshot.locks
+  else
+    snapshot = current_context()
+    locks = state.get_locks()
+  end
   local project_path = snapshot.project
   local git_branch = snapshot.branch
   if not project_path or not git_branch then
@@ -243,14 +305,26 @@ function M.persist(config, snapshot)
     return nil
   end
 
-  local state = require("radar.data.state")
   local current_time = os.time()
+
+  local recent
+  if snapshot.recent then
+    local saved = vim.tbl_get(
+      persisted_data or {},
+      "projects",
+      project_path,
+      git_branch,
+      "recent"
+    ) or {}
+    recent = merge_recent(snapshot.recent, saved, config.radar.max_recent_files)
+  end
 
   local merged_projects =
     vim.tbl_deep_extend("force", persisted_data and persisted_data.projects or {}, {
       [project_path] = {
         [git_branch] = {
-          locks = snapshot.locks or state.get_locks(),
+          locks = locks,
+          recent = recent,
           lastAccessed = current_time,
         },
       },
@@ -285,6 +359,7 @@ function M.populate(config)
     warn_no_branch()
     if not same_project then
       state.set_locks({})
+      state.set_history({})
       if radar.exists() then
         radar.update(config)
       end
@@ -296,12 +371,17 @@ function M.populate(config)
 
   local data = M.load(config)
 
-  local locks =
-    vim.tbl_get(data or {}, "projects", project_path, git_branch, "locks")
+  local entry = vim.tbl_get(data or {}, "projects", project_path, git_branch)
+  local locks = entry and entry.locks
   if locks then
     locks = vim.tbl_filter(require("radar.data.locks").exists, locks)
-    data.projects[project_path][git_branch].locks = locks
+    entry.locks = locks
   end
+  local recent = vim.tbl_filter(recent_exists, entry and entry.recent or {})
+  if entry then
+    entry.recent = recent
+  end
+  state.set_history(vim.tbl_map(path_utils.to_absolute, recent))
 
   -- Clears to {} when the new project/branch has no saved locks (e.g.,
   -- switching worktrees) so stale locks from the previous directory go away.
@@ -313,7 +393,7 @@ function M.populate(config)
   require("radar.ui.hud").refresh()
 
   if data ~= nil and locks ~= nil then
-    data.projects[project_path][git_branch].lastAccessed = os.time()
+    entry.lastAccessed = os.time()
 
     vim.fn.mkdir(vim.fn.fnamemodify(config.persist.path, ":h"), "p")
     M.write(config.persist.path, {

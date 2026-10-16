@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is **Nik's learning project** for Neovim plugin development. The focus is on understanding concepts through hands-on implementation rather than just completing features. Nik writes the code, Claude provides guidance and explanations of the "why" behind decisions.
 
-radar.nvim is a file navigation system inspired by fighter pilot radar displays: one floating radar window with locks, recent files and an alternative file, a tabs sidebar, and locks persisted per project and branch.
+radar.nvim is a file navigation system inspired by fighter pilot radar displays: one floating radar window with locks, recent files and an alternative file, a tabs sidebar, and locks and recent files persisted per project and branch.
 
 ## Architecture Overview
 
@@ -24,7 +24,7 @@ lua/radar/
 ├── data/
 │   ├── state.lua         -- Global state (locks, recent files, window handles, line map)
 │   ├── locks.lua         -- Lock add/remove/toggle/relabel
-│   ├── recent.lua        -- Recent files (vim.v.oldfiles + session files)
+│   ├── recent.lua        -- Recent files (session files + persisted history + vim.v.oldfiles)
 │   ├── alternative.lua   -- Alternative file (e.g., test ↔ impl)
 │   └── tabs.lua          -- Tab/buffer data gathering (NOT UI)
 ├── persist/
@@ -48,9 +48,10 @@ lua/radar/
 
 ### Key Architectural Patterns
 
-- **Context-Aware Persistence**: `{version, projects = {[project_root] = {[git_branch] = {locks = [...], lastAccessed = timestamp}}}}`
+- **Context-Aware Persistence**: `{version, projects = {[project_root] = {[git_branch] = {locks = [...], recent = [...], lastAccessed = timestamp}}}}`. Data without `recent` loads as an empty history.
 - **Project Identity**: The project is the git root containing the cwd (the worktree root inside a worktree), or the cwd outside git. The persistence key is that root abbreviated with `~`.
-- **Root-Relative Lock Paths**: Lock filenames are relative to the project root when inside it, absolute otherwise. URLs stay unchanged. `path.to_lock_path` and `path.to_absolute` convert.
+- **Root-Relative Lock Paths**: Lock filenames are relative to the project root when inside it, absolute otherwise. URLs stay unchanged. `path.to_lock_path` and `path.to_absolute` convert. The persisted `recent` list uses the same form.
+- **Recent History**: `recent` is a per-branch MRU list, most recent first, capped at `radar.max_recent_files`. `populate` loads it into `state` as absolute paths (missing files dropped). When `BufEnter` makes a new file the most recent, `persistence.recent_snapshot()` (this session's files inside the root, no locks, so the saved locks stay) is persisted after `persist.defer_ms`; `persist` merges them in front of the saved list. `recent.get_files` lists session files, then the history, then `vim.v.oldfiles`.
 - **Data Versioning**: Persistence data is versioned (currently v2). `migration.migrate` upgrades v0 → v1 → v2 on load.
 - **Safe Persistence**: Writes go to a tmp file that is renamed over the target (atomic). A corrupt data file is moved to `data.json.bad`. An unreadable file is never overwritten. JSON is encoded in Lua with a fixed key order, no external tools.
 - **No Branch, No Persistence**: Detached HEAD and non-git directories keep locks in memory only, as long as the project root stays the same. One warning per session.
@@ -118,7 +119,7 @@ vim.defer_fn(function()
 end, config.persist.defer_ms)
 ```
 
-The snapshot pins project, branch and locks at toggle time, so a `:cd` or branch switch within the delay cannot save them under the wrong key.
+The snapshot pins project, branch, locks and this session's recent files at toggle or `BufEnter` time, so a `:cd` or branch switch within the delay cannot save them under the wrong key.
 
 **Why**: Batches rapid changes, prevents excessive I/O during active editing.
 
@@ -132,7 +133,7 @@ local win_opts = window.resolve_config(config, preset_name, overrides)
 
 ### 6. Populate on Context Change
 
-`persistence.populate` loads locks for the current project and branch into state. `populate_if_changed` runs on `DirChanged`, `FocusGained` and before a lock toggle, and reloads only when the project root or branch differs from the last populate. Populating re-renders an open radar and refreshes the HUD.
+`persistence.populate` loads locks and the recent history for the current project and branch into state, dropping missing files. `populate_if_changed` runs on `DirChanged`, `FocusGained` and before a lock toggle, and reloads only when the project root or branch differs from the last populate. Populating re-renders an open radar and refreshes the HUD.
 
 ## Spatial Design & Keybinding Layout
 
@@ -141,7 +142,7 @@ From [docs/concept.md](docs/concept.md):
 ```
 <space> then:
 [1][2][3][4][5][6][7][8][9]  ← Locks (manually locked targets)
-[a][s][d][f][g]              ← Recent files (vim.v.oldfiles)
+[a][s][d][f][g]              ← Recent files (per project and branch)
 [o]                          ← Alternative file (test ↔ impl, also inside the radar)
 [<space>]                    ← Full radar
 ```
@@ -182,21 +183,21 @@ end
 ## Implemented Features
 
 - **Locks**: Manual file locking with 1-9 keybindings
-- **Recent Files**: MRU list filtered by project root (a-g keys)
+- **Recent Files**: MRU history per project root + git branch, filled up from `vim.v.oldfiles` (a-g keys)
 - **Alternative Files**: Smart test ↔ implementation file switching (`<space>o`, `o` inside the radar)
 - **HUD**: Always-visible float at the bottom of the active pane with the alternative file, up to `hud.max_locks` locks and `hud.max_recent` recent files; dodges the cursor, stays visible next to the radar (using the radar's source buffer as current file), hides while the tabs sidebar is open
 - **Radar Window**: One floating window with three sections and section cycling
 - **Tabs Sidebar**: Tab/buffer tree view with jump and close support
 - **Line Navigation**: Navigate within radar using `<CR>`, `V`, `S`, `T`, `F`
 - **Label Editing**: Customize lock labels via floating editor (supports protocol URLs)
-- **Context Persistence**: Saves locks per project root + git branch with data versioning
+- **Context Persistence**: Saves locks and recent files per project root + git branch with data versioning
 - **Help Popup**: `?` in the radar, built from the configured keys
 - **Data Cleanup**: `:RadarCleanup` command removes entries for deleted branches/projects
 - **Path Display**: Paths shown relative to the project root
 
 ### Known Limitations
 
-- **Detached HEAD and non-git folders**: Locks live in memory only. Persistence needs a branch.
+- **Detached HEAD and non-git folders**: Locks and recent files live in memory only. Persistence needs a branch.
 
 ## Issue Tracking
 
