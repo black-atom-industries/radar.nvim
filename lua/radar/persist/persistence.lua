@@ -270,9 +270,7 @@ function M.populate(config)
 
   -- Clears to {} when the new project/branch has no saved locks (e.g.,
   -- switching worktrees) so stale locks from the previous directory go away.
-  for i, lock in ipairs(locks or {}) do
-    lock.label = config.keys.locks[i] or tostring(i)
-  end
+  require("radar.data.locks").relabel(locks or {}, config)
   state.set_locks(locks or {})
 
   if data ~= nil and locks ~= nil then

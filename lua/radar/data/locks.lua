@@ -37,10 +37,21 @@ function M.add(filename, config)
   return lock
 end
 
----Remove lock by filename
+---Relabel locks by position from config.keys.locks
+---@param locks Radar.Lock[]
+---@param config Radar.Config
+---@return nil
+function M.relabel(locks, config)
+  for i, lock in ipairs(locks) do
+    lock.label = config.keys.locks[i] or tostring(i)
+  end
+end
+
+---Remove lock by filename and relabel the remaining locks
 ---@param filename string
+---@param config Radar.Config
 ---@return Radar.Lock
-function M.remove(filename)
+function M.remove(filename, config)
   ---@type Radar.Lock
   local removed_lock
 
@@ -49,6 +60,7 @@ function M.remove(filename)
     if lock.filename == filename then
       removed_lock = lock
       table.remove(state.get_locks(), i)
+      M.relabel(state.get_locks(), config)
       break
     end
   end
@@ -76,7 +88,7 @@ function M.toggle(filename, config, persistence_module)
     lock = M.add(filename, config)
     debug.log("  action = ADD, label =", lock.label)
   else
-    lock = M.remove(filename)
+    lock = M.remove(filename, config)
     debug.log("  action = REMOVE, removed =", lock)
   end
 

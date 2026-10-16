@@ -74,13 +74,7 @@ function M.save_buffer(edit_buf, radar_config, radar_module)
           string.format("Line %d: File not found: %s", i, filepath)
         )
       else
-        -- Create lock with label based on line position
-        local new_lock = {
-          label = radar_config.keys.locks[i] or tostring(i),
-          filename = path.to_lock_path(full_path),
-        }
-
-        table.insert(new_locks, new_lock)
+        table.insert(new_locks, { filename = path.to_lock_path(full_path) })
       end
     end
   end
@@ -94,6 +88,7 @@ function M.save_buffer(edit_buf, radar_config, radar_module)
   -- Update locks and persist
   local state = require("radar.data.state")
   local persistence = require("radar.persist.persistence")
+  require("radar.data.locks").relabel(new_locks, radar_config)
   state.set_locks(new_locks)
   persistence.persist(radar_config)
   radar_module.update(radar_config)

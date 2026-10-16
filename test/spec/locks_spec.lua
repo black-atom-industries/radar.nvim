@@ -95,25 +95,69 @@ describe("locks", function()
       locks.add("file2.lua", test_config)
       MiniTest.expect.equality(#state.get_locks(), 2)
 
-      local removed = locks.remove("file1.lua")
+      local removed = locks.remove("file1.lua", test_config)
 
       MiniTest.expect.equality(#state.get_locks(), 1)
       MiniTest.expect.equality(removed.filename, "file1.lua")
       MiniTest.expect.equality(state.get_locks()[1].filename, "file2.lua")
     end)
 
+    it("relabels remaining locks by position", function()
+      locks.add("a.lua", test_config)
+      locks.add("b.lua", test_config)
+      locks.add("c.lua", test_config)
+
+      locks.remove("a.lua", test_config)
+
+      local labels = vim.tbl_map(function(lock)
+        return lock.label .. ":" .. lock.filename
+      end, state.get_locks())
+      MiniTest.expect.equality(labels, { "1:b.lua", "2:c.lua" })
+    end)
+
+    it("relabels from configured keys", function()
+      test_config.keys.locks = { "x", "y", "z" }
+      locks.add("a.lua", test_config)
+      locks.add("b.lua", test_config)
+      locks.add("c.lua", test_config)
+
+      locks.remove("b.lua", test_config)
+
+      MiniTest.expect.equality(state.get_locks()[1].label, "x")
+      MiniTest.expect.equality(state.get_locks()[2].label, "y")
+    end)
+
     it("returns nil when file not found", function()
       locks.add("existing.lua", test_config)
 
-      local removed = locks.remove("nonexistent.lua")
+      local removed = locks.remove("nonexistent.lua", test_config)
 
       MiniTest.expect.equality(removed, nil)
       MiniTest.expect.equality(#state.get_locks(), 1)
     end)
 
     it("handles empty state gracefully", function()
-      local removed = locks.remove("nonexistent.lua")
+      local removed = locks.remove("nonexistent.lua", test_config)
       MiniTest.expect.equality(removed, nil)
+    end)
+  end)
+
+  describe("relabel", function()
+    it("labels by position and falls back to the index past the keys", function()
+      test_config = vim.deepcopy(config.default)
+      test_config.keys.locks = { "a", "b" }
+      local list = {
+        { label = "9", filename = "1.lua" },
+        { label = "9", filename = "2.lua" },
+        { label = "9", filename = "3.lua" },
+      }
+
+      locks.relabel(list, test_config)
+
+      MiniTest.expect.equality(
+        { list[1].label, list[2].label, list[3].label },
+        { "a", "b", "3" }
+      )
     end)
   end)
 
