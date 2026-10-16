@@ -13,6 +13,10 @@ local cut_item = nil
 ---@type integer?
 local cut_line_num = nil
 
+---Fewest rows the tabs view takes: the HUD's height when it opened
+---@type integer?
+local min_height = nil
+
 ---Check if tabs window exists
 ---@return boolean
 function M.exists()
@@ -279,7 +283,8 @@ function M.open(config)
   local tabs_data = tabs.get_tabs_data()
   local lines, line_mapping =
     build_content(tabs_data, vim.api.nvim_win_get_width(pane))
-  local win_config = window.pane_bottom(pane, #lines)
+  min_height = require("radar.ui.hud").get_height()
+  local win_config = window.pane_bottom(pane, #lines, min_height)
   state.set_tabs_line_mapping(line_mapping)
 
   -- Create buffer
@@ -383,7 +388,7 @@ function M.update()
 
   local pane = vim.api.nvim_win_get_config(winid).win
   if pane and vim.api.nvim_win_is_valid(pane) then
-    vim.api.nvim_win_set_config(winid, window.pane_bottom(pane, #lines))
+    vim.api.nvim_win_set_config(winid, window.pane_bottom(pane, #lines, min_height))
   end
 end
 

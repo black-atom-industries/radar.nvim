@@ -225,11 +225,12 @@ end
 
 ---Float config at the bottom of a pane, as wide as the pane: where the HUD sits
 ---@param pane integer
----@param lines integer content height, at least 3 rows and at most the pane
+---@param lines integer content height, at most the pane
+---@param min_height? integer fewest rows to take, 3 by default
 ---@return vim.api.keyset.win_config
-function M.pane_bottom(pane, lines)
+function M.pane_bottom(pane, lines, min_height)
   local pane_height = vim.api.nvim_win_get_height(pane)
-  local height = math.min(math.max(lines, 3), pane_height)
+  local height = math.min(math.max(lines, min_height or 3), pane_height)
   return {
     relative = "win",
     win = pane,

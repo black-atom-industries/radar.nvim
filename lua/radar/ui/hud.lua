@@ -362,6 +362,13 @@ function M.get_winid()
   return is_open(hud) and hud.winid or nil
 end
 
+---Rows the HUD of the current tabpage takes, or last took before it hid
+---@return integer
+function M.get_height()
+  local hud = huds[vim.api.nvim_get_current_tabpage()]
+  return hud and hud.height or 0
+end
+
 ---Close all HUDs and forget the config and session toggle
 ---@return nil
 function M.reset()
