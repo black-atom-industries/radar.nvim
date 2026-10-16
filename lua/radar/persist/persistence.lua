@@ -226,6 +226,26 @@ end
 ---@field branch string?
 ---@field locks Radar.Lock[]?
 ---@field recent string[]? this session's files as lock paths, most recent first
+---@field lock_version integer? lock change count when the locks were copied
+
+---Lock changes per project and branch, so a deferred save never overwrites
+---locks written after its snapshot
+---@type table<string, integer>
+local lock_versions = {}
+
+---@param snapshot Radar.PersistSnapshot
+---@return string
+local function lock_key(snapshot)
+  return tostring(snapshot.project) .. "\n" .. tostring(snapshot.branch)
+end
+
+---@param snapshot Radar.PersistSnapshot
+---@return integer
+local function bump_lock_version(snapshot)
+  local key = lock_key(snapshot)
+  lock_versions[key] = (lock_versions[key] or 0) + 1
+  return lock_versions[key]
+end
 
 ---Project and branch of the cwd
 ---@return Radar.PersistSnapshot
@@ -249,6 +269,7 @@ end
 function M.snapshot()
   local snapshot = M.recent_snapshot()
   snapshot.locks = vim.deepcopy(require("radar.data.state").get_locks())
+  snapshot.lock_version = bump_lock_version(snapshot)
   return snapshot
 end
 
@@ -289,9 +310,13 @@ function M.persist(config, snapshot)
   local locks
   if snapshot then
     locks = snapshot.locks
+    if locks and snapshot.lock_version ~= lock_versions[lock_key(snapshot)] then
+      locks = nil
+    end
   else
     snapshot = current_context()
     locks = state.get_locks()
+    bump_lock_version(snapshot)
   end
   local project_path = snapshot.project
   local git_branch = snapshot.branch

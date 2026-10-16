@@ -4,6 +4,7 @@ describe("persistence", function()
   local test_data_path = vim.fn.tempname() .. ".json"
   local test_config = {
     keys = require("radar.config").default.keys,
+    recent = require("radar.config").default.recent,
     persist = {
       path = test_data_path,
     },
@@ -359,6 +360,50 @@ describe("persistence", function()
         persistence.populate(test_config)
 
         MiniTest.expect.equality(state.get_locks()[1].filename, oil_url)
+      end)
+    end)
+  end)
+
+  describe("deferred saves", function()
+    it("never overwrite locks saved after their snapshot", function()
+      local state = require("radar.data.state")
+      in_dir_with_branch(function(dir)
+        vim.fn.writefile({}, dir .. "/a.lua")
+        vim.fn.writefile({}, dir .. "/b.lua")
+        state.set_locks({ { label = "1", filename = "a.lua" } })
+        local stale = persistence.snapshot()
+
+        state.set_locks({ { label = "1", filename = "b.lua" } })
+        persistence.persist(test_config)
+        persistence.persist(test_config, stale)
+
+        state.set_locks({})
+        persistence.populate(test_config)
+        MiniTest.expect.equality(state.get_locks(), {
+          { label = "1", filename = "b.lua" },
+        })
+      end)
+    end)
+
+    it("keep the latest of two quick toggles", function()
+      local state = require("radar.data.state")
+      in_dir_with_branch(function(dir)
+        vim.fn.writefile({}, dir .. "/a.lua")
+        vim.fn.writefile({}, dir .. "/b.lua")
+        state.set_locks({ { label = "1", filename = "a.lua" } })
+        local first = persistence.snapshot()
+        state.set_locks({
+          { label = "1", filename = "a.lua" },
+          { label = "2", filename = "b.lua" },
+        })
+        local second = persistence.snapshot()
+
+        persistence.persist(test_config, first)
+        persistence.persist(test_config, second)
+
+        state.set_locks({})
+        persistence.populate(test_config)
+        MiniTest.expect.equality(#state.get_locks(), 2)
       end)
     end)
   end)
