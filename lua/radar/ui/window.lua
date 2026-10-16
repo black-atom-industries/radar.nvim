@@ -238,6 +238,7 @@ function M.pane_bottom(pane, lines, min_height)
     col = 0,
     width = vim.api.nvim_win_get_width(pane),
     height = height,
+    style = "minimal",
     border = "none",
     focusable = true,
     zindex = 20,
