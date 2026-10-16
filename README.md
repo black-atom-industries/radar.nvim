@@ -139,6 +139,7 @@ The HUD sits at the bottom of the active pane, as wide as the pane, and follows 
 **Within Tabs Sidebar:**
 
 - **`<CR>`**: Jump to tab/buffer
+- **`1-9`**: Jump to that tab
 - **`x`**: Close buffer or tab
 - **`q` / `<Esc>`**: Close tabs sidebar
 

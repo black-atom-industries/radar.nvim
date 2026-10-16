@@ -381,6 +381,19 @@ describe("hud window", function()
       require("radar.ui.tabs").close()
     end)
 
+    it("labels tabs with their number and jumps with it", function()
+      local tabs = require("radar.ui.tabs")
+      vim.cmd("tabnew " .. vim.fn.fnameescape(file("c.lua")))
+      press("t")
+      local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+      MiniTest.expect.equality(vim.startswith(lines[1], " 1  Tab 1"), true)
+      vim.api.nvim_feedkeys("1", "x", false)
+      MiniTest.expect.equality(vim.fn.tabpagenr(), 1)
+      if tabs.exists() then
+        tabs.close()
+      end
+    end)
+
     it("toggles the tabs sidebar with t", function()
       local tabs = require("radar.ui.tabs")
       press("t")

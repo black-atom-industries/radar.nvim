@@ -61,6 +61,7 @@ function M.show_help()
     "                          ",
     "  Navigation              ",
     "    <CR>   Jump to tab/buffer ",
+    "    1-9    Jump to tab        ",
     "    <Esc>  Close tabs window  ",
     "                          ",
     "  Actions                 ",
@@ -93,16 +94,12 @@ local function setup_tab_highlights()
     return val and string.format("#%06x", val) or nil
   end
 
-  -- Tab header groups (bold for all, standout fg for active)
-  local tab_bg = get_attr("Normal", "bg")
-  local active_fg = get_attr("@attribute", "fg")
+  -- Tab headers are bold; the current tab and buffer take the accent, as in
+  -- the HUD
+  local active_fg = get_attr("Title", "fg")
 
-  vim.api.nvim_set_hl(0, "RadarTabsTabHeader", { bold = true, bg = tab_bg })
-  vim.api.nvim_set_hl(
-    0,
-    "RadarTabsTabHeaderActive",
-    { bold = true, fg = active_fg, bg = tab_bg }
-  )
+  vim.api.nvim_set_hl(0, "RadarTabsTabHeader", { bold = true })
+  vim.api.nvim_set_hl(0, "RadarTabsTabHeaderActive", { bold = true, fg = active_fg })
 end
 
 -- Create highlight groups on load
@@ -119,28 +116,32 @@ vim.api.nvim_create_autocmd("ColorScheme", {
   desc = "Rebuild tabs UI and indicator highlights on theme change",
 })
 
+---Key column of a tab header: the tab number for tabs 1-9, as in the HUD
+---@param index integer
+---@return string
+local function tab_prefix(index)
+  return " " .. (index <= 9 and tostring(index) or " ") .. "  "
+end
+
 ---Build the content lines and line mapping
 ---@param tabs_data Radar.TabData[]
----@param win_width integer Width of the window in columns (excluding border)
+---@param win_width integer Width of the window in columns
 ---@return string[], Radar.TabsLineMapping[]
 local function build_content(tabs_data, win_width)
   local lines = {}
   local line_mapping = {}
 
   for _, tab in ipairs(tabs_data) do
-    -- Tab header line
-    local current_marker = tab.is_current and "*" or " "
     local tab_line =
-      string.format("%sTab %d (%s)", current_marker, tab.index, tab.cwd)
+      string.format("%sTab %d (%s)", tab_prefix(tab.index), tab.index, tab.cwd)
     table.insert(lines, tab_line)
     table.insert(line_mapping, { tabid = tab.tabid })
 
-    -- Buffer lines (indented)
     for _, buf in ipairs(tab.buffers) do
       local filepath = require("radar.path").display(buf.filepath)
       local bufnr = vim.fn.bufnr(buf.filepath)
       local buf_indicators = indicators.get_buffer_indicators(bufnr)
-      local left = "    " .. filepath
+      local left = "      " .. filepath
       local buf_line =
         indicators.right_align_line(left, buf_indicators, win_width, 4)
       table.insert(lines, buf_line)
@@ -169,22 +170,34 @@ local function apply_highlights(bufnr, tabs_data)
   vim.api.nvim_buf_clear_namespace(bufnr, ns, 0, -1)
 
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+  local current_win = window.active_pane()
   local line_idx = 0
 
   for _, tab in ipairs(tabs_data) do
-    -- Highlight tab header (all get bold + subtle bg, active gets standout fg)
     if line_idx < #lines then
-      local hl_group = tab.is_current and "RadarTabsTabHeaderActive"
-        or "RadarTabsTabHeader"
-      vim.api.nvim_buf_set_extmark(bufnr, ns, line_idx, 0, {
+      local key_end = #tab_prefix(tab.index) - 2
+      vim.api.nvim_buf_set_extmark(bufnr, ns, line_idx, 1, {
+        end_col = key_end,
+        hl_group = "@keyword",
+      })
+      vim.api.nvim_buf_set_extmark(bufnr, ns, line_idx, key_end + 2, {
         end_col = #lines[line_idx + 1],
-        hl_group = hl_group,
+        hl_group = tab.is_current and "RadarTabsTabHeaderActive"
+          or "RadarTabsTabHeader",
       })
     end
     line_idx = line_idx + 1
 
-    -- Buffer lines
-    for _ in ipairs(tab.buffers) do
+    for _, buf in ipairs(tab.buffers) do
+      if line_idx < #lines and tab.is_current and buf.winid == current_win then
+        local text = lines[line_idx + 1]
+        local path_start = #text:match("^%s*")
+        local path_end = path_start + #require("radar.path").display(buf.filepath)
+        vim.api.nvim_buf_set_extmark(bufnr, ns, line_idx, path_start, {
+          end_col = math.min(path_end, #text),
+          hl_group = "Title",
+        })
+      end
       line_idx = line_idx + 1
     end
   end
@@ -263,6 +276,20 @@ local function setup_keymaps(bufnr, config)
   vim.keymap.set("n", "P", function()
     M.paste_line_before(config)
   end, vim.tbl_extend("force", opts, { desc = "Paste cut tab/buffer before" }))
+
+  -- Jump to tab by number
+  for index = 1, 9 do
+    vim.keymap.set("n", tostring(index), function()
+      for line, entry in ipairs(state.get_tabs_line_mapping()) do
+        if entry.tabid and not entry.filepath then
+          if vim.api.nvim_tabpage_get_number(entry.tabid) == index then
+            vim.api.nvim_win_set_cursor(0, { line, 0 })
+            return M.jump_to_line(config)
+          end
+        end
+      end
+    end, vim.tbl_extend("force", opts, { desc = "Jump to tab " .. index }))
+  end
 
   -- Help
   vim.keymap.set("n", "?", function()
