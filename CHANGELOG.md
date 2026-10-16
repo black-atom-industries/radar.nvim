@@ -3,6 +3,58 @@
 ## [0.6.0](https://github.com/black-atom-industries/radar.nvim/compare/v0.5.0...v0.6.0) (2026-10-16)
 
 
+### Highlights
+
+#### A HUD replaces the radar window
+
+A small window sits at the bottom of the pane you're working in and shows where you can go: the file you're in, the alternative file, up to five locks and three recent files, each next to its key. `<space>` plus that key gets you there. Nothing pops up first, so a jump is two keystrokes.
+
+![Jumping from the HUD: Space 1 opens a lock, Space o goes back to the alternative file, Space a opens a recent file](https://raw.githubusercontent.com/black-atom-industries/radar.nvim/v0.6.0/docs/assets/changelog/0.6.0-hud-jump.webp)
+
+```
+<space> then:
+1-9   jump to a lock          o   alternative file
+a-g   jump to a recent file   l   lock or unlock this file
+e     edit locks              h   hide or show the HUD
+?     list these keys
+```
+
+The HUD follows you between splits, takes the pane's width, and moves to the top of the pane while your cursor line runs under it. To open a file in a split, split first, then jump.
+
+![The HUD follows the active split and moves to the top of the pane when the cursor reaches the bottom](https://raw.githubusercontent.com/black-atom-industries/radar.nvim/v0.6.0/docs/assets/changelog/0.6.0-hud-split.webp)
+
+#### Lock and edit without opening anything
+
+`<space>l` locks the file you're in. `<space>e` opens the lock editor in the HUD's place: one path per line, the order sets the numbers, `:w` saves. Removing a lock renumbers the rest, so the numbers have no gaps.
+
+![Space l locks the current file, Space e opens the lock editor in the HUD's place, and saving reorders the locks](https://raw.githubusercontent.com/black-atom-industries/radar.nvim/v0.6.0/docs/assets/changelog/0.6.0-hud-edit.webp)
+
+#### Recent files that survive a restart
+
+radar.nvim keeps its own list of recent files for each project and branch, so the HUD has them from the first second of a new session, however small your shada is or however Neovim was closed.
+
+#### Locks stay where they belong
+
+- A project is its git root, so starting Neovim in a subfolder, running `:cd`, or working in a git worktree gives you the same locks.
+- A corrupt data file is moved to `data.json.bad` instead of breaking every save, and a failed read never overwrites other projects' locks.
+- Locks for deleted files clean themselves up.
+
+#### Tabs sidebar
+
+Move tabs and buffers with `dd`, `p` and `P`, open buffers in splits with `v` and `s`, keep one tab with `o`, and see git and LSP status next to each buffer.
+
+#### Upgrading from 0.5
+
+`<space>` waits for a second key and no longer opens a window; your locks and data carry over and migrate on first start. The alternative file moved from `<space><space>` to `<space>o`. The radar window's options and split keys are gone, and the recent-file cap moved:
+
+```diff
+ require("radar").setup({
+-  radar = { max_recent_files = 10, win_preset = "center" },
+-  keys = { vertical = "<C-v>", horizontal = "<C-s>", tab = "<C-t>", float = "<C-f>" },
++  recent = { max_files = 10 },
+ })
+```
+
 ### ⚠ BREAKING CHANGES
 
 * **ui:** hud.icons is gone.
