@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.7.1](https://github.com/black-atom-industries/radar.nvim/compare/v0.7.0...v0.7.1) (2026-10-16)
+
+
+### Bug Fixes
+
+* **ui:** call the floats Lock HUD and Tab HUD in help and keymaps ([eb56c2a](https://github.com/black-atom-industries/radar.nvim/commit/eb56c2acdb5646cc66364a02a5f7055e52f5b590))
+
+
+### Documentation
+
+* name the floats Lock HUD and Tab HUD ([7e35af5](https://github.com/black-atom-industries/radar.nvim/commit/7e35af57b45b04e916e6ed03cc10ffc7b4d22299))
+* show how to pick a prefix that fits your leader ([308c0f6](https://github.com/black-atom-industries/radar.nvim/commit/308c0f681ec69110af5f29192e9f2c614b0bf9a9))
+
 ## [0.7.0](https://github.com/black-atom-industries/radar.nvim/compare/v0.6.0...v0.7.0) (2026-10-16)
 
 
