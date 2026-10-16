@@ -366,7 +366,7 @@ function M.open(config)
 
   -- Capture the alternate file before focus changes
   local alternative = require("radar.data.alternative")
-  state.set_source_alt_file(alternative.get_alternative_file())
+  state.set_source_alt_file(alternative.get_alternative_file() or false)
 
   if not M.exists() then
     M.create(config)

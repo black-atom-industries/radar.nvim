@@ -28,7 +28,7 @@ local _state = {
   edit_bufid = nil,
   ---@type integer?
   source_bufnr = nil,
-  ---@type string?
+  ---@type string|false?
   source_alt_file = nil,
   ---@type integer?
   tabs_winid = nil,
@@ -109,7 +109,7 @@ function M.get_source_bufnr()
   return _state.source_bufnr
 end
 
----@return string?
+---@return string|false?
 function M.get_source_alt_file()
   return _state.source_alt_file
 end
@@ -180,7 +180,7 @@ function M.set_source_bufnr(bufnr)
   _state.source_bufnr = bufnr
 end
 
----@param alt_file string?
+---@param alt_file string|false?
 function M.set_source_alt_file(alt_file)
   _state.source_alt_file = alt_file
 end

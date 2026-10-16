@@ -36,9 +36,10 @@ function M.get_files(config)
   -- Exclude alternative file — use stored source alt file when available
   -- (set during radar.open()) to ensure consistent exclusion before and after
   -- BufEnter during nvim_open_win, where re-evaluating get_alternative_file()
-  -- gives different results (radar buffer vs source buffer)
+  -- gives different results (radar buffer vs source buffer).
+  -- `false` means radar.open() found no alternative file.
   local alt_file = state.get_source_alt_file()
-  if not alt_file then
+  if alt_file == nil then
     local ok, result = pcall(function()
       local alternative = require("radar.data.alternative")
       return alternative.get_alternative_file()
