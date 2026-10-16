@@ -2,9 +2,8 @@ local M = {}
 local path = require("radar.path")
 
 ---Calculate optimal window width based on longest file path
----@param radar_module table
 ---@return integer
-local function calculate_window_width(radar_module)
+local function calculate_window_width()
   local max_width = 60 -- Minimum width
 
   local state = require("radar.data.state")
@@ -12,7 +11,7 @@ local function calculate_window_width(radar_module)
   for _, lock in ipairs(state.get_locks()) do
     local formatted_path = lock.filename
     if not path.is_oil_url(lock.filename) then
-      formatted_path = radar_module.get_formatted_filepath(lock.filename)
+      formatted_path = path.display(lock.filename)
     end
     local entry_text = string.format("   [%s] %s  ", lock.label, formatted_path)
     max_width = math.max(max_width, vim.fn.strdisplaywidth(entry_text))
@@ -65,7 +64,7 @@ function M.save_buffer(edit_buf, radar_config, radar_module)
       local filepath = line:match("^%s*(.-)%s*$")
 
       local full_path = path.is_url(filepath) and filepath
-        or path.to_absolute(vim.fn.expand(filepath))
+        or path.to_absolute(filepath)
 
       -- Protocol URLs (gh://, fugitive://, etc.) are valid without file check
       if not path.is_url(filepath) and vim.fn.filereadable(full_path) ~= 1 then
@@ -128,8 +127,7 @@ function M.open_file_from_edit(edit_buf, open_cmd, radar_config, radar_module)
 
   -- Extract and expand filepath
   local filepath = line:match("^%s*(.-)%s*$")
-  local full_path = path.is_url(filepath) and filepath
-    or path.to_absolute(vim.fn.expand(filepath))
+  local full_path = path.is_url(filepath) and filepath or path.to_absolute(filepath)
 
   -- Only validate regular filepaths
   if not path.is_url(filepath) and vim.fn.filereadable(full_path) ~= 1 then
@@ -214,7 +212,7 @@ function M.edit_locks(radar_config, radar_module)
   for _, lock in ipairs(state.get_locks()) do
     local formatted_path = lock.filename
     if not path.is_oil_url(lock.filename) then
-      formatted_path = radar_module.get_formatted_filepath(lock.filename)
+      formatted_path = path.display(lock.filename)
     end
     table.insert(lines, formatted_path)
   end
@@ -222,7 +220,7 @@ function M.edit_locks(radar_config, radar_module)
   vim.api.nvim_buf_set_lines(edit_buf, 0, -1, false, lines)
 
   -- Open floating window with dynamic sizing
-  local calculated_width = calculate_window_width(radar_module)
+  local calculated_width = calculate_window_width()
   local win_width = calculated_width + 10 -- Add padding
   local win_height = math.max(math.min(#lines + 2, 20), 5) -- min 5, max 20
 

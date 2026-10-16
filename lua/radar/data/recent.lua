@@ -1,11 +1,6 @@
 local M = {}
 local path = require("radar.path")
 
-local function is_within_root(filesystem_path, root)
-  local normalized_path = filesystem_path:gsub("/+$", "")
-  return normalized_path == root or vim.startswith(filesystem_path, root .. "/")
-end
-
 ---@param filename string
 ---@return string
 local function absolute(filename)
@@ -59,12 +54,10 @@ function M.get_files(config)
     local filepath = state.get_session_files()[i]
 
     local filesystem_path = path.to_filesystem_path(filepath)
-    local abs_path = path.to_absolute(filesystem_path)
+    local abs_path = absolute(filepath)
 
     if not excluded_files[abs_path] and not seen_files[abs_path] then
-      if
-        is_within_root(filesystem_path, root) and exists(filepath, filesystem_path)
-      then
+      if path.relative_to(abs_path, root) and exists(filepath, filesystem_path) then
         table.insert(recent_files, filepath)
         seen_files[abs_path] = true
 
@@ -79,16 +72,14 @@ function M.get_files(config)
   for _, filepath in ipairs(vim.v.oldfiles) do
     -- Skip if already seen, excluded, or if we're at capacity
     local filesystem_path = path.to_filesystem_path(filepath)
-    local abs_path = path.to_absolute(filesystem_path)
+    local abs_path = absolute(filepath)
 
     if
       not seen_files[abs_path]
       and not excluded_files[abs_path]
       and #recent_files < config.radar.max_recent_files
     then
-      if
-        is_within_root(filesystem_path, root) and exists(filepath, filesystem_path)
-      then
+      if path.relative_to(abs_path, root) and exists(filepath, filesystem_path) then
         table.insert(recent_files, filepath)
         seen_files[abs_path] = true
       end

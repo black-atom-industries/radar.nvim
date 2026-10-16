@@ -3,13 +3,6 @@ local M = {}
 local indicators = require("radar.ui.indicators")
 local path_utils = require("radar.path")
 
----Format file path relative to the project root
----@param filename string
----@return string
-function M.get_formatted_filepath(filename)
-  return path_utils.display(filename)
-end
-
 ---Resolve a grid dimension value (float 0-1 = percentage, integer = absolute)
 ---@param value number
 ---@param terminal_size integer vim.o.columns or vim.o.lines
@@ -73,7 +66,12 @@ local function build_content(config)
   add_line(pad_str)
 
   -- ── Locks section ──
-  local locks_count = #state.get_locks()
+  -- Skip stale locks whose files no longer exist
+  local visible_locks = vim.tbl_filter(function(lock)
+    return path_utils.is_url(lock.filename)
+      or vim.fn.filereadable(path_utils.to_absolute(lock.filename)) == 1
+  end, state.get_locks())
+  local locks_count = #visible_locks
   local locks_title = pad_str .. config.radar.titles.locks
   local locks_header_full = locks_title
     .. string.rep(
@@ -90,24 +88,15 @@ local function build_content(config)
     .. locks_count
   section_ranges.locks.start = add_line(locks_header_full)
 
-  local has_visible_locks = false
-  if locks_count > 0 then
-    for _, lock in ipairs(state.get_locks()) do
-      -- Skip stale locks whose files no longer exist
-      local abs_path = path_utils.to_absolute(lock.filename)
-      if path_utils.is_url(lock.filename) or vim.fn.filereadable(abs_path) == 1 then
-        local path = M.get_formatted_filepath(lock.filename)
-        local left = pad_str .. string.format("[%s] %s", lock.label, path)
-        local bufnr = vim.fn.bufnr(abs_path)
-        local buf_indicators = indicators.get_buffer_indicators(bufnr)
-        local line =
-          indicators.right_align_line(left, buf_indicators, content_width, 0)
-        line_map[add_line(line)] = { section = "locks", target = lock.filename }
-        has_visible_locks = true
-      end
-    end
+  for _, lock in ipairs(visible_locks) do
+    local path = path_utils.display(lock.filename)
+    local left = pad_str .. string.format("[%s] %s", lock.label, path)
+    local bufnr = vim.fn.bufnr(path_utils.to_absolute(lock.filename))
+    local buf_indicators = indicators.get_buffer_indicators(bufnr)
+    local line = indicators.right_align_line(left, buf_indicators, content_width, 0)
+    line_map[add_line(line)] = { section = "locks", target = lock.filename }
   end
-  if not has_visible_locks and config.radar.show_empty_message then
+  if locks_count == 0 and config.radar.show_empty_message then
     add_line(pad_str .. "No locks yet — press l to lock files")
   end
   section_ranges.locks["end"] = #lines
@@ -136,7 +125,7 @@ local function build_content(config)
   if recent_count > 0 then
     for i, filename in ipairs(state.get_recent_files()) do
       local label = config.keys.recent[i]
-      local path = M.get_formatted_filepath(filename)
+      local path = path_utils.display(filename)
       local left
       if label then
         left = pad_str .. string.format("[%s] %s", label, path)

@@ -197,7 +197,10 @@ describe("locks", function()
 
     before_each(function()
       setup_test_state()
-      mock_persistence = { persist = function() end }
+      mock_persistence = {
+        persist = function() end,
+        populate_if_changed = function() end,
+      }
       mock_mini_radar = {
         exists = function()
           return false

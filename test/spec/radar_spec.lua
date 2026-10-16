@@ -1,23 +1,24 @@
 local radar = require("radar.ui.radar")
+local path = require("radar.path")
 
 describe("radar path formatting", function()
   it("shows the current Oil directory as ./", function()
     local oil_url = "oil://" .. vim.uv.cwd() .. "/"
 
-    MiniTest.expect.equality(radar.get_formatted_filepath(oil_url), "./")
+    MiniTest.expect.equality(path.display(oil_url), "./")
   end)
 
   it("shows Oil subdirectories relative to cwd with a trailing slash", function()
     local oil_url = "oil://" .. vim.uv.cwd() .. "/lua/radar/"
 
-    MiniTest.expect.equality(radar.get_formatted_filepath(oil_url), "lua/radar/")
+    MiniTest.expect.equality(path.display(oil_url), "lua/radar/")
   end)
 
   it("leaves other protocol URLs on the existing formatting path", function()
     local filename = "gh://owner/repo/blob/main/file.lua"
 
     MiniTest.expect.equality(
-      radar.get_formatted_filepath(filename),
+      path.display(filename),
       vim.fn.fnamemodify(filename, ":p:.")
     )
   end)
@@ -84,19 +85,38 @@ describe("radar rendering", function()
 
     radar.open(test_config)
 
+    local header = line_of(test_config.radar.titles.locks)
+    local lines = vim.api.nvim_buf_get_lines(state.get_radar_bufid(), 0, -1, false)
+    MiniTest.expect.equality(vim.endswith(lines[header], " 2"), true)
+
     local current_line = line_of("[3] a.lua")
     MiniTest.expect.equality(vim.api.nvim_win_get_cursor(0)[1], current_line)
     MiniTest.expect.equality(highlighted_lines("radar.locks"), { current_line })
-    MiniTest.expect.equality(
-      navigation.get_file_from_line(test_config, "locks"),
-      "a.lua"
-    )
+    MiniTest.expect.equality(navigation.get_file_from_line("locks"), "a.lua")
 
     vim.api.nvim_win_set_cursor(0, { line_of("[2] b.lua"), 0 })
-    MiniTest.expect.equality(
-      navigation.get_file_from_line(test_config, "locks"),
-      "b.lua"
-    )
+    MiniTest.expect.equality(navigation.get_file_from_line("locks"), "b.lua")
+  end)
+
+  it("shows locks populated after it opened", function()
+    local persistence = require("radar.persist.persistence")
+    persistence.write(test_config.persist.path, {
+      version = 2,
+      projects = {
+        [persistence.get_project_path()] = {
+          main = {
+            locks = { { label = "1", filename = "b.lua" } },
+            lastAccessed = 1,
+          },
+        },
+      },
+    })
+
+    radar.open(test_config)
+    MiniTest.expect.equality(line_of("[1] b.lua"), nil)
+
+    persistence.populate(test_config)
+    MiniTest.expect.equality(line_of("[1] b.lua") ~= nil, true)
   end)
 
   it("updates in place and keeps the buffer count stable", function()
@@ -137,6 +157,36 @@ describe("radar rendering", function()
     MiniTest.expect.equality(state.get_radar_line_mapping(), {})
   end)
 
+  it("reloads instead of toggling after a branch switch outside Neovim", function()
+    local persistence = require("radar.persist.persistence")
+    persistence.write(test_config.persist.path, {
+      version = 2,
+      projects = {
+        [persistence.get_project_path()] = {
+          main = {
+            locks = { { label = "1", filename = "a.lua" } },
+            lastAccessed = 1,
+          },
+          feat = {
+            locks = { { label = "1", filename = "b.lua" } },
+            lastAccessed = 1,
+          },
+        },
+      },
+    })
+    persistence.populate(test_config)
+    radar.open(test_config)
+
+    vim.fn.writefile({ "ref: refs/heads/feat" }, root .. "/.git/HEAD")
+    vim.api.nvim_win_set_cursor(0, { line_of("[1] a.lua"), 0 })
+    vim.api.nvim_feedkeys(test_config.keys.lock, "x", false)
+
+    MiniTest.expect.equality(state.get_locks(), {
+      { label = "1", filename = "b.lua" },
+    })
+    MiniTest.expect.equality(line_of("[1] b.lua") ~= nil, true)
+  end)
+
   it("recreates the radar with its source after saving the editor", function()
     vim.cmd.edit(root .. "/b.lua")
     vim.cmd.edit(root .. "/a.lua")
@@ -159,6 +209,7 @@ describe("radar rendering", function()
 
   it("locks the current file from recent when it has no alternate", function()
     state.set_session_files({ root .. "/a.lua" })
+    require("radar.persist.persistence").populate(test_config)
 
     radar.open(test_config)
     MiniTest.expect.equality(vim.api.nvim_win_get_cursor(0)[1], line_of("a.lua"))

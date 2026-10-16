@@ -106,7 +106,7 @@ end
 ---@param abs string
 ---@param root string
 ---@return string?
-local function relative_to(abs, root)
+function M.relative_to(abs, root)
   local relative
   if root == "/" then
     relative = abs:sub(2)
@@ -128,7 +128,7 @@ function M.to_lock_path(name)
   end
   local abs = M.to_absolute(name)
   local root = M.project_root()
-  return root and relative_to(abs, root) or abs
+  return root and M.relative_to(abs, root) or abs
 end
 
 ---Format a lock filename, path or URL for display: relative to the project

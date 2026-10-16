@@ -152,7 +152,7 @@ Locks are saved and restored per project and git branch, so switching between pr
 
 - The project is the git root containing the working directory (the worktree root inside a worktree), or the working directory outside git.
 - Lock paths are stored relative to the project root.
-- Detached HEAD and non-git directories keep locks in memory only.
+- Detached HEAD and non-git directories keep locks in memory only, until you switch to another project.
 - A corrupt data file is moved to `data.json.bad`. Writes are atomic.
 
 ### Data Cleanup

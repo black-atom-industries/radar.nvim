@@ -2,10 +2,9 @@ local M = {}
 local path_utils = require("radar.path")
 
 ---Get file path from current line in radar window
----@param _config Radar.Config
 ---@param section "locks" | "recent"
 ---@return string? filepath
-function M.get_file_from_line(_config, section)
+function M.get_file_from_line(section)
   local state = require("radar.data.state")
 
   if
@@ -107,7 +106,7 @@ end
 ---@param section "locks" | "recent"
 ---@return nil
 function M.open_file_from_line(open_cmd, config, radar_module, section)
-  local filepath = M.get_file_from_line(config, section)
+  local filepath = M.get_file_from_line(section)
   if filepath then
     M.open_file(filepath, open_cmd, config, radar_module)
   end

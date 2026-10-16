@@ -20,9 +20,6 @@ describe("edit", function()
 
     -- Mock dependencies
     mock_mini_radar = {
-      get_formatted_filepath = function(path)
-        return vim.fn.fnamemodify(path, ":p:.")
-      end,
       update = function() end,
       close = function() end,
     }
@@ -272,14 +269,12 @@ describe("edit", function()
     it("keeps Oil lock URLs intact in the editable buffer", function()
       local oil_url = "oil://" .. vim.uv.cwd() .. "/"
       state.set_locks({ { label = "1", filename = oil_url } })
-      mock_mini_radar.get_formatted_filepath =
-        require("radar.ui.radar").get_formatted_filepath
 
       edit.edit_locks(test_config, mock_mini_radar)
 
       local edit_buf = state.get_edit_bufid()
       local lines = vim.api.nvim_buf_get_lines(edit_buf, 0, -1, false)
-      MiniTest.expect.equality(mock_mini_radar.get_formatted_filepath(oil_url), "./")
+      MiniTest.expect.equality(require("radar.path").display(oil_url), "./")
       MiniTest.expect.equality(lines, { oil_url })
 
       package.loaded["radar.persist.persistence"] = mock_persistence

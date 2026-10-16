@@ -206,12 +206,33 @@ function M.load(config)
   return nil, true
 end
 
----Persist current state to file
+---@class Radar.PersistSnapshot
+---@field project string?
+---@field branch string?
+---@field locks Radar.Lock[]?
+
+---Project and branch of the cwd
+---@return Radar.PersistSnapshot
+local function current_context()
+  return { project = M.get_project_path(), branch = M.get_git_branch() }
+end
+
+---Project, branch and a copy of the locks, for a later persist()
+---@return Radar.PersistSnapshot
+function M.snapshot()
+  local snapshot = current_context()
+  snapshot.locks = vim.deepcopy(require("radar.data.state").get_locks())
+  return snapshot
+end
+
+---Persist the locks of a project and branch to file
 ---@param config Radar.Config
+---@param snapshot? Radar.PersistSnapshot defaults to the current state
 ---@return Radar.PersistenceData?
-function M.persist(config)
-  local project_path = M.get_project_path()
-  local git_branch = M.get_git_branch()
+function M.persist(config, snapshot)
+  snapshot = snapshot or current_context()
+  local project_path = snapshot.project
+  local git_branch = snapshot.branch
   if not project_path or not git_branch then
     warn_no_branch()
     return nil
@@ -229,7 +250,7 @@ function M.persist(config)
     vim.tbl_deep_extend("force", persisted_data and persisted_data.projects or {}, {
       [project_path] = {
         [git_branch] = {
-          locks = state.get_locks(),
+          locks = snapshot.locks or state.get_locks(),
           lastAccessed = current_time,
         },
       },
@@ -245,25 +266,34 @@ function M.persist(config)
   return data
 end
 
----Project and branch of the last populate, as `<project>\n<branch>`
----@type string?
-local populated_context
+---Project and branch of the last populate
+---@type Radar.PersistSnapshot?
+local populated
 
----Populate state from persisted data
+---Populate state from persisted data. Without a branch, in-memory locks are
+---kept only while the project root stays the same.
 ---@param config Radar.Config
 ---@return nil
 function M.populate(config)
-  local project_path = M.get_project_path()
-  local git_branch = M.get_git_branch()
-  populated_context =
-    string.format("%s\n%s", tostring(project_path), tostring(git_branch))
-  if not project_path or not git_branch then
+  local context = current_context()
+  local same_project = populated ~= nil and populated.project == context.project
+  populated = context
+  local state = require("radar.data.state")
+  local radar = require("radar.ui.radar")
+
+  if not context.project or not context.branch then
     warn_no_branch()
+    if not same_project then
+      state.set_locks({})
+      if radar.exists() then
+        radar.update(config)
+      end
+    end
     return
   end
+  local project_path, git_branch = context.project, context.branch
 
   local data = M.load(config)
-  local state = require("radar.data.state")
 
   local locks =
     vim.tbl_get(data or {}, "projects", project_path, git_branch, "locks")
@@ -272,6 +302,9 @@ function M.populate(config)
   -- switching worktrees) so stale locks from the previous directory go away.
   require("radar.data.locks").relabel(locks or {}, config)
   state.set_locks(locks or {})
+  if radar.exists() then
+    radar.update(config)
+  end
 
   if data ~= nil and locks ~= nil then
     data.projects[project_path][git_branch].lastAccessed = os.time()
@@ -289,12 +322,12 @@ end
 ---@param config Radar.Config
 ---@return boolean reloaded
 function M.populate_if_changed(config)
-  local context = string.format(
-    "%s\n%s",
-    tostring(M.get_project_path()),
-    tostring(M.get_git_branch())
-  )
-  if context == populated_context then
+  local context = current_context()
+  if
+    populated
+    and populated.project == context.project
+    and populated.branch == context.branch
+  then
     return false
   end
   M.populate(config)

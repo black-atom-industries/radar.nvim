@@ -144,7 +144,10 @@ describe("project identity", function()
       end,
       update = function() end,
     }
-    local persistence_mock = { persist = function() end }
+    local persistence_mock = {
+      persist = function() end,
+      populate_if_changed = function() end,
+    }
 
     it(
       "stores locks root-relative and toggles the same lock from any cwd",
@@ -180,7 +183,123 @@ describe("project identity", function()
     end)
   end)
 
+  describe("deferred persist", function()
+    it("saves a toggle under the project it was made in", function()
+      local root = repo()
+      local other = repo()
+      test_config.persist.defer_ms = 1
+      vim.uv.chdir(root)
+      persistence.populate(test_config)
+
+      locks.toggle("a.lua", test_config, persistence)
+      vim.uv.chdir(other)
+      persistence.populate(test_config)
+      vim.wait(500, function()
+        return persistence.read(test_config.persist.path) ~= nil
+      end)
+
+      local data = persistence.read(test_config.persist.path)
+      MiniTest.expect.equality(
+        data.projects[root].main.locks,
+        { { label = "1", filename = "a.lua" } }
+      )
+      MiniTest.expect.equality(data.projects[other], nil)
+    end)
+
+    it("toggles against the branch checked out outside Neovim", function()
+      local root = repo()
+      test_config.persist.defer_ms = 1
+      persistence.write(test_config.persist.path, {
+        version = 2,
+        projects = {
+          [root] = {
+            main = {
+              locks = { { label = "1", filename = "a.lua" } },
+              lastAccessed = 1,
+            },
+            feat = {
+              locks = { { label = "1", filename = "src/b.lua" } },
+              lastAccessed = 1,
+            },
+          },
+        },
+      })
+      vim.uv.chdir(root)
+      persistence.populate(test_config)
+      git(root, "switch", "-q", "-c", "feat")
+      vim.cmd.edit(vim.fn.fnameescape(root .. "/a.lua"))
+      local buf = vim.api.nvim_get_current_buf()
+
+      locks.lock_current_buffer(buf, test_config, persistence, {
+        exists = function()
+          return true
+        end,
+        update = function() end,
+      })
+      vim.wait(500, function()
+        return #persistence.read(test_config.persist.path).projects[root].feat.locks
+          == 2
+      end)
+
+      local data = persistence.read(test_config.persist.path)
+      local function filenames(branch)
+        return vim.tbl_map(function(lock)
+          return lock.filename
+        end, data.projects[root][branch].locks)
+      end
+      MiniTest.expect.equality(filenames("feat"), { "src/b.lua", "a.lua" })
+      MiniTest.expect.equality(filenames("main"), { "a.lua" })
+      vim.cmd("bwipeout! " .. buf)
+    end)
+  end)
+
+  describe("edit", function()
+    it("saves typed paths containing $ literally", function()
+      local root = repo()
+      vim.fn.mkdir(root .. "/lua", "p")
+      vim.fn.writefile({}, root .. "/lua/posts.$postId.tsx")
+      vim.uv.chdir(root)
+      local buf = vim.api.nvim_create_buf(false, true)
+      vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "lua/posts.$postId.tsx" })
+
+      require("radar.ui.edit").save_buffer(buf, test_config, {
+        update = function() end,
+      })
+
+      MiniTest.expect.equality(
+        state.get_locks(),
+        { { label = "1", filename = "lua/posts.$postId.tsx" } }
+      )
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end)
+  end)
+
   describe("populate", function()
+    it("clears locks when leaving a repo for a non-git directory", function()
+      local root = repo()
+      local plain = temp_dir()
+      table.insert(dirs, plain)
+      persistence.write(test_config.persist.path, {
+        version = 2,
+        projects = {
+          [root] = {
+            main = {
+              locks = { { label = "1", filename = "a.lua" } },
+              lastAccessed = 1,
+            },
+          },
+        },
+      })
+
+      vim.uv.chdir(root)
+      persistence.populate(test_config)
+      MiniTest.expect.equality(#state.get_locks(), 1)
+
+      vim.uv.chdir(plain)
+      persistence.populate(test_config)
+      MiniTest.expect.equality(state.get_locks(), {})
+    end)
+
     it("clears locks on a project switch without a data file", function()
       local root = repo()
       local other = repo()
@@ -203,6 +322,7 @@ describe("project identity", function()
         "radar.VimResized",
         "radar.BufEnter",
         "radar.DirChanged",
+        "radar.FocusGained",
         "radar.TabsUpdate",
       }) do
         pcall(vim.api.nvim_del_augroup_by_name, group)

@@ -52,7 +52,7 @@ lua/radar/
 - **Root-Relative Lock Paths**: Lock filenames are relative to the project root when inside it, absolute otherwise. URLs stay unchanged. `path.to_lock_path` and `path.to_absolute` convert.
 - **Data Versioning**: Persistence data is versioned (currently v2). `migration.migrate` upgrades v0 → v1 → v2 on load.
 - **Safe Persistence**: Writes go to a tmp file that is renamed over the target (atomic). A corrupt data file is moved to `data.json.bad`. An unreadable file is never overwritten. JSON is encoded in Lua with a fixed key order, no external tools.
-- **No Branch, No Persistence**: Detached HEAD and non-git directories keep locks in memory only. One warning per session.
+- **No Branch, No Persistence**: Detached HEAD and non-git directories keep locks in memory only, as long as the project root stays the same. One warning per session.
 - **Single Radar Window**: One floating window and buffer holding the alternative, locks and recent sections. `ui/radar.lua` renders it in place and stores a line → entry map in `state`, which navigation and the lock key read.
 - **Relabel by Position**: Lock labels come from the position in `config.keys.locks`. Removing a lock and loading persisted locks both relabel.
 - **Safe String Matching**: Uses `string.find(text, pattern, 1, true)` for literal matching (critical for special chars)
@@ -108,10 +108,13 @@ local locks = vim.tbl_get(data, "projects", project_path, git_branch, "locks")
 ### 4. Deferred Persistence for Performance
 
 ```lua
+local snapshot = persistence.snapshot()
 vim.defer_fn(function()
-    persistence.persist(config)
+    persistence.persist(config, snapshot)
 end, config.persist.defer_ms)
 ```
+
+The snapshot pins project, branch and locks at toggle time, so a `:cd` or branch switch within the delay cannot save them under the wrong key.
 
 **Why**: Batches rapid changes, prevents excessive I/O during active editing.
 
@@ -125,7 +128,7 @@ local win_opts = window.resolve_config(config, preset_name, overrides)
 
 ### 6. Populate on Context Change
 
-`persistence.populate` loads locks for the current project and branch into state. `populate_if_changed` runs on `DirChanged` and reloads only when the project root or branch differs from the last populate.
+`persistence.populate` loads locks for the current project and branch into state. `populate_if_changed` runs on `DirChanged`, `FocusGained` and before a lock toggle, and reloads only when the project root or branch differs from the last populate. Populating re-renders an open radar.
 
 ## Spatial Design & Keybinding Layout
 

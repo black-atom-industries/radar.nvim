@@ -83,12 +83,16 @@ function M.setup_common_keymaps(bufnr, config, radar, opts)
     local locks = require("radar.data.locks")
     local persistence = require("radar.persist.persistence")
 
+    if persistence.populate_if_changed(config) then
+      return
+    end
+
     local section = radar.get_focused_section_from_cursor()
     if not section then
       return
     end
 
-    local filepath = navigation.get_file_from_line(config, section)
+    local filepath = navigation.get_file_from_line(section)
     if not filepath then
       return
     end

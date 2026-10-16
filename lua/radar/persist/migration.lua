@@ -74,10 +74,7 @@ local function rebase(filename, dir, root)
   end
   local abs = vim.startswith(filename, "/") and filename
     or vim.fs.normalize(dir .. "/" .. filename)
-  if vim.startswith(abs, root .. "/") then
-    return abs:sub(#root + 2)
-  end
-  return abs
+  return path.relative_to(abs, root) or abs
 end
 
 ---Migrate v1 to v2: keys are unescaped raw strings, and projects keyed by a

@@ -65,6 +65,14 @@ function M.setup(config)
     end,
   })
 
+  -- Reload state after a branch switch outside Neovim
+  autocmd("FocusGained", {
+    group = autogrp("radar.FocusGained", { clear = true }),
+    callback = function()
+      require("radar.persist.persistence").populate_if_changed(config)
+    end,
+  })
+
   -- Tabs sidebar updates
   autocmd({ "BufEnter", "TabEnter", "TabClosed", "WinEnter" }, {
     group = autogrp("radar.TabsUpdate", { clear = true }),
