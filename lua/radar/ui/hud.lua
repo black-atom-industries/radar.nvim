@@ -114,9 +114,19 @@ end
 ---@return Radar.HudData
 local function gather()
   local state = require("radar.data.state")
-  local current = vim.api.nvim_buf_get_name(0)
+  local source = state.get_source_bufnr()
+  local in_radar = require("radar.ui.radar").exists()
+    and source
+    and vim.api.nvim_buf_is_valid(source)
+  local current = vim.api.nvim_buf_get_name(in_radar and source or 0)
+  local alt
+  if in_radar then
+    alt = state.get_source_alt_file() or nil
+  else
+    alt = require("radar.data.alternative").get_alternative_file()
+  end
   return {
-    alt = require("radar.data.alternative").get_alternative_file(),
+    alt = alt,
     locks = vim.tbl_filter(function(lock)
       return path_utils.is_url(lock.filename)
         or vim.fn.filereadable(path_utils.to_absolute(lock.filename)) == 1
@@ -141,13 +151,13 @@ end
 local function should_show(config)
   local state = require("radar.data.state")
   local tab = vim.api.nvim_get_current_tabpage()
-  for _, winid in pairs({ state.get_radar_winid(), state.get_tabs_winid() }) do
-    if
-      vim.api.nvim_win_is_valid(winid)
-      and vim.api.nvim_win_get_tabpage(winid) == tab
-    then
-      return false
-    end
+  local tabs_winid = state.get_tabs_winid()
+  if
+    tabs_winid
+    and vim.api.nvim_win_is_valid(tabs_winid)
+    and vim.api.nvim_win_get_tabpage(tabs_winid) == tab
+  then
+    return false
   end
   return enabled(config)
 end

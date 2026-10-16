@@ -222,11 +222,11 @@ describe("hud window", function()
     MiniTest.expect.equality(vim.api.nvim_buf_is_valid(second_buf), false)
   end)
 
-  it("hides while the radar or the tabs sidebar is open", function()
+  it("stays visible next to the radar and hides for the tabs sidebar", function()
     hud.refresh()
 
     radar.open(test_config)
-    MiniTest.expect.equality(hud.get_winid(), nil)
+    MiniTest.expect.equality(hud.get_winid() ~= nil, true)
     radar.close()
     MiniTest.expect.equality(hud.get_winid() ~= nil, true)
 
@@ -236,24 +236,33 @@ describe("hud window", function()
     MiniTest.expect.equality(hud.get_winid() ~= nil, true)
   end)
 
-  it("keeps the HUD of another tab while the radar is open", function()
-    hud.refresh()
-    local first = hud.get_winid()
-    vim.cmd("tabnew " .. vim.fn.fnameescape(file("c.lua")))
-    vim.cmd.edit(file("a.lua"))
-    hud.refresh()
-
+  it("updates while the radar is open and ignores the radar buffer", function()
     radar.open(test_config)
-    MiniTest.expect.equality(hud.get_winid(), nil)
-    MiniTest.expect.equality(vim.api.nvim_win_is_valid(first), true)
-    radar.close()
-    local second = assert(hud.get_winid())
+    local before = vim.api.nvim_buf_get_lines(
+      vim.api.nvim_win_get_buf(assert(hud.get_winid())),
+      0,
+      -1,
+      false
+    )
+    local radar_text = table.concat(before, "\n")
+    MiniTest.expect.equality(radar_text:find("b.lua", 1, true), nil)
 
-    vim.cmd("tabprevious")
-    radar.open(test_config)
-    vim.cmd("tabnext")
+    require("radar.data.locks").toggle(
+      "c.lua",
+      test_config,
+      require("radar.persist.persistence")
+    )
     hud.refresh()
-    MiniTest.expect.equality(hud.get_winid(), second)
+    local after = vim.api.nvim_buf_get_lines(
+      vim.api.nvim_win_get_buf(assert(hud.get_winid())),
+      0,
+      -1,
+      false
+    )
+    MiniTest.expect.equality(
+      table.concat(after, "\n"):find("[1] c.lua", 1, true) ~= nil,
+      true
+    )
   end)
 
   it("toggles for the session and respects hud.enabled", function()

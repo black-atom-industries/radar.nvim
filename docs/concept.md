@@ -62,7 +62,7 @@ This gives you instant access to 24 files without moving your left hand from hom
 - Shows the alternative file, up to 5 locks and 3 recent files, leaving out the file you are in
 - Labels are the keys that follow `<space>`: `<space>1` jumps to lock 1, `<space>a` to the first recent file, `<space>o` to the alternative file
 - Moves to the bottom-right corner while the cursor is under it
-- Hidden while the full radar or the tabs sidebar is open, and when empty; `<space>h` toggles it for the session
+- Stays visible next to the full radar and updates as you lock; hidden while the tabs sidebar is open and when empty; `<space>h` toggles it for the session
 
 ### Full Radar (`<space><space>`)
 

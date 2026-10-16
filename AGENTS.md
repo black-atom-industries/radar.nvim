@@ -184,7 +184,7 @@ end
 - **Locks**: Manual file locking with 1-9 keybindings
 - **Recent Files**: MRU list filtered by project root (a-g keys)
 - **Alternative Files**: Smart test ↔ implementation file switching (`<space>o`, `o` inside the radar)
-- **Corner HUD**: Always-visible top-right float with the alternative file, up to `hud.max_locks` locks and `hud.max_recent` recent files; dodges the cursor, hides while the radar or tabs sidebar is open
+- **Corner HUD**: Always-visible top-right float with the alternative file, up to `hud.max_locks` locks and `hud.max_recent` recent files; dodges the cursor, stays visible next to the radar (using the radar's source buffer as current file), hides while the tabs sidebar is open
 - **Radar Window**: One floating window with three sections and section cycling
 - **Tabs Sidebar**: Tab/buffer tree view with jump and close support
 - **Line Navigation**: Navigate within radar using `<CR>`, `V`, `S`, `T`, `F`
