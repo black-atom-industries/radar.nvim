@@ -59,15 +59,23 @@ end
 function M.build(config, data, max_width)
   local lines, highlights = {}, {}
 
-  local function add(label, target, current)
-    local prefix = string.format(" [%s] ", label)
+  local function add(icon, label, target, current)
+    local icon_part = " " .. icon .. " "
+    local label_part = "[" .. label .. "]"
+    local prefix = icon_part .. label_part .. " "
     local avail = max_width - vim.fn.strdisplaywidth(prefix) - 1
     local line = prefix .. fit(path_utils.display(target), avail) .. " "
     table.insert(lines, line)
     table.insert(highlights, {
       line = #lines - 1,
       col_start = 1,
-      col_end = #prefix - 1,
+      col_end = #icon_part - 1,
+      hl_group = "Comment",
+    })
+    table.insert(highlights, {
+      line = #lines - 1,
+      col_start = #icon_part,
+      col_end = #icon_part + #label_part,
       hl_group = "@keyword",
     })
     if current then
@@ -81,12 +89,17 @@ function M.build(config, data, max_width)
   end
 
   if data.alt then
-    add("<Tab>", data.alt, false)
+    add(config.hud.icons.alternative, "<Tab>", data.alt, false)
   end
 
   for i = 1, math.min(#data.locks, config.hud.max_locks) do
     local lock = data.locks[i]
-    add(lock.label, lock.filename, lock.filename == data.current_lock)
+    add(
+      config.hud.icons.locks,
+      lock.label,
+      lock.filename,
+      lock.filename == data.current_lock
+    )
   end
 
   local shown = 0
@@ -96,7 +109,7 @@ function M.build(config, data, max_width)
       break
     end
     if file ~= data.current then
-      add(label, file, false)
+      add(config.hud.icons.recent, label, file, false)
       shown = shown + 1
     end
   end

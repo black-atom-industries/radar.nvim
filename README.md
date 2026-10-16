@@ -101,6 +101,7 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 | `hud.enabled`                                       | `true`                                | Show the corner HUD                                                             |
 | `hud.max_locks`                                     | `5`                                   | Locks shown in the HUD                                                          |
 | `hud.max_recent`                                    | `3`                                   | Recent files shown in the HUD                                                   |
+| `hud.icons`                                         | radar section icons                   | Icon in front of each HUD line, per section                                     |
 | `tabs.auto_close`                                   | `true`                                | Close tabs window after selecting                                               |
 | `tabs.win_preset`                                   | `"center"`                            | Window preset for tabs sidebar                                                  |
 | `radar_edit.win_preset`                             | `"center"`                            | Window preset for lock label editor                                             |

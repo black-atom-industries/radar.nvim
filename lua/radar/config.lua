@@ -60,6 +60,11 @@ M.default = {
     enabled = true,
     max_locks = 5,
     max_recent = 3,
+    icons = {
+      alternative = "󰐷",
+      locks = "󰋱",
+      recent = "󰽏",
+    },
   },
 
   -- Lock label editor window

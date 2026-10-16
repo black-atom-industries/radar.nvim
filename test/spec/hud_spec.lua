@@ -24,10 +24,10 @@ describe("hud content", function()
     }, 60)
 
     MiniTest.expect.equality(content.lines, {
-      " [<Tab>] alt.lua ",
-      " [1] one.lua ",
-      " [2] two.lua ",
-      " [a] /r/a.lua ",
+      " 󰐷 [<Tab>] alt.lua ",
+      " 󰋱 [1] one.lua ",
+      " 󰋱 [2] two.lua ",
+      " 󰽏 [a] /r/a.lua ",
     })
   end)
 
@@ -44,8 +44,8 @@ describe("hud content", function()
     }, 60)
 
     MiniTest.expect.equality(#content.lines, 5 + 3)
-    MiniTest.expect.equality(content.lines[5], " [5] 5.lua ")
-    MiniTest.expect.equality(content.lines[8], " [d] /r/c ")
+    MiniTest.expect.equality(content.lines[5], " 󰋱 [5] 5.lua ")
+    MiniTest.expect.equality(content.lines[8], " 󰽏 [d] /r/c ")
   end)
 
   it("highlights the current file in locks", function()
@@ -77,7 +77,7 @@ describe("hud content", function()
 
     MiniTest.expect.equality(
       content.lines,
-      { " [a] /r/a ", " [d] /r/c ", " [f] /r/d " }
+      { " 󰽏 [a] /r/a ", " 󰽏 [d] /r/c ", " 󰽏 [f] /r/d " }
     )
   end)
 
@@ -167,7 +167,7 @@ describe("hud window", function()
     MiniTest.expect.equality(win_config.col + win_config.width, vim.o.columns)
     MiniTest.expect.equality(
       vim.api.nvim_buf_get_lines(vim.api.nvim_win_get_buf(winid), 0, 1, false),
-      { " [<Tab>] a.lua " }
+      { " 󰐷 [<Tab>] a.lua " }
     )
   end)
 
