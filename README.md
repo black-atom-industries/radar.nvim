@@ -43,6 +43,22 @@ This spatial keyboard layout gives you instant access to **15 files** without mo
 
 ### Configuration Examples
 
+**Choose the prefix:**
+
+Every jump starts with the prefix, `<space>` by default. My leader is `,`, so `<space>` is free for radar.nvim. If your leader is `<space>`, turn it around and give radar.nvim the key you don't use as leader. Sharing one key makes Neovim wait `timeoutlen` after each press to tell a radar.nvim key from a leader mapping.
+
+```lua
+-- vim.g.mapleader = " "
+{
+  "black-atom-industries/radar.nvim",
+  opts = {
+    keys = {
+      prefix = ",",  -- then ,1 jumps to lock 1, ,o to the alternative file
+    },
+  }
+}
+```
+
 **Simple customization:**
 
 ```lua
