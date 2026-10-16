@@ -4,6 +4,8 @@
 
 A Neovim plugin that treats file navigation like a fighter pilot's radar system. Your most important files are "locked targets" that you can instantly access, while other files appear as "blips" on your radar for quick identification and engagement.
 
+![Jumping from the HUD: Space 1 opens a lock, Space o goes back to the alternative file, Space a opens a recent file](docs/assets/changelog/0.6.0-hud-jump.webp)
+
 ## Concept
 
 `radar.nvim` provides **instant access** to your working files through spatial keyboard shortcuts, eliminating the need for fuzzy finders or file trees for your active working set.
@@ -126,9 +128,13 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 
 The HUD sits at the bottom of the active pane, as wide as the pane, and follows you between splits. It shows the file you are in (`%`, highlighted), the alternative file, up to 5 locks and 3 recent files with the keys that reach them after `<space>`. A locked current file is highlighted; the current file never takes a recent slot. It moves to the top of the pane while your cursor line runs under it and hides while the tabs sidebar or the lock editor is open and when there is nothing to show.
 
+![The HUD follows the active split and moves to the top of the pane when the cursor reaches the bottom](docs/assets/changelog/0.6.0-hud-split.webp)
+
 **Lock editor:**
 
 `<space>e` opens the lock editor where the HUD sits: at the bottom of the active pane, as wide as the pane. One lock path per line; the line order sets the labels. `:w` saves, `q` saves and closes. `<CR>`, `<C-v>`, `<C-s>`, `<C-t>` and `<C-f>` save and open the file under the cursor in the current window, a vertical split, a horizontal split, a new tab or a floating window.
+
+![Space l locks the current file, Space e opens the lock editor in the HUD's place, and saving reorders the locks](docs/assets/changelog/0.6.0-hud-edit.webp)
 
 **Within Tabs Sidebar:**
 
@@ -218,19 +224,9 @@ end)
 
 ## Interface Preview
 
-The HUD at the bottom of the active pane:
+The HUD at the bottom of the active pane: the current file, the alternative file, locks and recent files, each with the key that reaches it after `<space>`.
 
-```
- %  lua/radar/config.lua
- o  test/spec/hud_spec.lua
-
- 1  lua/radar/init.lua
- 2  lua/radar/config.lua
-
- a  README.md
- s  AGENTS.md
- d  lua/radar/ui/keys.lua
-```
+![The HUD at the bottom of a pane](docs/assets/changelog/0.6.0-hud.webp)
 
 ## Contributing
 
