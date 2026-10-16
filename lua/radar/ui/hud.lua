@@ -237,8 +237,9 @@ function M.refresh()
   end
 
   require("radar.data.recent").update_state(config)
-  local max_width = math.max(math.min(60, math.floor(vim.o.columns / 2)), 20)
-  local content = M.build(config, gather(), max_width)
+  local width =
+    math.max(math.min(config.hud.width, math.floor(vim.o.columns / 2)), 20)
+  local content = M.build(config, gather(), width)
   if #content.lines == 0 then
     hide(hud)
     return
@@ -260,10 +261,6 @@ function M.refresh()
     })
   end
 
-  local width = 0
-  for _, line in ipairs(content.lines) do
-    width = math.max(width, vim.fn.strdisplaywidth(line))
-  end
   hud.width, hud.height, hud.corner = width, #content.lines, nil
 
   local pos = position("top", hud.width, hud.height)

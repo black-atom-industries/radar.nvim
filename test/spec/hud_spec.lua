@@ -171,6 +171,23 @@ describe("hud window", function()
     )
   end)
 
+  it("keeps a fixed width when the content changes", function()
+    hud.refresh()
+    local winid = assert(hud.get_winid())
+    local expected =
+      math.max(math.min(test_config.hud.width, math.floor(vim.o.columns / 2)), 20)
+    MiniTest.expect.equality(vim.api.nvim_win_get_width(winid), expected)
+
+    state.set_locks({
+      { label = "1", filename = "a-much-longer-file-name-than-before.lua" },
+    })
+    hud.refresh()
+    MiniTest.expect.equality(
+      vim.api.nvim_win_get_width(assert(hud.get_winid())),
+      expected
+    )
+  end)
+
   it("stays hidden when empty", function()
     vim.cmd.enew()
     vim.cmd("bwipeout! " .. vim.fn.bufnr(file("a.lua")))

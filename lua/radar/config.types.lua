@@ -51,6 +51,7 @@
 
 ---@class Radar.Config.Hud
 ---@field enabled boolean Show the HUD on startup
+---@field width integer Fixed HUD width in cells, capped at half the editor width
 ---@field max_locks integer Locks shown in the HUD
 ---@field max_recent integer Recent files shown in the HUD
 ---@field icons Radar.Config.HudIcons Icon prefixed to each line, per section
