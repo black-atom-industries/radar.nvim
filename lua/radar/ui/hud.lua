@@ -188,14 +188,14 @@ local function should_show(config)
   return enabled(config)
 end
 
----Editor position of the HUD in a corner
+---Editor position of the HUD: top-right corner or bottom center
 ---@param corner "top" | "bottom"
 ---@param width integer
 ---@param height integer
 ---@return { row: integer, col: integer }
 local function position(corner, width, height)
-  local col = math.max(vim.o.columns - width, 0)
   if corner == "top" then
+    local col = math.max(vim.o.columns - width, 0)
     local tabline = (
       vim.o.showtabline == 2
       or (vim.o.showtabline == 1 and #vim.api.nvim_list_tabpages() > 1)
@@ -207,7 +207,7 @@ local function position(corner, width, height)
   local statusline = vim.o.laststatus > 0 and 1 or 0
   return {
     row = math.max(vim.o.lines - vim.o.cmdheight - statusline - height, 0),
-    col = col,
+    col = math.max(math.floor((vim.o.columns - width) / 2), 0),
   }
 end
 
@@ -324,8 +324,22 @@ function M.refresh()
   M.dodge()
 end
 
----Move the HUD to the bottom-right corner while the cursor line runs under
----its top-right spot, and back once it does not
+---Whether the current tabpage has windows side by side
+---@return boolean
+local function has_vsplit()
+  for _, winid in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+    if
+      vim.api.nvim_win_get_config(winid).relative == ""
+      and vim.fn.win_screenpos(winid)[2] > 1
+    then
+      return true
+    end
+  end
+  return false
+end
+
+---Place the HUD top-right, or bottom center with a vertical split, and
+---switch to the other spot while the cursor line runs under it
 ---@return nil
 function M.dodge()
   local hud = huds[vim.api.nvim_get_current_tabpage()]
@@ -334,15 +348,22 @@ function M.dodge()
   end
   ---@cast hud Radar.Hud
 
-  local top = position("top", hud.width, hud.height)
   local cursor = vim.fn.screenpos(0, vim.fn.line("."), vim.fn.col("."))
   local row = cursor.row - 1
-  local win_right = vim.fn.win_screenpos(0)[2] - 1 + vim.api.nvim_win_get_width(0)
-  local under = cursor.row > 0
-    and row >= top.row
-    and row < top.row + hud.height
-    and win_right > top.col
-  local corner = under and "bottom" or "top"
+  local win_left = vim.fn.win_screenpos(0)[2] - 1
+  local win_right = win_left + vim.api.nvim_win_get_width(0)
+  local function under(corner)
+    local pos = position(corner, hud.width, hud.height)
+    return cursor.row > 0
+      and row >= pos.row
+      and row < pos.row + hud.height
+      and win_right > pos.col
+      and win_left < pos.col + hud.width
+  end
+
+  local preferred = has_vsplit() and "bottom" or "top"
+  local other = preferred == "top" and "bottom" or "top"
+  local corner = under(preferred) and other or preferred
   if corner == hud.corner then
     return
   end

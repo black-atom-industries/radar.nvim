@@ -78,7 +78,7 @@ function M.setup(config)
     end,
   })
 
-  autocmd("TabEnter", {
+  autocmd({ "TabEnter", "WinEnter", "WinResized" }, {
     group = autogrp("radar.HudTabEnter", { clear = true }),
     callback = function()
       require("radar.ui.hud").refresh()

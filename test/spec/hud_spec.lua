@@ -305,37 +305,42 @@ describe("hud window", function()
     MiniTest.expect.equality(hud.get_winid(), nil)
   end)
 
-  it("moves to the bottom-right while the cursor line runs under it", function()
+  local function bottom_center(win_config)
+    return win_config.row + win_config.height == vim.o.lines - vim.o.cmdheight - 1
+      and win_config.col == math.floor((vim.o.columns - win_config.width) / 2)
+  end
+
+  it("moves to the bottom center while the cursor line runs under it", function()
     vim.api.nvim_buf_set_lines(0, 0, -1, false, vim.fn["repeat"]({ "x" }, 50))
     hud.refresh()
     local winid = assert(hud.get_winid())
 
     vim.api.nvim_win_set_cursor(0, { 1, 0 })
     hud.dodge()
-    local win_config = vim.api.nvim_win_get_config(winid)
-    MiniTest.expect.equality(
-      win_config.row + win_config.height,
-      vim.o.lines - vim.o.cmdheight - 1
-    )
-    MiniTest.expect.equality(win_config.col + win_config.width, vim.o.columns)
+    MiniTest.expect.equality(bottom_center(vim.api.nvim_win_get_config(winid)), true)
 
     vim.api.nvim_win_set_cursor(0, { 20, 0 })
     hud.dodge()
     MiniTest.expect.equality(vim.api.nvim_win_get_config(winid).row, 0)
   end)
 
-  it("stays put for a cursor in a split left of the HUD", function()
+  it("sits at the bottom center with a vertical split", function()
     vim.api.nvim_buf_set_lines(0, 0, -1, false, vim.fn["repeat"]({ "x" }, 50))
+    vim.api.nvim_win_set_cursor(0, { 20, 0 })
     hud.refresh()
     local winid = assert(hud.get_winid())
 
     vim.cmd("vsplit")
-    vim.cmd("wincmd h")
-    vim.api.nvim_win_set_width(0, 20)
-    vim.api.nvim_win_set_cursor(0, { 1, 0 })
+    vim.api.nvim_win_set_cursor(0, { 20, 0 })
     hud.dodge()
-    MiniTest.expect.equality(vim.api.nvim_win_get_config(winid).row, 0)
+    MiniTest.expect.equality(bottom_center(vim.api.nvim_win_get_config(winid)), true)
+
     vim.cmd("only")
+    hud.refresh()
+    MiniTest.expect.equality(
+      vim.api.nvim_win_get_config(assert(hud.get_winid())).row,
+      0
+    )
   end)
 
   describe("prefix", function()
