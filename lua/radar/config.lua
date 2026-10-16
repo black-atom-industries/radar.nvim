@@ -58,7 +58,6 @@ M.default = {
   -- Corner HUD with the alternative file, locks and recent files
   hud = {
     enabled = true,
-    width = 64,
     max_locks = 5,
     max_recent = 3,
     icons = {

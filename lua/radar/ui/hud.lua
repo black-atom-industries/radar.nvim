@@ -14,7 +14,7 @@ local _enabled = nil
 ---@class Radar.Hud
 ---@field bufnr integer
 ---@field winid integer?
----@field width integer
+---@field anchor integer? pane the HUD sits in
 ---@field height integer
 ---@field corner "top" | "bottom"?
 
@@ -188,27 +188,36 @@ local function should_show(config)
   return enabled(config)
 end
 
----Editor position of the HUD: top-right corner or bottom center
----@param corner "top" | "bottom"
----@param width integer
----@param height integer
----@return { row: integer, col: integer }
-local function position(corner, width, height)
-  if corner == "top" then
-    local col = math.max(vim.o.columns - width, 0)
-    local tabline = (
-      vim.o.showtabline == 2
-      or (vim.o.showtabline == 1 and #vim.api.nvim_list_tabpages() > 1)
-    )
-        and 1
-      or 0
-    return { row = tabline, col = col }
+---Pane the HUD belongs to: the current window, or the previous pane while a
+---float such as the radar has focus
+---@param hud Radar.Hud?
+---@return integer?
+local function anchor_window(hud)
+  local function is_pane(winid)
+    return winid ~= 0
+      and vim.api.nvim_win_is_valid(winid)
+      and vim.api.nvim_win_get_config(winid).relative == ""
   end
-  local statusline = vim.o.laststatus > 0 and 1 or 0
-  return {
-    row = math.max(vim.o.lines - vim.o.cmdheight - statusline - height, 0),
-    col = math.max(math.floor((vim.o.columns - width) / 2), 0),
-  }
+  local current = vim.api.nvim_get_current_win()
+  if is_pane(current) then
+    return current
+  end
+  if hud and hud.anchor and is_pane(hud.anchor) then
+    return hud.anchor
+  end
+  local previous = vim.fn.win_getid(vim.fn.winnr("#"))
+  return is_pane(previous) and previous or nil
+end
+
+---Float position at the top or bottom edge of a pane
+---@param anchor integer
+---@param corner "top" | "bottom"
+---@param height integer
+---@return vim.api.keyset.win_config
+local function position(anchor, corner, height)
+  local row = corner == "top" and 0
+    or math.max(vim.api.nvim_win_get_height(anchor) - height, 0)
+  return { relative = "win", win = anchor, row = row, col = 0 }
 end
 
 ---@param hud Radar.Hud?
@@ -265,11 +274,19 @@ function M.refresh()
     return
   end
 
+  local anchor = anchor_window(hud)
+  if not anchor then
+    hide(hud)
+    return
+  end
+
   require("radar.data.recent").update_state(config)
-  local width =
-    math.max(math.min(config.hud.width, math.floor(vim.o.columns / 2)), 20)
+  local width = vim.api.nvim_win_get_width(anchor)
   local content = M.build(config, gather(), width)
-  if #content.lines == 0 then
+  if
+    #content.lines == 0
+    or vim.api.nvim_win_get_height(anchor) < #content.lines + 2
+  then
     hide(hud)
     return
   end
@@ -277,7 +294,7 @@ function M.refresh()
   if not hud or not vim.api.nvim_buf_is_valid(hud.bufnr) then
     local bufnr = vim.api.nvim_create_buf(false, true)
     vim.api.nvim_set_option_value("bufhidden", "hide", { buf = bufnr })
-    hud = { bufnr = bufnr, width = 0, height = 0 }
+    hud = { bufnr = bufnr, height = 0 }
     huds[tab] = hud
   end
 
@@ -290,17 +307,13 @@ function M.refresh()
     })
   end
 
-  hud.width, hud.height, hud.corner = width, #content.lines, nil
+  hud.anchor, hud.height = anchor, #content.lines
 
-  local pos = position("top", hud.width, hud.height)
-  ---@type vim.api.keyset.win_config
-  local win_config = {
-    relative = "editor",
-    row = pos.row,
-    col = pos.col,
-    width = hud.width,
-    height = hud.height,
-  }
+  local win_config =
+    vim.tbl_extend("force", position(anchor, "bottom", hud.height), {
+      width = width,
+      height = hud.height,
+    })
   if is_open(hud) then
     vim.api.nvim_win_set_config(hud.winid, win_config)
   else
@@ -320,26 +333,12 @@ function M.refresh()
       { win = hud.winid }
     )
   end
-  hud.corner = "top"
+  hud.corner = "bottom"
   M.dodge()
 end
 
----Whether the current tabpage has windows side by side
----@return boolean
-local function has_vsplit()
-  for _, winid in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-    if
-      vim.api.nvim_win_get_config(winid).relative == ""
-      and vim.fn.win_screenpos(winid)[2] > 1
-    then
-      return true
-    end
-  end
-  return false
-end
-
----Place the HUD top-right, or bottom center with a vertical split, and
----switch to the other spot while the cursor line runs under it
+---Keep the HUD at the bottom of its pane, and move it to the top while the
+---cursor line runs under it
 ---@return nil
 function M.dodge()
   local hud = huds[vim.api.nvim_get_current_tabpage()]
@@ -347,33 +346,18 @@ function M.dodge()
     return
   end
   ---@cast hud Radar.Hud
-
-  local cursor = vim.fn.screenpos(0, vim.fn.line("."), vim.fn.col("."))
-  local row = cursor.row - 1
-  local win_left = vim.fn.win_screenpos(0)[2] - 1
-  local win_right = win_left + vim.api.nvim_win_get_width(0)
-  local function under(corner)
-    local pos = position(corner, hud.width, hud.height)
-    return cursor.row > 0
-      and row >= pos.row
-      and row < pos.row + hud.height
-      and win_right > pos.col
-      and win_left < pos.col + hud.width
+  if vim.api.nvim_get_current_win() ~= hud.anchor then
+    return
   end
 
-  local preferred = has_vsplit() and "bottom" or "top"
-  local other = preferred == "top" and "bottom" or "top"
-  local corner = under(preferred) and other or preferred
+  local under_bottom = vim.fn.winline()
+    > vim.api.nvim_win_get_height(hud.anchor) - hud.height
+  local corner = under_bottom and "top" or "bottom"
   if corner == hud.corner then
     return
   end
 
-  local pos = position(corner, hud.width, hud.height)
-  vim.api.nvim_win_set_config(hud.winid, {
-    relative = "editor",
-    row = pos.row,
-    col = pos.col,
-  })
+  vim.api.nvim_win_set_config(hud.winid, position(hud.anchor, corner, hud.height))
   hud.corner = corner
 end
 

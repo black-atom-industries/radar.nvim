@@ -8,7 +8,7 @@
 
 The plugin provides two complementary views:
 
-- **Corner HUD**: A small, always-visible window in the top-right corner showing the alternative file, your first locks and recent files
+- **HUD**: A small, always-visible window at the bottom of the active pane showing the current and alternative file, your first locks and recent files
 - **Full Radar**: A comprehensive tactical display showing all file categories
 
 ## 🚀 Key Features
@@ -48,7 +48,7 @@ This gives you instant access to 24 files without moving your left hand from hom
 
 ## 🎨 Interface Design
 
-### Corner HUD (Persistent)
+### HUD (Persistent)
 
 ```
  [o] spec.lua
@@ -58,10 +58,10 @@ This gives you instant access to 24 files without moving your left hand from hom
  [s] setup.ts
 ```
 
-- One per tab, anchored to the editor's top-right corner below the tabline
+- One per tab, anchored to the bottom of the active pane and as wide as it
 - Shows the current file, the alternative file, up to 5 locks and 3 recent files; a locked current file is highlighted
 - Labels are the keys that follow `<space>`: `<space>1` jumps to lock 1, `<space>a` to the first recent file, `<space>o` to the alternative file
-- Sits at the bottom center when the tab has a vertical split; switches between top-right and bottom center while the cursor line runs under it
+- Moves to the top of the pane while the cursor line runs under it
 - Stays visible next to the full radar and updates as you lock; hidden while the tabs sidebar is open and when empty; `<space>h` toggles it for the session
 
 ### Full Radar (`<space><space>`)

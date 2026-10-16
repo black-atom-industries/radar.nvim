@@ -34,7 +34,7 @@ lua/radar/
 └── ui/
     ├── radar.lua         -- Radar window: build content, render, focus, help
     ├── keys.lua          -- Keymaps (global prefix dispatch + radar buffer-local)
-    ├── hud.lua           -- Corner HUD: content builder + one float per tabpage
+    ├── hud.lua           -- HUD: content builder + one float per tabpage, anchored to the active pane
     ├── navigation.lua    -- File opening (current window/vertical/horizontal/tab/float)
     ├── help.lua          -- Help popup
     ├── edit.lua          -- Lock label editor
@@ -55,7 +55,7 @@ lua/radar/
 - **Safe Persistence**: Writes go to a tmp file that is renamed over the target (atomic). A corrupt data file is moved to `data.json.bad`. An unreadable file is never overwritten. JSON is encoded in Lua with a fixed key order, no external tools.
 - **No Branch, No Persistence**: Detached HEAD and non-git directories keep locks in memory only, as long as the project root stays the same. One warning per session.
 - **Single Radar Window**: One floating window and buffer holding the alternative, locks and recent sections. `ui/radar.lua` renders it in place and stores a line → entry map in `state`, which navigation and the lock key read.
-- **Corner HUD**: `ui/hud.lua` keeps one non-focusable float and scratch buffer per tabpage, top-right below the tabline. `hud.build` is a pure content builder (lines + highlight ranges); `hud.refresh()` rebuilds and shows or hides the current tab's HUD and runs on lock changes, populate, radar/tabs open and close, `BufEnter`, `TabEnter`, `WinEnter`, `WinResized`, `VimResized`, `DirChanged`, `FocusGained` and `VimEnter`. `hud.dodge()` only repositions on `CursorMoved`, `CursorMovedI` and `WinScrolled`: the preferred spot is top-right, or bottom center when the tab has a vertical split, and the HUD switches to the other spot while the cursor line runs under it.
+- **HUD**: `ui/hud.lua` keeps one non-focusable float and scratch buffer per tabpage, anchored (`relative = "win"`) to the bottom of the active pane and as wide as it; while a float such as the radar has focus it stays on the previous pane. `hud.build` is a pure content builder (lines + highlight ranges); `hud.refresh()` rebuilds and shows or hides the current tab's HUD and runs on lock changes, populate, radar/tabs open and close, `BufEnter`, `TabEnter`, `WinEnter`, `WinResized`, `VimResized`, `DirChanged`, `FocusGained` and `VimEnter`. `hud.dodge()` only repositions on `CursorMoved`, `CursorMovedI` and `WinScrolled`: the HUD moves to the top of its pane while the cursor line runs under it.
 - **Prefix Dispatch**: The global `keys.prefix` mapping reads one key with `vim.fn.getcharstr()` and dispatches: lock and recent labels jump, prefix opens the radar, `keys.alternative` (`o`) opens the alternative file, `keys.lock` locks the current buffer, `keys.hud_toggle` toggles the HUD, anything else cancels. Split variants exist only inside the radar.
 - **Relabel by Position**: Lock labels come from the position in `config.keys.locks`. Removing a lock and loading persisted locks both relabel.
 - **Safe String Matching**: Uses `string.find(text, pattern, 1, true)` for literal matching (critical for special chars)
@@ -151,7 +151,7 @@ From [docs/concept.md](docs/concept.md):
 - Locks (1-9 keys)
 - Recent files (a-g keys, filtered by project root)
 - Alternative file (`<space>o`, `o` inside the radar)
-- Corner HUD (`<space>h` toggles it)
+- HUD (`<space>h` toggles it)
 - Tabs sidebar
 
 **Planned (tracked in GitHub Issues):**
@@ -184,7 +184,7 @@ end
 - **Locks**: Manual file locking with 1-9 keybindings
 - **Recent Files**: MRU list filtered by project root (a-g keys)
 - **Alternative Files**: Smart test ↔ implementation file switching (`<space>o`, `o` inside the radar)
-- **Corner HUD**: Always-visible top-right float with the alternative file, up to `hud.max_locks` locks and `hud.max_recent` recent files; dodges the cursor, stays visible next to the radar (using the radar's source buffer as current file), hides while the tabs sidebar is open
+- **HUD**: Always-visible float at the bottom of the active pane with the alternative file, up to `hud.max_locks` locks and `hud.max_recent` recent files; dodges the cursor, stays visible next to the radar (using the radar's source buffer as current file), hides while the tabs sidebar is open
 - **Radar Window**: One floating window with three sections and section cycling
 - **Tabs Sidebar**: Tab/buffer tree view with jump and close support
 - **Line Navigation**: Navigate within radar using `<CR>`, `V`, `S`, `T`, `F`

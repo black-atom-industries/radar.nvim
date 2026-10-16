@@ -170,42 +170,43 @@ describe("hud window", function()
     state.reset()
   end)
 
-  local function cursor_below_hud()
-    vim.api.nvim_buf_set_lines(0, 0, -1, false, vim.fn["repeat"]({ "x" }, 50))
-    vim.api.nvim_win_set_cursor(0, { 30, 0 })
+  local function bottom_of(win_config, pane)
+    return win_config.row + win_config.height == vim.api.nvim_win_get_height(pane)
   end
 
-  it("opens top-right in the editor when there is content", function()
-    cursor_below_hud()
+  it("opens at the bottom of the current pane, as wide as the pane", function()
     hud.refresh()
 
     local winid = assert(hud.get_winid())
     local win_config = vim.api.nvim_win_get_config(winid)
-    MiniTest.expect.equality(win_config.relative, "editor")
+    MiniTest.expect.equality(win_config.relative, "win")
+    MiniTest.expect.equality(win_config.win, vim.api.nvim_get_current_win())
     MiniTest.expect.equality(win_config.focusable, false)
-    MiniTest.expect.equality(win_config.row, 0)
-    MiniTest.expect.equality(win_config.col + win_config.width, vim.o.columns)
+    MiniTest.expect.equality(win_config.col, 0)
+    MiniTest.expect.equality(bottom_of(win_config, 0), true)
+    MiniTest.expect.equality(win_config.width, vim.api.nvim_win_get_width(0))
     MiniTest.expect.equality(
       vim.api.nvim_buf_get_lines(vim.api.nvim_win_get_buf(winid), 0, 2, false),
       { " 󰈔 [%] b.lua ", " 󰐷 [o] a.lua " }
     )
   end)
 
-  it("keeps a fixed width when the content changes", function()
+  it("follows the active pane", function()
     hud.refresh()
-    local winid = assert(hud.get_winid())
-    local expected =
-      math.max(math.min(test_config.hud.width, math.floor(vim.o.columns / 2)), 20)
-    MiniTest.expect.equality(vim.api.nvim_win_get_width(winid), expected)
+    vim.cmd("vsplit " .. vim.fn.fnameescape(file("c.lua")))
+    hud.refresh()
+    local left = vim.api.nvim_get_current_win()
+    local win_config = vim.api.nvim_win_get_config(assert(hud.get_winid()))
+    MiniTest.expect.equality(win_config.win, left)
+    MiniTest.expect.equality(win_config.width, vim.api.nvim_win_get_width(left))
 
-    state.set_locks({
-      { label = "1", filename = "a-much-longer-file-name-than-before.lua" },
-    })
+    vim.cmd("wincmd l")
     hud.refresh()
     MiniTest.expect.equality(
-      vim.api.nvim_win_get_width(assert(hud.get_winid())),
-      expected
+      vim.api.nvim_win_get_config(assert(hud.get_winid())).win,
+      vim.api.nvim_get_current_win()
     )
+    vim.cmd("only")
   end)
 
   it("stays hidden when empty", function()
@@ -230,17 +231,14 @@ describe("hud window", function()
   end)
 
   it("has one window per tabpage", function()
-    cursor_below_hud()
     hud.refresh()
     local first = hud.get_winid()
 
     vim.cmd("tabnew " .. vim.fn.fnameescape(file("c.lua")))
     vim.cmd.edit(file("a.lua"))
-    cursor_below_hud()
     hud.refresh()
     local second = hud.get_winid()
     MiniTest.expect.equality(second ~= nil and second ~= first, true)
-    MiniTest.expect.equality(vim.api.nvim_win_get_config(second).row, 1)
     local second_buf = vim.api.nvim_win_get_buf(second)
 
     vim.cmd("tabclose")
@@ -305,42 +303,20 @@ describe("hud window", function()
     MiniTest.expect.equality(hud.get_winid(), nil)
   end)
 
-  local function bottom_center(win_config)
-    return win_config.row + win_config.height == vim.o.lines - vim.o.cmdheight - 1
-      and win_config.col == math.floor((vim.o.columns - win_config.width) / 2)
-  end
-
-  it("moves to the bottom center while the cursor line runs under it", function()
-    vim.api.nvim_buf_set_lines(0, 0, -1, false, vim.fn["repeat"]({ "x" }, 50))
+  it("moves to the top of the pane while the cursor line runs under it", function()
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, vim.fn["repeat"]({ "x" }, 200))
+    vim.api.nvim_win_set_cursor(0, { 1, 0 })
     hud.refresh()
     local winid = assert(hud.get_winid())
+    MiniTest.expect.equality(bottom_of(vim.api.nvim_win_get_config(winid), 0), true)
 
-    vim.api.nvim_win_set_cursor(0, { 1, 0 })
-    hud.dodge()
-    MiniTest.expect.equality(bottom_center(vim.api.nvim_win_get_config(winid)), true)
-
-    vim.api.nvim_win_set_cursor(0, { 20, 0 })
+    vim.cmd("normal! L")
     hud.dodge()
     MiniTest.expect.equality(vim.api.nvim_win_get_config(winid).row, 0)
-  end)
 
-  it("sits at the bottom center with a vertical split", function()
-    vim.api.nvim_buf_set_lines(0, 0, -1, false, vim.fn["repeat"]({ "x" }, 50))
-    vim.api.nvim_win_set_cursor(0, { 20, 0 })
-    hud.refresh()
-    local winid = assert(hud.get_winid())
-
-    vim.cmd("vsplit")
-    vim.api.nvim_win_set_cursor(0, { 20, 0 })
+    vim.cmd("normal! H")
     hud.dodge()
-    MiniTest.expect.equality(bottom_center(vim.api.nvim_win_get_config(winid)), true)
-
-    vim.cmd("only")
-    hud.refresh()
-    MiniTest.expect.equality(
-      vim.api.nvim_win_get_config(assert(hud.get_winid())).row,
-      0
-    )
+    MiniTest.expect.equality(bottom_of(vim.api.nvim_win_get_config(winid), 0), true)
   end)
 
   describe("prefix", function()

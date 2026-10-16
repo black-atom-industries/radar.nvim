@@ -11,7 +11,7 @@ A Neovim plugin that treats file navigation like a fighter pilot's radar system.
 - **File Pinning**: Lock your most important files to slots 1-9 for instant access
 - **Smart Persistence**: Context-aware storage per project and git branch
 - **Sections**: One radar window with alternative file, locks, and recent files
-- **Corner HUD**: A small always-visible window in the top-right corner with the alternative file, the first locks and recent files
+- **HUD**: A small always-visible window at the bottom of the active pane with the current and alternative file, the first locks and recent files
 - **Tab Navigation**: Sidebar view of all open tabs and buffers
 - **Dynamic Highlighting**: Auto-highlight the currently active locked file
 
@@ -98,8 +98,7 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 | `radar.max_recent_files`                            | `10`                                  | Max recent files shown                                                          |
 | `radar.titles`                                      | (nerd font icons)                     | Section titles for main, locks, recent                      |
 | `radar.win_opts`                                    | `{ cursorline = true, ... }`          | Window-local options applied to radar buffers                                   |
-| `hud.enabled`                                       | `true`                                | Show the corner HUD                                                             |
-| `hud.width`                                         | `64`                                  | Fixed HUD width in cells (capped at half the editor)                            |
+| `hud.enabled`                                       | `true`                                | Show the HUD                                                                    |
 | `hud.max_locks`                                     | `5`                                   | Locks shown in the HUD                                                          |
 | `hud.max_recent`                                    | `3`                                   | Recent files shown in the HUD                                                   |
 | `hud.icons`                                         | radar section icons                   | Icon in front of each HUD line, per section                                     |
@@ -131,9 +130,9 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 
 - **`<leader>t`**: Toggle tabs sidebar
 
-**Corner HUD:**
+**HUD:**
 
-The HUD sits in the top-right corner of every tab, below the tabline, or at the bottom center when the tab has a vertical split. It shows the file you are in (`[%]`, highlighted), the alternative file, up to 5 locks and 3 recent files with the keys that reach them after `<space>`. A locked current file is highlighted; the current file never takes a recent slot. It switches to the other spot while your cursor line runs under it, stays visible next to the open radar, and hides while the tabs sidebar is open and when there is nothing to show.
+The HUD sits at the bottom of the active pane, as wide as the pane, and follows you between splits. It shows the file you are in (`[%]`, highlighted), the alternative file, up to 5 locks and 3 recent files with the keys that reach them after `<space>`. A locked current file is highlighted; the current file never takes a recent slot. It moves to the top of the pane while your cursor line runs under it, stays visible next to the open radar, and hides while the tabs sidebar is open and when there is nothing to show.
 
 **Within Radar Window:**
 
