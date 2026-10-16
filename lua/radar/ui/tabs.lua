@@ -316,6 +316,9 @@ function M.open(config)
 
   -- Create buffer
   local bufnr = vim.api.nvim_create_buf(false, true)
+  if not pcall(vim.api.nvim_buf_set_name, bufnr, "radar-tabs") then
+    vim.api.nvim_buf_set_name(bufnr, "radar-tabs-" .. bufnr)
+  end
   vim.api.nvim_set_option_value("buftype", "nofile", { buf = bufnr })
   vim.api.nvim_set_option_value("bufhidden", "wipe", { buf = bufnr })
   vim.api.nvim_set_option_value("swapfile", false, { buf = bufnr })
