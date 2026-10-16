@@ -324,8 +324,8 @@ function M.refresh()
   M.dodge()
 end
 
----Move the HUD to the bottom-right corner while the cursor sits under its
----top-right spot, and back once it does not
+---Move the HUD to the bottom-right corner while the cursor line runs under
+---its top-right spot, and back once it does not
 ---@return nil
 function M.dodge()
   local hud = huds[vim.api.nvim_get_current_tabpage()]
@@ -336,12 +336,12 @@ function M.dodge()
 
   local top = position("top", hud.width, hud.height)
   local cursor = vim.fn.screenpos(0, vim.fn.line("."), vim.fn.col("."))
-  local row, col = cursor.row - 1, cursor.col - 1
+  local row = cursor.row - 1
+  local win_right = vim.fn.win_screenpos(0)[2] - 1 + vim.api.nvim_win_get_width(0)
   local under = cursor.row > 0
     and row >= top.row
     and row < top.row + hud.height
-    and col >= top.col
-    and col < top.col + hud.width
+    and win_right > top.col
   local corner = under and "bottom" or "top"
   if corner == hud.corner then
     return

@@ -170,7 +170,13 @@ describe("hud window", function()
     state.reset()
   end)
 
+  local function cursor_below_hud()
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, vim.fn["repeat"]({ "x" }, 50))
+    vim.api.nvim_win_set_cursor(0, { 30, 0 })
+  end
+
   it("opens top-right in the editor when there is content", function()
+    cursor_below_hud()
     hud.refresh()
 
     local winid = assert(hud.get_winid())
@@ -224,11 +230,13 @@ describe("hud window", function()
   end)
 
   it("has one window per tabpage", function()
+    cursor_below_hud()
     hud.refresh()
     local first = hud.get_winid()
 
     vim.cmd("tabnew " .. vim.fn.fnameescape(file("c.lua")))
     vim.cmd.edit(file("a.lua"))
+    cursor_below_hud()
     hud.refresh()
     local second = hud.get_winid()
     MiniTest.expect.equality(second ~= nil and second ~= first, true)
@@ -297,13 +305,12 @@ describe("hud window", function()
     MiniTest.expect.equality(hud.get_winid(), nil)
   end)
 
-  it("moves to the bottom-right while the cursor is under it", function()
-    local width = vim.api.nvim_win_get_width(0)
-    vim.api.nvim_buf_set_lines(0, 0, -1, false, { string.rep("x", width - 1) })
+  it("moves to the bottom-right while the cursor line runs under it", function()
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, vim.fn["repeat"]({ "x" }, 50))
     hud.refresh()
     local winid = assert(hud.get_winid())
 
-    vim.api.nvim_win_set_cursor(0, { 1, width - 2 })
+    vim.api.nvim_win_set_cursor(0, { 1, 0 })
     hud.dodge()
     local win_config = vim.api.nvim_win_get_config(winid)
     MiniTest.expect.equality(
@@ -312,9 +319,23 @@ describe("hud window", function()
     )
     MiniTest.expect.equality(win_config.col + win_config.width, vim.o.columns)
 
+    vim.api.nvim_win_set_cursor(0, { 20, 0 })
+    hud.dodge()
+    MiniTest.expect.equality(vim.api.nvim_win_get_config(winid).row, 0)
+  end)
+
+  it("stays put for a cursor in a split left of the HUD", function()
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, vim.fn["repeat"]({ "x" }, 50))
+    hud.refresh()
+    local winid = assert(hud.get_winid())
+
+    vim.cmd("vsplit")
+    vim.cmd("wincmd h")
+    vim.api.nvim_win_set_width(0, 20)
     vim.api.nvim_win_set_cursor(0, { 1, 0 })
     hud.dodge()
     MiniTest.expect.equality(vim.api.nvim_win_get_config(winid).row, 0)
+    vim.cmd("only")
   end)
 
   describe("prefix", function()
