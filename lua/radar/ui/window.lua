@@ -223,13 +223,27 @@ function M.active_pane()
   return vim.fn.win_getid(vim.fn.winnr("#"))
 end
 
+---Rows a bottom float leaves free in a pane: with cmdheight 0, the bottom pane
+---keeps one row for the command line, so opening it does not shift the float
+---@param pane integer
+---@return integer
+function M.cmdline_reserve(pane)
+  if vim.o.cmdheight > 0 then
+    return 0
+  end
+  local at_bottom = vim.api.nvim_win_call(pane, function()
+    return vim.fn.winnr() == vim.fn.winnr("j")
+  end)
+  return at_bottom and 1 or 0
+end
+
 ---Float config at the bottom of a pane, as wide as the pane: where the HUD sits
 ---@param pane integer
 ---@param lines integer content height, at most the pane
 ---@param min_height? integer fewest rows to take, 3 by default
 ---@return vim.api.keyset.win_config
 function M.pane_bottom(pane, lines, min_height)
-  local pane_height = vim.api.nvim_win_get_height(pane)
+  local pane_height = vim.api.nvim_win_get_height(pane) - M.cmdline_reserve(pane)
   local height = math.min(math.max(lines, min_height or 3), pane_height)
   return {
     relative = "win",

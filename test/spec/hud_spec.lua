@@ -305,6 +305,19 @@ describe("hud window", function()
     MiniTest.expect.equality(hud.get_winid(), nil)
   end)
 
+  it("keeps the command line row free with cmdheight 0", function()
+    local cmdheight = vim.o.cmdheight
+    vim.o.cmdheight = 0
+    hud.refresh()
+    local win_config = vim.api.nvim_win_get_config(assert(hud.get_winid()))
+    MiniTest.expect.equality(
+      win_config.row + win_config.height,
+      vim.api.nvim_win_get_height(0) - 1
+    )
+    vim.o.cmdheight = cmdheight
+    hud.refresh()
+  end)
+
   it("stays at the bottom with hud.dodge off", function()
     test_config.hud.dodge = false
     vim.api.nvim_buf_set_lines(0, 0, -1, false, vim.fn["repeat"]({ "x" }, 200))

@@ -188,8 +188,9 @@ end
 ---@param height integer
 ---@return vim.api.keyset.win_config
 local function position(anchor, corner, height)
-  local row = corner == "top" and 0
-    or math.max(vim.api.nvim_win_get_height(anchor) - height, 0)
+  local bottom = vim.api.nvim_win_get_height(anchor)
+    - require("radar.ui.window").cmdline_reserve(anchor)
+  local row = corner == "top" and 0 or math.max(bottom - height, 0)
   return { relative = "win", win = anchor, row = row, col = 0 }
 end
 
@@ -332,7 +333,9 @@ function M.dodge()
   end
 
   local under_bottom = vim.fn.winline()
-    > vim.api.nvim_win_get_height(hud.anchor) - hud.height
+    > vim.api.nvim_win_get_height(hud.anchor)
+      - require("radar.ui.window").cmdline_reserve(hud.anchor)
+      - hud.height
   local corner = under_bottom and "top" or "bottom"
   if corner == hud.corner then
     return
