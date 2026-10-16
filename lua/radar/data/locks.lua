@@ -141,11 +141,7 @@ function M.lock_current_buffer(buf_nr, config, persistence_module, radar_module)
     return
   end
 
-  -- Keep protocol URLs as-is (gh://, fugitive://, etc.), normalize regular paths
-  local normalized_filename = filename
-  if not filename:match("^%w+://") then
-    normalized_filename = vim.fn.fnamemodify(filename, ":p:.")
-  end
+  local normalized_filename = require("radar.path").to_lock_path(filename)
   debug.log("  normalized filename =", normalized_filename)
 
   M.toggle(normalized_filename, config, persistence_module)

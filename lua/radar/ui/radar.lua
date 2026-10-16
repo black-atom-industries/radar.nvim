@@ -3,20 +3,11 @@ local M = {}
 local indicators = require("radar.ui.indicators")
 local path_utils = require("radar.path")
 
----Format file path to relative path from cwd
+---Format file path relative to the project root
 ---@param filename string
 ---@return string
 function M.get_formatted_filepath(filename)
-  if path_utils.is_oil_url(filename) then
-    local filesystem_path = path_utils.to_filesystem_path(filename)
-    local relative_path = vim.fn.fnamemodify(filesystem_path, ":p:.")
-    if relative_path == "" or relative_path == "." then
-      return "./"
-    end
-    return relative_path:gsub("/+$", "") .. "/"
-  end
-
-  return vim.fn.fnamemodify(filename, ":p:.")
+  return path_utils.display(filename)
 end
 
 ---Resolve a grid dimension value (float 0-1 = percentage, integer = absolute)
@@ -68,7 +59,7 @@ local function build_content(config)
   local alt_text
   if alt_file then
     alt_text = pad_str
-      .. string.format("[%s] %s", alt_label, vim.fn.fnamemodify(alt_file, ":p:."))
+      .. string.format("[%s] %s", alt_label, path_utils.display(alt_file))
   else
     alt_text = pad_str .. string.format("[%s] - No other file yet", alt_label)
   end
@@ -100,8 +91,8 @@ local function build_content(config)
   if locks_count > 0 then
     for _, lock in ipairs(state.get_locks()) do
       -- Skip stale locks whose files no longer exist
-      local abs_path = vim.fn.fnamemodify(lock.filename, ":p")
-      if lock.filename:match("^%w+://") or vim.fn.filereadable(abs_path) == 1 then
+      local abs_path = path_utils.to_absolute(lock.filename)
+      if path_utils.is_url(lock.filename) or vim.fn.filereadable(abs_path) == 1 then
         local path = M.get_formatted_filepath(lock.filename)
         local left = pad_str .. string.format("[%s] %s", lock.label, path)
         local bufnr = vim.fn.bufnr(abs_path)
@@ -273,7 +264,7 @@ local function apply_highlights(bufnr, config)
   end
   local curr_filepath_formatted = ""
   if curr_filepath ~= "" then
-    curr_filepath_formatted = vim.fn.fnamemodify(curr_filepath, ":p:.")
+    curr_filepath_formatted = path_utils.to_lock_path(curr_filepath)
   end
 
   -- Highlight locks entries that match current file
@@ -523,7 +514,7 @@ function M.create(config)
   local src_buf = state.get_source_bufnr()
   if src_buf and vim.api.nvim_buf_is_valid(src_buf) then
     local buf_name = vim.api.nvim_buf_get_name(src_buf)
-    local src_filepath = vim.fn.fnamemodify(buf_name, ":p:.")
+    local src_filepath = buf_name ~= "" and path_utils.to_lock_path(buf_name) or ""
     if src_filepath ~= "" then
       -- Check locks first
       for i, lock in ipairs(state.get_locks()) do

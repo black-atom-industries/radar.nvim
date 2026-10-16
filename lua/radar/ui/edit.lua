@@ -64,12 +64,11 @@ function M.save_buffer(edit_buf, radar_config, radar_module)
       -- Trim whitespace from filepath
       local filepath = line:match("^%s*(.-)%s*$")
 
-      -- Protocol URLs (gh://, fugitive://, etc.) are valid without file check
-      local is_protocol_url = filepath:match("^%w+://")
-      local full_path = is_protocol_url and filepath or vim.fn.expand(filepath)
+      local full_path = path.is_url(filepath) and filepath
+        or path.to_absolute(vim.fn.expand(filepath))
 
-      -- Validate regular filepaths exist
-      if not is_protocol_url and vim.fn.filereadable(full_path) ~= 1 then
+      -- Protocol URLs (gh://, fugitive://, etc.) are valid without file check
+      if not path.is_url(filepath) and vim.fn.filereadable(full_path) ~= 1 then
         table.insert(
           errors,
           string.format("Line %d: File not found: %s", i, filepath)
@@ -78,7 +77,7 @@ function M.save_buffer(edit_buf, radar_config, radar_module)
         -- Create lock with label based on line position
         local new_lock = {
           label = radar_config.keys.locks[i] or tostring(i),
-          filename = full_path,
+          filename = path.to_lock_path(full_path),
         }
 
         table.insert(new_locks, new_lock)
@@ -134,11 +133,11 @@ function M.open_file_from_edit(edit_buf, open_cmd, radar_config, radar_module)
 
   -- Extract and expand filepath
   local filepath = line:match("^%s*(.-)%s*$")
-  local is_protocol_url = filepath:match("^%w+://")
-  local full_path = is_protocol_url and filepath or vim.fn.expand(filepath)
+  local full_path = path.is_url(filepath) and filepath
+    or path.to_absolute(vim.fn.expand(filepath))
 
   -- Only validate regular filepaths
-  if not is_protocol_url and vim.fn.filereadable(full_path) ~= 1 then
+  if not path.is_url(filepath) and vim.fn.filereadable(full_path) ~= 1 then
     vim.notify(string.format("File not found: %s", filepath), vim.log.levels.ERROR)
     return
   end

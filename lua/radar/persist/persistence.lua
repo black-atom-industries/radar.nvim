@@ -1,5 +1,7 @@
 local M = {}
 local utils = require("radar.utils")
+local path_utils = require("radar.path")
+local migration = require("radar.persist.migration")
 
 ---@param value any
 ---@return string
@@ -75,7 +77,7 @@ function M.encode(data)
     or "{\n" .. table.concat(project_items, ",\n") .. "\n  }"
   return string.format(
     '{\n  "version": %s,\n  "projects": %s\n}\n',
-    encode_scalar(data.version or 1),
+    encode_scalar(data.version or migration.VERSION),
     projects
   )
 end
@@ -133,82 +135,18 @@ function M.read(path)
   return decoded
 end
 
----Get current project path
+---Get the persistence key of the current project: the project root with `~`
+---abbreviation
 ---@return string?
 function M.get_project_path()
-  local cwd = vim.uv.cwd()
-
-  if not cwd then
-    return nil
-  end
-
-  local sanitized_path = vim.fn.fnameescape(cwd)
-  return vim.fn.fnamemodify(sanitized_path, ":~")
-end
-
----@param path string
----@return string?
-local function read_file(path)
-  local fd = vim.uv.fs_open(path, "r", 438)
-  if not fd then
-    return nil
-  end
-  local stat = vim.uv.fs_fstat(fd)
-  if not stat then
-    vim.uv.fs_close(fd)
-    return nil
-  end
-  local data = vim.uv.fs_read(fd, stat.size, 0)
-  vim.uv.fs_close(fd)
-  return data
+  local root = path_utils.project_root()
+  return root and vim.fn.fnamemodify(root, ":~")
 end
 
 ---Get current git branch by reading HEAD directly (no subprocess)
 ---@return string?
 function M.get_git_branch()
-  local cwd = vim.uv.cwd()
-  if not cwd then
-    return nil
-  end
-
-  -- Walk up directory tree to find .git. In worktrees and submodules .git is
-  -- a file containing `gitdir: <path>`, which holds that checkout's HEAD.
-  local dir = cwd
-  local head_path
-  for _ = 1, 10 do
-    local dot_git = dir .. "/.git"
-    local stat = vim.uv.fs_stat(dot_git)
-    if stat and stat.type == "directory" then
-      head_path = dot_git .. "/HEAD"
-      break
-    elseif stat and stat.type == "file" then
-      local gitdir = (read_file(dot_git) or ""):match("^gitdir:%s*(.-)%s*$")
-      if gitdir then
-        if not vim.startswith(gitdir, "/") then
-          gitdir = vim.fs.normalize(vim.fs.joinpath(dir, gitdir))
-        end
-        head_path = gitdir .. "/HEAD"
-      end
-      break
-    end
-    local parent = vim.fn.fnamemodify(dir, ":h")
-    if parent == dir then
-      break
-    end
-    dir = parent
-  end
-
-  if not head_path then
-    return nil
-  end
-
-  local data = read_file(head_path)
-
-  local branch = data and data:match("ref: refs/heads/([^\n]+)")
-  if branch then
-    return vim.fn.fnameescape(branch)
-  end
-  return nil
+  return path_utils.git_branch(path_utils.git_info())
 end
 
 local warned_no_branch = false
@@ -236,7 +174,7 @@ function M.load(config)
   local data, status = M.read(file_path)
 
   if data then
-    local ok, migrated = pcall(require("radar.persist.migration").migrate, data)
+    local ok, migrated = pcall(migration.migrate, data)
     if ok and type(migrated) == "table" and type(migrated.projects) == "table" then
       return migrated
     end
@@ -298,7 +236,7 @@ function M.persist(config)
     })
 
   local data = {
-    version = 1,
+    version = migration.VERSION,
     projects = utils.sort_projects(merged_projects),
   }
 
@@ -307,12 +245,18 @@ function M.persist(config)
   return data
 end
 
+---Project and branch of the last populate, as `<project>\n<branch>`
+---@type string?
+local populated_context
+
 ---Populate state from persisted data
 ---@param config Radar.Config
 ---@return nil
 function M.populate(config)
   local project_path = M.get_project_path()
   local git_branch = M.get_git_branch()
+  populated_context =
+    string.format("%s\n%s", tostring(project_path), tostring(git_branch))
   if not project_path or not git_branch then
     warn_no_branch()
     return
@@ -321,26 +265,42 @@ function M.populate(config)
   local data = M.load(config)
   local state = require("radar.data.state")
 
-  if data ~= nil then
-    local locks = vim.tbl_get(data, "projects", project_path, git_branch, "locks")
+  local locks =
+    vim.tbl_get(data or {}, "projects", project_path, git_branch, "locks")
 
-    -- Clears to {} when the new project/branch has no saved locks (e.g.,
-    -- switching worktrees) so stale locks from the previous directory go away.
-    for i, lock in ipairs(locks or {}) do
-      lock.label = config.keys.locks[i] or tostring(i)
-    end
-    state.set_locks(locks or {})
-
-    if locks ~= nil then
-      data.projects[project_path][git_branch].lastAccessed = os.time()
-
-      vim.fn.mkdir(vim.fn.fnamemodify(config.persist.path, ":h"), "p")
-      M.write(config.persist.path, {
-        version = data.version or 1,
-        projects = utils.sort_projects(data.projects),
-      })
-    end
+  -- Clears to {} when the new project/branch has no saved locks (e.g.,
+  -- switching worktrees) so stale locks from the previous directory go away.
+  for i, lock in ipairs(locks or {}) do
+    lock.label = config.keys.locks[i] or tostring(i)
   end
+  state.set_locks(locks or {})
+
+  if data ~= nil and locks ~= nil then
+    data.projects[project_path][git_branch].lastAccessed = os.time()
+
+    vim.fn.mkdir(vim.fn.fnamemodify(config.persist.path, ":h"), "p")
+    M.write(config.persist.path, {
+      version = data.version or migration.VERSION,
+      projects = utils.sort_projects(data.projects),
+    })
+  end
+end
+
+---Populate state only when the project root or branch differs from the last
+---populate
+---@param config Radar.Config
+---@return boolean reloaded
+function M.populate_if_changed(config)
+  local context = string.format(
+    "%s\n%s",
+    tostring(M.get_project_path()),
+    tostring(M.get_git_branch())
+  )
+  if context == populated_context then
+    return false
+  end
+  M.populate(config)
+  return true
 end
 
 return M

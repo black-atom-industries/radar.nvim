@@ -260,7 +260,7 @@ describe("persistence", function()
       MiniTest.expect.equality(vim.fn.readfile(test_data_path .. ".bad")[1], corrupt)
       local fresh =
         vim.json.decode(table.concat(vim.fn.readfile(test_data_path), "\n"))
-      MiniTest.expect.equality(fresh.version, 1)
+      MiniTest.expect.equality(fresh.version, 2)
     end)
 
     it("aborts the save when the file cannot be quarantined", function()

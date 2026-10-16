@@ -2,36 +2,23 @@ local M = {}
 local utils = require("radar.utils")
 
 ---Get list of branches for a git project
----@param project_path string
+---@param project_path string persistence key (`~` abbreviated, unescaped)
 ---@return string[]?
 function M.get_project_branches(project_path)
-  -- Expand path from ~ notation to full path
-  local expanded_path = vim.fn.expand(project_path)
+  local expanded_path = vim.fs.normalize(project_path)
 
-  -- Check if directory exists
-  if vim.fn.isdirectory(expanded_path) == 0 then
+  if not vim.uv.fs_stat(expanded_path .. "/.git") then
     return nil
   end
 
-  -- Check if it's a git repo
-  local git_dir = expanded_path .. "/.git"
-  if vim.fn.isdirectory(git_dir) == 0 then
+  local result = vim
+    .system({ "git", "-C", expanded_path, "branch", "--format=%(refname:lstrip=2)" })
+    :wait()
+  if result.code ~= 0 then
     return nil
   end
 
-  -- Get all local branches
-  local cmd = string.format(
-    "cd %s && git branch --format='%%(refname:short)'",
-    vim.fn.shellescape(expanded_path)
-  )
-  local branches = vim.fn.systemlist(cmd)
-
-  -- Check if command failed
-  if vim.v.shell_error ~= 0 then
-    return nil
-  end
-
-  return branches
+  return vim.split(result.stdout or "", "\n", { trimempty = true })
 end
 
 ---Check if an entry should be preserved (safety checks)
@@ -95,7 +82,7 @@ function M.cleanup(config, opts)
   local current_branch = persistence.get_git_branch()
 
   local new_data = {
-    version = data.version or 1,
+    version = data.version,
     projects = {},
   }
   local removed_count = 0
@@ -103,7 +90,7 @@ function M.cleanup(config, opts)
 
   for project_path, branches in pairs(data.projects) do
     -- Check if project directory exists
-    local expanded_path = vim.fn.expand(project_path)
+    local expanded_path = vim.fs.normalize(project_path)
     local project_exists = vim.fn.isdirectory(expanded_path) == 1
 
     if not project_exists then

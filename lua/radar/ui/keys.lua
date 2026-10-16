@@ -93,13 +93,7 @@ function M.setup_common_keymaps(bufnr, config, radar, opts)
       return
     end
 
-    -- Normalize to relative path (locks use :p:. format)
-    local normalized = filepath
-    if not filepath:match("^%w+://") then
-      normalized = vim.fn.fnamemodify(filepath, ":p:.")
-    end
-
-    locks.toggle(normalized, config, persistence)
+    locks.toggle(require("radar.path").to_lock_path(filepath), config, persistence)
 
     if not radar.exists() then
       radar.create(config)

@@ -56,9 +56,7 @@ function M.setup(config)
       local recent = require("radar.data.recent")
       local radar = require("radar.ui.radar")
 
-      -- Reload locks for the new project/branch
-      persistence.populate(config)
-      -- Reload recent files filtered by the new cwd
+      persistence.populate_if_changed(config)
       recent.update_state(config)
       -- Refresh radar if open
       if radar.exists() then

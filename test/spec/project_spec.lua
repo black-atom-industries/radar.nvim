@@ -1,0 +1,355 @@
+local path = require("radar.path")
+local state = require("radar.data.state")
+local locks = require("radar.data.locks")
+local persistence = require("radar.persist.persistence")
+local migration = require("radar.persist.migration")
+local cleanup = require("radar.persist.cleanup")
+local config = require("radar.config")
+
+local function git(dir, ...)
+  local cmd = {
+    "git",
+    "-C",
+    dir,
+    "-c",
+    "user.name=t",
+    "-c",
+    "user.email=t@t",
+    "-c",
+    "commit.gpgsign=false",
+  }
+  local result = vim
+    .system(vim.list_extend(cmd, { ... }), {
+      env = { GIT_CONFIG_GLOBAL = "/dev/null", GIT_CONFIG_NOSYSTEM = "1" },
+    })
+    :wait()
+  assert(result.code == 0, result.stderr)
+end
+
+local function temp_dir()
+  local dir = vim.fn.tempname()
+  vim.fn.mkdir(dir, "p")
+  return assert(vim.uv.fs_realpath(dir))
+end
+
+---Git repo with a commit on `main`, a.lua and src/b.lua
+local function make_repo()
+  local root = temp_dir()
+  git(root, "init", "-q", "-b", "main")
+  git(root, "commit", "-q", "--allow-empty", "-m", "init")
+  vim.fn.mkdir(root .. "/src", "p")
+  vim.fn.writefile({}, root .. "/a.lua")
+  vim.fn.writefile({}, root .. "/src/b.lua")
+  return root
+end
+
+describe("project identity", function()
+  local test_config, original_cwd, dirs
+
+  before_each(function()
+    test_config = vim.deepcopy(config.default)
+    test_config.persist.path = vim.fn.tempname() .. ".json"
+    original_cwd = vim.uv.cwd()
+    dirs = {}
+    state.set_locks({})
+  end)
+
+  after_each(function()
+    vim.uv.chdir(original_cwd)
+    for _, dir in ipairs(dirs) do
+      vim.fn.delete(dir, "rf")
+    end
+    vim.fn.delete(test_config.persist.path)
+  end)
+
+  local function repo()
+    local root = make_repo()
+    table.insert(dirs, root)
+    return root
+  end
+
+  describe("path helpers", function()
+    it("detects protocol URLs", function()
+      MiniTest.expect.equality(path.is_url("oil:///tmp/"), true)
+      MiniTest.expect.equality(path.is_url("gh://owner/repo"), true)
+      MiniTest.expect.equality(path.is_url("/tmp/a.lua"), false)
+      MiniTest.expect.equality(path.is_url("src/a.lua"), false)
+    end)
+
+    it("finds the git root and branch from a subdirectory", function()
+      local root = repo()
+      vim.uv.chdir(root .. "/src")
+
+      MiniTest.expect.equality(path.project_root(), root)
+      MiniTest.expect.equality(path.git_info().head, root .. "/.git/HEAD")
+      MiniTest.expect.equality(path.git_branch(path.git_info()), "main")
+    end)
+
+    it("follows a .git file and keeps the raw branch name", function()
+      local root = temp_dir()
+      local gitdir = temp_dir()
+      table.insert(dirs, root)
+      table.insert(dirs, gitdir)
+      vim.fn.writefile({ "gitdir: " .. gitdir }, root .. "/.git")
+      vim.fn.writefile({ "ref: refs/heads/feat#1" }, gitdir .. "/HEAD")
+      vim.fn.mkdir(root .. "/deep/er", "p")
+      vim.uv.chdir(root .. "/deep/er")
+
+      MiniTest.expect.equality(path.project_root(), root)
+      MiniTest.expect.equality(persistence.get_git_branch(), "feat#1")
+      MiniTest.expect.equality(persistence.get_project_path(), root)
+    end)
+
+    it("falls back to the cwd outside git", function()
+      local dir = temp_dir()
+      table.insert(dirs, dir)
+      vim.uv.chdir(dir)
+
+      MiniTest.expect.equality(path.project_root(), dir)
+      MiniTest.expect.equality(persistence.get_git_branch(), nil)
+    end)
+
+    it("converts between lock paths and absolute paths from any cwd", function()
+      local root = repo()
+      vim.uv.chdir(root .. "/src")
+
+      MiniTest.expect.equality(path.to_lock_path(root .. "/src/b.lua"), "src/b.lua")
+      MiniTest.expect.equality(path.to_lock_path("src/b.lua"), "src/b.lua")
+      MiniTest.expect.equality(path.to_absolute("src/b.lua"), root .. "/src/b.lua")
+      MiniTest.expect.equality(
+        path.to_lock_path("/elsewhere/x.lua"),
+        "/elsewhere/x.lua"
+      )
+      MiniTest.expect.equality(path.to_lock_path("gh://o/r/a.lua"), "gh://o/r/a.lua")
+      MiniTest.expect.equality(path.to_absolute("oil:///x/"), "oil:///x/")
+    end)
+
+    it("displays paths relative to the project root", function()
+      local root = repo()
+      vim.uv.chdir(root .. "/src")
+
+      MiniTest.expect.equality(path.display("a.lua"), "a.lua")
+      MiniTest.expect.equality(path.to_lock_path(root), ".")
+      MiniTest.expect.equality(path.display(root), "./")
+      MiniTest.expect.equality(path.display(root .. "/src/b.lua"), "src/b.lua")
+      MiniTest.expect.equality(path.display("oil://" .. root .. "/"), "./")
+      MiniTest.expect.equality(path.display("oil://" .. root .. "/src/"), "src/")
+    end)
+  end)
+
+  describe("locks", function()
+    local radar_mock = {
+      exists = function()
+        return true
+      end,
+      update = function() end,
+    }
+    local persistence_mock = { persist = function() end }
+
+    it(
+      "stores locks root-relative and toggles the same lock from any cwd",
+      function()
+        local root = repo()
+        vim.cmd.edit(vim.fn.fnameescape(root .. "/src/b.lua"))
+        local buf = vim.api.nvim_get_current_buf()
+
+        vim.uv.chdir(root .. "/src")
+        locks.lock_current_buffer(buf, test_config, persistence_mock, radar_mock)
+        MiniTest.expect.equality(state.get_locks()[1].filename, "src/b.lua")
+
+        vim.uv.chdir(root)
+        locks.lock_current_buffer(buf, test_config, persistence_mock, radar_mock)
+        MiniTest.expect.equality(#state.get_locks(), 0)
+
+        vim.cmd("bwipeout! " .. buf)
+      end
+    )
+
+    it("persists under the git root key from a subdirectory", function()
+      local root = repo()
+      vim.uv.chdir(root .. "/src")
+      state.set_locks({ { label = "1", filename = "src/b.lua" } })
+
+      local data = persistence.persist(test_config)
+
+      MiniTest.expect.equality(vim.tbl_keys(data.projects), { root })
+      MiniTest.expect.equality(
+        data.projects[root].main.locks[1].filename,
+        "src/b.lua"
+      )
+    end)
+  end)
+
+  describe("populate", function()
+    it("clears locks on a project switch without a data file", function()
+      local root = repo()
+      local other = repo()
+      vim.uv.chdir(root)
+      state.set_locks({ { label = "1", filename = "a.lua" } })
+      persistence.persist(test_config)
+      vim.fn.delete(test_config.persist.path)
+
+      vim.uv.chdir(other)
+      persistence.populate(test_config)
+
+      MiniTest.expect.equality(state.get_locks(), {})
+    end)
+  end)
+
+  describe("DirChanged", function()
+    after_each(function()
+      for _, group in ipairs({
+        "radar.VimEnter",
+        "radar.VimResized",
+        "radar.BufEnter",
+        "radar.DirChanged",
+        "radar.TabsUpdate",
+      }) do
+        pcall(vim.api.nvim_del_augroup_by_name, group)
+      end
+    end)
+
+    it("keeps locks within the repo and reloads in another repo", function()
+      local root = repo()
+      local other = repo()
+      persistence.write(test_config.persist.path, {
+        version = 2,
+        projects = {
+          [root] = {
+            main = {
+              locks = { { label = "1", filename = "a.lua" } },
+              lastAccessed = 1,
+            },
+          },
+        },
+      })
+      require("radar.autocmd").setup(test_config)
+
+      vim.cmd.cd(vim.fn.fnameescape(root))
+      persistence.populate(test_config)
+      MiniTest.expect.equality(#state.get_locks(), 1)
+
+      locks.add("src/b.lua", test_config)
+      vim.cmd.cd("src")
+      MiniTest.expect.equality(#state.get_locks(), 2)
+
+      vim.cmd.cd(vim.fn.fnameescape(other))
+      MiniTest.expect.equality(state.get_locks(), {})
+    end)
+  end)
+
+  describe("migration v1 to v2", function()
+    it("unescapes project and branch keys", function()
+      local key = vim.fn.fnameescape("/missing dir/x#1")
+      local result = migration.migrate({
+        version = 1,
+        projects = {
+          [key] = {
+            [vim.fn.fnameescape("feat#1")] = { locks = {}, lastAccessed = 1 },
+          },
+        },
+      })
+
+      MiniTest.expect.equality(result, {
+        version = 2,
+        projects = {
+          ["/missing dir/x#1"] = { ["feat#1"] = { locks = {}, lastAccessed = 1 } },
+        },
+      })
+    end)
+
+    it("merges subdirectory projects into the git root", function()
+      local root = repo()
+      local result = migration.migrate({
+        version = 1,
+        projects = {
+          [vim.fn.fnameescape(root)] = {
+            main = {
+              locks = {
+                { label = "1", filename = "a.lua" },
+                { label = "2", filename = "src/b.lua" },
+              },
+              lastAccessed = 1,
+            },
+          },
+          [vim.fn.fnameescape(root .. "/src")] = {
+            main = {
+              locks = {
+                { label = "1", filename = "b.lua" },
+                { label = "2", filename = "c.lua" },
+                { label = "3", filename = root .. "/a.lua" },
+                { label = "4", filename = "oil:///x/" },
+              },
+              lastAccessed = 5,
+            },
+            feat = {
+              locks = { { label = "1", filename = "d.lua" } },
+              lastAccessed = 3,
+            },
+          },
+        },
+      })
+
+      MiniTest.expect.equality(vim.tbl_keys(result.projects), { root })
+      local filenames = vim.tbl_map(function(lock)
+        return lock.filename
+      end, result.projects[root].main.locks)
+      MiniTest.expect.equality(
+        filenames,
+        { "a.lua", "src/b.lua", "src/c.lua", "oil:///x/" }
+      )
+      MiniTest.expect.equality(result.projects[root].main.lastAccessed, 5)
+      MiniTest.expect.equality(
+        result.projects[root].feat.locks[1].filename,
+        "src/d.lua"
+      )
+
+      MiniTest.expect.equality(migration.migrate(vim.deepcopy(result)), result)
+    end)
+
+    it("leaves projects whose directory no longer exists untouched", function()
+      local data = {
+        ["/missing/repo/sub"] = {
+          main = {
+            locks = { { label = "1", filename = "x.lua" } },
+            lastAccessed = 2,
+          },
+        },
+      }
+      local result =
+        migration.migrate({ version = 1, projects = vim.deepcopy(data) })
+
+      MiniTest.expect.equality(result.projects, data)
+    end)
+  end)
+
+  describe("cleanup", function()
+    it("keeps branches and projects whose names contain #", function()
+      local root = repo() .. "/repo#1"
+      vim.fn.mkdir(root, "p")
+      git(root, "init", "-q", "-b", "main")
+      git(root, "commit", "-q", "--allow-empty", "-m", "init")
+      git(root, "checkout", "-q", "-b", "feat#1")
+      vim.uv.chdir(root)
+      state.set_locks({ { label = "1", filename = "a.lua" } })
+      persistence.persist(test_config)
+      git(root, "checkout", "-q", "main")
+      persistence.persist(test_config)
+      local data = persistence.read(test_config.persist.path)
+      data.projects[root].gone = data.projects[root].main
+      persistence.write(test_config.persist.path, data)
+
+      local elsewhere = temp_dir()
+      table.insert(dirs, elsewhere)
+      vim.uv.chdir(elsewhere)
+
+      local result = cleanup.cleanup(test_config)
+
+      MiniTest.expect.equality(result.removed, 1)
+      data = persistence.read(test_config.persist.path)
+      local branches = vim.tbl_keys(data.projects[root])
+      table.sort(branches)
+      MiniTest.expect.equality(branches, { "feat#1", "main" })
+    end)
+  end)
+end)

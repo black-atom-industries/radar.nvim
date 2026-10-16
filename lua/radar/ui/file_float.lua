@@ -11,7 +11,7 @@ function M.open(filepath, config)
   -- Resolve window config from preset
   local window = require("radar.ui.window")
   local win_opts = window.resolve_config(config, config.file_float.win_preset, {
-    title = " " .. vim.fn.fnamemodify(filepath, ":.") .. " ",
+    title = " " .. require("radar.path").display(filepath) .. " ",
   })
 
   -- Create scratch buffer initially

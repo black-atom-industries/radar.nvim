@@ -18,7 +18,7 @@ function M.get_alternative_file()
     return nil
   end
 
-  return alt_file
+  return vim.fn.fnamemodify(alt_file, ":p")
 end
 
 return M

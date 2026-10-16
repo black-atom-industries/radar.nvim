@@ -1,4 +1,5 @@
 local M = {}
+local path_utils = require("radar.path")
 
 ---Get file path from current line in radar window
 ---@param _config Radar.Config
@@ -30,8 +31,10 @@ function M.get_file_from_line(_config, section)
   if section == "locks" then
     local visible_locks = {}
     for _, lock in ipairs(state.get_locks()) do
-      local abs_path = vim.fn.fnamemodify(lock.filename, ":p")
-      if lock.filename:match("^%w+://") or vim.fn.filereadable(abs_path) == 1 then
+      if
+        path_utils.is_url(lock.filename)
+        or vim.fn.filereadable(path_utils.to_absolute(lock.filename)) == 1
+      then
         table.insert(visible_locks, lock)
       end
     end
@@ -58,12 +61,11 @@ function M.open_file(filepath, open_cmd, config, radar_module)
     return
   end
 
+  filepath = path_utils.to_absolute(filepath)
+
   -- Skip stale entries whose files no longer exist
-  if not filepath:match("^%w+://") then
-    local abs_path = vim.fn.fnamemodify(filepath, ":p")
-    if vim.fn.filereadable(abs_path) == 0 then
-      return
-    end
+  if not path_utils.is_url(filepath) and vim.fn.filereadable(filepath) == 0 then
+    return
   end
 
   -- Close radar first, so file opens in the previous window

@@ -133,7 +133,7 @@ local function build_content(tabs_data, win_width)
 
     -- Buffer lines (indented)
     for _, buf in ipairs(tab.buffers) do
-      local filepath = vim.fn.fnamemodify(buf.filepath, ":p:.")
+      local filepath = require("radar.path").display(buf.filepath)
       local bufnr = vim.fn.bufnr(buf.filepath)
       local buf_indicators = indicators.get_buffer_indicators(bufnr)
       local left = "    " .. filepath

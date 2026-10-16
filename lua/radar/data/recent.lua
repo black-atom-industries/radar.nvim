@@ -1,11 +1,15 @@
 local M = {}
 local path = require("radar.path")
 
-local function is_within_cwd(filesystem_path, cwd)
-  local normalized_cwd = cwd:gsub("/+$", "")
+local function is_within_root(filesystem_path, root)
   local normalized_path = filesystem_path:gsub("/+$", "")
-  return normalized_path == normalized_cwd
-    or vim.startswith(filesystem_path, normalized_cwd .. "/")
+  return normalized_path == root or vim.startswith(filesystem_path, root .. "/")
+end
+
+---@param filename string
+---@return string
+local function absolute(filename)
+  return path.to_absolute(path.to_filesystem_path(filename))
 end
 
 local function exists(filename, filesystem_path)
@@ -13,12 +17,12 @@ local function exists(filename, filesystem_path)
     or vim.fn.filereadable(filename) == 1
 end
 
----Get recent files filtered by current working directory and excluding locked files and alternative file
+---Get recent files filtered by project root and excluding locked files and alternative file
 ---@param config Radar.Config
 ---@return string[]
 function M.get_files(config)
-  local cwd = vim.uv.cwd()
-  if not cwd then
+  local root = path.project_root()
+  if not root then
     return {}
   end
 
@@ -27,10 +31,8 @@ function M.get_files(config)
   local excluded_files = {}
 
   local state = require("radar.data.state")
-  -- Create lookup table for locked files (normalize to absolute paths)
   for _, lock in ipairs(state.get_locks()) do
-    local abs_path = vim.fn.fnamemodify(path.to_filesystem_path(lock.filename), ":p")
-    excluded_files[abs_path] = true
+    excluded_files[absolute(lock.filename)] = true
   end
 
   -- Exclude alternative file — use stored source alt file when available
@@ -49,8 +51,7 @@ function M.get_files(config)
     end
   end
   if alt_file then
-    local abs_path = vim.fn.fnamemodify(path.to_filesystem_path(alt_file), ":p")
-    excluded_files[abs_path] = true
+    excluded_files[absolute(alt_file)] = true
   end
 
   -- Add current session files first (most recent)
@@ -58,11 +59,11 @@ function M.get_files(config)
     local filepath = state.get_session_files()[i]
 
     local filesystem_path = path.to_filesystem_path(filepath)
-    local abs_path = vim.fn.fnamemodify(filesystem_path, ":p")
+    local abs_path = path.to_absolute(filesystem_path)
 
     if not excluded_files[abs_path] and not seen_files[abs_path] then
       if
-        is_within_cwd(filesystem_path, cwd) and exists(filepath, filesystem_path)
+        is_within_root(filesystem_path, root) and exists(filepath, filesystem_path)
       then
         table.insert(recent_files, filepath)
         seen_files[abs_path] = true
@@ -78,16 +79,15 @@ function M.get_files(config)
   for _, filepath in ipairs(vim.v.oldfiles) do
     -- Skip if already seen, excluded, or if we're at capacity
     local filesystem_path = path.to_filesystem_path(filepath)
-    local abs_path = vim.fn.fnamemodify(filesystem_path, ":p")
+    local abs_path = path.to_absolute(filesystem_path)
 
     if
       not seen_files[abs_path]
       and not excluded_files[abs_path]
       and #recent_files < config.radar.max_recent_files
     then
-      -- Only include files from current working directory
       if
-        is_within_cwd(filesystem_path, cwd) and exists(filepath, filesystem_path)
+        is_within_root(filesystem_path, root) and exists(filepath, filesystem_path)
       then
         table.insert(recent_files, filepath)
         seen_files[abs_path] = true
