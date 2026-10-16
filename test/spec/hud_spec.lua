@@ -372,6 +372,14 @@ describe("hud window", function()
       MiniTest.expect.equality(hud.get_winid(), nil)
     end)
 
+    it("toggles the tabs sidebar with t", function()
+      local tabs = require("radar.ui.tabs")
+      press("t")
+      MiniTest.expect.equality(tabs.exists(), true)
+      press("t")
+      MiniTest.expect.equality(tabs.exists(), false)
+    end)
+
     it("opens the lock editor at the bottom of the pane", function()
       local winborder = vim.o.winborder
       vim.o.winborder = "rounded"

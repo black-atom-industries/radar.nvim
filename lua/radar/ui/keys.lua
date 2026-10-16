@@ -21,6 +21,7 @@ function M.prefix_help_section(config)
       { keys.lock, "Lock/unlock buffer" },
       { keys.edit, "Edit locks" },
       { keys.hud_toggle, "Toggle HUD" },
+      { keys.tabs, "Tabs sidebar" },
       { keys.help, "Show help" },
       { "<Esc>", "Cancel" },
     },
@@ -54,6 +55,8 @@ local function dispatch(config)
     require("radar.ui.edit").edit_locks(config)
   elseif is(config.keys.hud_toggle) then
     require("radar.ui.hud").toggle()
+  elseif is(config.keys.tabs) then
+    require("radar.ui.tabs").toggle(config)
   elseif is(config.keys.help) then
     local help = require("radar.ui.help")
     help.show({

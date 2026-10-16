@@ -12,6 +12,7 @@ M.default = {
     recent = { "a", "s", "d", "f", "g" },
     tabs_toggle = "<leader>t",
     hud_toggle = "h",
+    tabs = "t",
     edit = "e",
     help = "?",
   },

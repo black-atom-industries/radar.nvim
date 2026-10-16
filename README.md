@@ -90,6 +90,7 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 | `keys.tabs_toggle`                                  | `"<leader>t"`                         | Toggle tabs sidebar                                                             |
 | `keys.alternative`                                  | `"o"`                                 | Alternative file (after the prefix)                                             |
 | `keys.hud_toggle`                                   | `"h"`                                 | Toggle the HUD for the session (after the prefix)                               |
+| `keys.tabs`                                         | `"t"`                                 | Toggle the tabs sidebar (after the prefix)                                      |
 | `keys.edit`                                         | `"e"`                                 | Open the lock editor (after the prefix)                                         |
 | `keys.help`                                         | `"?"`                                 | Show the keys that follow the prefix (after the prefix)                         |
 | `recent.max_files`                                  | `10`                                  | Recent files kept per project and branch                                        |
@@ -118,6 +119,7 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 - **`o`**: Open the alternative file
 - **`l`**: Lock or unlock the current buffer
 - **`h`**: Toggle the HUD for this session
+- **`t`**: Toggle the tabs sidebar
 - **`e`**: Open the lock editor
 - **`?`**: Show these keys
 - **`<Esc>`** or any other key: Cancel

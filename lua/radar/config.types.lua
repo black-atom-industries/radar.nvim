@@ -8,6 +8,7 @@
 ---@field recent string[]
 ---@field tabs_toggle string
 ---@field hud_toggle string
+---@field tabs string
 ---@field edit string
 ---@field help string
 
