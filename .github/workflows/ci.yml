@@ -18,7 +18,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
-      XDG_DATA_HOME: ${{ runner.temp }}/xdg
+      XDG_DATA_HOME: /tmp/radar-xdg
     steps:
       - uses: actions/checkout@v7
       - uses: rhysd/action-setup-vim@v1
