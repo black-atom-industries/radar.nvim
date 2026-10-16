@@ -23,7 +23,7 @@ See also [Concept](./docs/concept.md)
 <space> then:
 [1][2][3][4][5][6][7][8][9]  ← Locks (manually locked targets)
 [a][s][d][f][g]              ← Recent files (vim.v.oldfiles)
-[<Tab>]                      ← Alternative file (test ↔ impl)
+[o]                          ← Alternative file (test ↔ impl)
 [<space>]                    ← Full radar
 ```
 
@@ -89,7 +89,7 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 | `keys.locks`                                        | `{"1".."9"}`                          | Keys for lock slots                                                             |
 | `keys.recent`                                       | `{"a".."g"}`                          | Keys for recent file slots                                                      |
 | `keys.tabs_toggle`                                  | `"<leader>t"`                         | Toggle tabs sidebar                                                             |
-| `keys.alternative`                                  | `"-"`                                 | Alternative file inside the radar                                               |
+| `keys.alternative`                                  | `"o"`                                 | Alternative file, after the prefix and inside the radar                         |
 | `keys.hud_toggle`                                   | `"h"`                                 | Toggle the HUD for the session (after the prefix)                               |
 | `keys.vertical` / `.horizontal` / `.tab` / `.float` | `<C-v>` / `<C-s>` / `<C-t>` / `<C-f>` | Split mode modifiers                                                            |
 | `radar.size`                                   | `{ width = 50, height = 75 }`         | Window dimensions                                                               |
@@ -123,7 +123,7 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 
 - **`1-9`**: Jump to a lock
 - **`a-g`**: Jump to a recent file
-- **`<Tab>`**: Open the alternative file
+- **`o`**: Open the alternative file
 - **`<space>`**: Open the radar
 - **`l`**: Lock or unlock the current buffer
 - **`h`**: Toggle the HUD for this session
@@ -140,7 +140,7 @@ The HUD sits in the top-right corner of every tab, below the tabline. It shows t
 - **`l`**: Lock or unlock the file under the cursor
 - **`1-9`**: Open locked files
 - **`a-g`**: Open recent files
-- **`-`**: Open alternative file (e.g., test ↔ implementation)
+- **`o`**: Open alternative file (e.g., test ↔ implementation)
 - **`e`**: Edit lock labels
 - **`t`**: Open tabs sidebar
 - **`?`**: Toggle help
@@ -161,7 +161,7 @@ The HUD sits in the top-right corner of every tab, below the tabline. It shows t
 - **`T`**: Open in new tab
 - **`F`**: Open in floating window
 
-**Split Modifiers (within radar, combine with 1-9, a-g, or `-`):**
+**Split Modifiers (within radar, combine with 1-9, a-g, or `o`):**
 
 - **`<C-v>` + key**: Open in vertical split
 - **`<C-s>` + key**: Open in horizontal split

@@ -56,7 +56,7 @@ lua/radar/
 - **No Branch, No Persistence**: Detached HEAD and non-git directories keep locks in memory only, as long as the project root stays the same. One warning per session.
 - **Single Radar Window**: One floating window and buffer holding the alternative, locks and recent sections. `ui/radar.lua` renders it in place and stores a line → entry map in `state`, which navigation and the lock key read.
 - **Corner HUD**: `ui/hud.lua` keeps one non-focusable float and scratch buffer per tabpage, top-right below the tabline. `hud.build` is a pure content builder (lines + highlight ranges); `hud.refresh()` rebuilds and shows or hides the current tab's HUD and runs on lock changes, populate, radar/tabs open and close, `BufEnter`, `TabEnter`, `VimResized`, `DirChanged`, `FocusGained` and `VimEnter`. `hud.dodge()` only repositions (bottom-right while the cursor is under the top-right spot) on `CursorMoved`, `CursorMovedI` and `WinScrolled`.
-- **Prefix Dispatch**: The global `keys.prefix` mapping reads one key with `vim.fn.getcharstr()` and dispatches: lock and recent labels jump, prefix opens the radar, `<Tab>` opens the alternative file, `keys.lock` locks the current buffer, `keys.hud_toggle` toggles the HUD, anything else cancels. Split variants exist only inside the radar.
+- **Prefix Dispatch**: The global `keys.prefix` mapping reads one key with `vim.fn.getcharstr()` and dispatches: lock and recent labels jump, prefix opens the radar, `keys.alternative` (`o`) opens the alternative file, `keys.lock` locks the current buffer, `keys.hud_toggle` toggles the HUD, anything else cancels. Split variants exist only inside the radar.
 - **Relabel by Position**: Lock labels come from the position in `config.keys.locks`. Removing a lock and loading persisted locks both relabel.
 - **Safe String Matching**: Uses `string.find(text, pattern, 1, true)` for literal matching (critical for special chars)
 - **Dynamic Highlighting**: Extmarks, refreshed on `BufEnter`
@@ -69,7 +69,7 @@ lua/radar/
    - Sections top to bottom: alternative file, locks, recent files
    - Placement via `config.radar.win_preset`, size via `config.radar.size`
    - `<Tab>`/`<S-Tab>` cycles the cursor between sections
-   - `keys.alternative` (default `-`) opens the alternative file, the prefix closes the radar
+   - `keys.alternative` (default `o`) opens the alternative file, the prefix closes the radar
 
 2. **Config Separation**
    - `config.types.lua` = types only (no values)
@@ -142,7 +142,7 @@ From [docs/concept.md](docs/concept.md):
 <space> then:
 [1][2][3][4][5][6][7][8][9]  ← Locks (manually locked targets)
 [a][s][d][f][g]              ← Recent files (vim.v.oldfiles)
-[<Tab>]                      ← Alternative file (test ↔ impl; `-` inside the radar)
+[o]                          ← Alternative file (test ↔ impl, also inside the radar)
 [<space>]                    ← Full radar
 ```
 
@@ -150,7 +150,7 @@ From [docs/concept.md](docs/concept.md):
 
 - Locks (1-9 keys)
 - Recent files (a-g keys, filtered by project root)
-- Alternative file (`<space><Tab>`, `-` inside the radar)
+- Alternative file (`<space>o`, `o` inside the radar)
 - Corner HUD (`<space>h` toggles it)
 - Tabs sidebar
 
@@ -183,7 +183,7 @@ end
 
 - **Locks**: Manual file locking with 1-9 keybindings
 - **Recent Files**: MRU list filtered by project root (a-g keys)
-- **Alternative Files**: Smart test ↔ implementation file switching (`<space><Tab>`, `-` inside the radar)
+- **Alternative Files**: Smart test ↔ implementation file switching (`<space>o`, `o` inside the radar)
 - **Corner HUD**: Always-visible top-right float with the alternative file, up to `hud.max_locks` locks and `hud.max_recent` recent files; dodges the cursor, hides while the radar or tabs sidebar is open
 - **Radar Window**: One floating window with three sections and section cycling
 - **Tabs Sidebar**: Tab/buffer tree view with jump and close support

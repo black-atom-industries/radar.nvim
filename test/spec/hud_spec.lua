@@ -24,7 +24,7 @@ describe("hud content", function()
     }, 60)
 
     MiniTest.expect.equality(content.lines, {
-      " 󰐷 [<Tab>] alt.lua ",
+      " 󰐷 [o] alt.lua ",
       " 󰋱 [1] one.lua ",
       " 󰋱 [2] two.lua ",
       " 󰽏 [a] /r/a.lua ",
@@ -167,7 +167,7 @@ describe("hud window", function()
     MiniTest.expect.equality(win_config.col + win_config.width, vim.o.columns)
     MiniTest.expect.equality(
       vim.api.nvim_buf_get_lines(vim.api.nvim_win_get_buf(winid), 0, 1, false),
-      { " 󰐷 [<Tab>] a.lua " }
+      { " 󰐷 [o] a.lua " }
     )
   end)
 
@@ -324,8 +324,8 @@ describe("hud window", function()
       MiniTest.expect.equality(radar.exists(), true)
     end)
 
-    it("opens the alternative file with <Tab>", function()
-      press("\t")
+    it("opens the alternative file with o", function()
+      press("o")
       MiniTest.expect.equality(vim.api.nvim_buf_get_name(0), file("a.lua"))
     end)
 
@@ -363,9 +363,9 @@ describe("hud window", function()
   end)
 
   describe("inside the radar", function()
-    it("opens the alternative file with -", function()
+    it("opens the alternative file with o", function()
       radar.open(test_config)
-      vim.api.nvim_feedkeys("-", "x", false)
+      vim.api.nvim_feedkeys("o", "x", false)
       MiniTest.expect.equality(radar.exists(), false)
       MiniTest.expect.equality(vim.api.nvim_buf_get_name(0), file("a.lua"))
     end)

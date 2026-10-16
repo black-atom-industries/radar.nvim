@@ -51,7 +51,7 @@ This gives you instant access to 24 files without moving your left hand from hom
 ### Corner HUD (Persistent)
 
 ```
- [<Tab>] spec.lua
+ [o] spec.lua
  [1] config.lua
  [2] init.lua
  [a] radar.lua
@@ -60,7 +60,7 @@ This gives you instant access to 24 files without moving your left hand from hom
 
 - One per tab, anchored to the editor's top-right corner below the tabline
 - Shows the alternative file, up to 5 locks and 3 recent files, with the current file highlighted
-- Labels are the keys that follow `<space>`: `<space>1` jumps to lock 1, `<space>a` to the first recent file, `<space><Tab>` to the alternative file
+- Labels are the keys that follow `<space>`: `<space>1` jumps to lock 1, `<space>a` to the first recent file, `<space>o` to the alternative file
 - Moves to the bottom-right corner while the cursor is under it
 - Hidden while the full radar or the tabs sidebar is open, and when empty; `<space>h` toggles it for the session
 
@@ -88,7 +88,7 @@ This gives you instant access to 24 files without moving your left hand from hom
 require("radar").setup({
   keys = {
     prefix = "<space>",                             -- reads one more key; <space><space> opens the radar
-    alternative = "-",                              -- alternative file inside the radar
+    alternative = "o",                              -- alternative file, after the prefix and inside the radar
     hud_toggle = "h",                               -- <space>h toggles the HUD
     locks = { "1", "2", "3", "4", "5", "6", "7", "8", "9" },
     recent = { "a", "s", "d", "f", "g" },

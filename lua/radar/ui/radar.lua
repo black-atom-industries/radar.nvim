@@ -640,7 +640,7 @@ function M.show_help(config)
         { range(keys.locks), "Jump to lock" },
         { range(keys.recent), "Jump to recent" },
         { keys.prefix, "Open radar" },
-        { "<Tab>", "Alternative file" },
+        { keys.alternative, "Alternative file" },
         { keys.lock, "Lock/unlock buffer" },
         { keys.hud_toggle, "Toggle HUD" },
       },

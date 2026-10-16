@@ -17,7 +17,7 @@ local function dispatch(config)
 
   if is(config.keys.prefix) then
     radar.toggle(config)
-  elseif is("<Tab>") then
+  elseif is(config.keys.alternative) then
     local alt_file = require("radar.data.alternative").get_alternative_file()
     navigation.open_file(alt_file, nil, config, radar)
   elseif is(config.keys.lock) then

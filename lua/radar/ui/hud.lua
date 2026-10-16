@@ -89,7 +89,7 @@ function M.build(config, data, max_width)
   end
 
   if data.alt then
-    add(config.hud.icons.alternative, "<Tab>", data.alt, false)
+    add(config.hud.icons.alternative, config.keys.alternative, data.alt, false)
   end
 
   for i = 1, math.min(#data.locks, config.hud.max_locks) do
