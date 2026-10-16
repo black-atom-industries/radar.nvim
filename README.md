@@ -99,7 +99,7 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 | `radar.titles`                                      | (nerd font icons)                     | Section titles for main, locks, recent                      |
 | `radar.win_opts`                                    | `{ cursorline = true, ... }`          | Window-local options applied to radar buffers                                   |
 | `hud.enabled`                                       | `true`                                | Show the corner HUD                                                             |
-| `hud.width`                                         | `50`                                  | Fixed HUD width in cells (capped at half the editor)                            |
+| `hud.width`                                         | `64`                                  | Fixed HUD width in cells (capped at half the editor)                            |
 | `hud.max_locks`                                     | `5`                                   | Locks shown in the HUD                                                          |
 | `hud.max_recent`                                    | `3`                                   | Recent files shown in the HUD                                                   |
 | `hud.icons`                                         | radar section icons                   | Icon in front of each HUD line, per section                                     |
