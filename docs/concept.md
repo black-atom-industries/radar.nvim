@@ -8,8 +8,8 @@
 
 The plugin has two parts that work together:
 
-- **HUD**: A small, always-visible window at the bottom of the active pane showing the current and alternative file, your first locks and recent files
-- **Prefix Keys**: `<space>` plus one key jumps to any file the HUD labels, and to locks and recent files past what it shows
+- **Lock HUD**: A small, always-visible window at the bottom of the active pane showing the current and alternative file, your first locks and recent files
+- **Prefix Keys**: `<space>` plus one key jumps to any file the Lock HUD labels, and to locks and recent files past what it shows
 
 ## 🚀 Key Features
 
@@ -30,7 +30,7 @@ Files are automatically organized into tactical categories:
 
 ### Direct Access
 
-`<space>` and a single key open any file with a binding. The HUD shows which key reaches which file.
+`<space>` and a single key open any file with a binding. The Lock HUD shows which key reaches which file.
 
 ## ⌨️ Keybinding Design
 
@@ -47,7 +47,7 @@ This gives you instant access to 24 files without moving your left hand from hom
 
 ## 🎨 Interface Design
 
-### HUD (Persistent)
+### Lock HUD (Persistent)
 
 ```
  %  impl.ts
@@ -64,7 +64,7 @@ This gives you instant access to 24 files without moving your left hand from hom
 - Shows the current file, the alternative file, up to 5 locks and 3 recent files; a locked current file is highlighted
 - Labels are the keys that follow `<space>`: `<space>1` jumps to lock 1, `<space>a` to the first recent file, `<space>o` to the alternative file
 - Moves to the top of the pane while the cursor line runs under it
-- Updates as you lock; hidden while the tabs view or the lock editor is open and when empty; `<space>h` toggles it for the session
+- Updates as you lock; hidden while the Tab HUD or the lock editor is open and when empty; `<space>h` toggles it for the session
 
 ## 🔧 Configuration
 
@@ -121,7 +121,7 @@ Pin the 3-5 files you're actively working on. These are your primary targets - a
 
 ### The Context Switch
 
-Glance at the HUD when switching contexts. It shows the alternative file, your locks and what you were working on recently on this branch.
+Glance at the Lock HUD when switching contexts. It shows the alternative file, your locks and what you were working on recently on this branch.
 
 ### The Quick Jump
 
@@ -131,7 +131,7 @@ Stop hunting through file trees or typing fuzzy search patterns for files you ac
 
 ### Version 0.5 (MVP)
 
-- [x] HUD with pinned and recent files
+- [x] Lock HUD with pinned and recent files
 - [x] Basic keybindings (1-9 for pins)
 - [ ] Deduplication logic
 - [ ] Basic configuration
@@ -162,11 +162,11 @@ If you're contributing, please:
 - Explain the "why" behind your changes
 - Keep the code simple and readable
 - Maintain the spatial keybinding philosophy
-- Test with the HUD and the prefix keys
+- Test with the Lock HUD and the prefix keys
 
 ## 📚 Inspiration
 
-- Fighter pilot HUD/radar displays
+- Fighter pilot Lock HUD/radar displays
 - Vim's marks system (but visual and persistent)
 - The need for speed in file navigation
 - Frustration with losing context when using fuzzy finders

@@ -4,7 +4,7 @@
 
 radar.nvim shows the file you're in, its alternative, your locks and recent files at the bottom of your pane, each one keystroke after `<space>`.
 
-![Jumping from the HUD: Space 1 opens a lock, Space o goes back to the alternative file, Space a opens a recent file](docs/assets/changelog/0.6.0-hud-jump.webp)
+![Jumping from the Lock HUD: Space 1 opens a lock, Space o goes back to the alternative file, Space a opens a recent file](docs/assets/changelog/0.6.0-hud-jump.webp)
 
 ## Concept
 
@@ -13,8 +13,8 @@ radar.nvim shows the file you're in, its alternative, your locks and recent file
 - **File Pinning**: Lock your most important files to slots 1-9 for instant access
 - **Smart Persistence**: Context-aware storage per project and git branch
 - **Prefix Keys**: `<space>` plus one key jumps to a lock, a recent file or the alternative file
-- **HUD**: A small always-visible window at the bottom of the active pane with the current and alternative file, the first locks and recent files
-- **Tabs view**: All open tabs and their buffers, where the HUD sits
+- **Lock HUD**: A small always-visible window at the bottom of the active pane with the current and alternative file, the first locks and recent files
+- **Tab HUD**: All open tabs and their buffers, where the Lock HUD sits
 - **Dynamic Highlighting**: Auto-highlight the currently active locked file
 
 See also [Concept](./docs/concept.md)
@@ -60,7 +60,7 @@ This spatial keyboard layout gives you instant access to **15 files** without mo
 }
 ```
 
-**Customize tabs view:**
+**Customize Tab HUD:**
 
 ```lua
 {
@@ -86,19 +86,19 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 | `keys.lock`                                         | `"l"`                                 | Lock current buffer to a slot                                                   |
 | `keys.locks`                                        | `{"1".."9"}`                          | Keys for lock slots                                                             |
 | `keys.recent`                                       | `{"a".."g"}`                          | Keys for recent file slots                                                      |
-| `keys.tabs_toggle`                                  | `"<leader>t"`                         | Toggle tabs view                                                             |
+| `keys.tabs_toggle`                                  | `"<leader>t"`                         | Toggle Tab HUD                                                                  |
 | `keys.alternative`                                  | `"o"`                                 | Alternative file (after the prefix)                                             |
-| `keys.hud_toggle`                                   | `"h"`                                 | Toggle the HUD for the session (after the prefix)                               |
-| `keys.tabs`                                         | `"t"`                                 | Toggle the tabs view (after the prefix)                                      |
+| `keys.hud_toggle`                                   | `"h"`                                 | Toggle the Lock HUD for the session (after the prefix)                          |
+| `keys.tabs`                                         | `"t"`                                 | Toggle the Tab HUD (after the prefix)                                           |
 | `keys.edit`                                         | `"e"`                                 | Open the lock editor (after the prefix)                                         |
 | `keys.help`                                         | `"?"`                                 | Show the keys that follow the prefix (after the prefix)                         |
 | `recent.max_files`                                  | `10`                                  | Recent files kept per project and branch                                        |
-| `hud.enabled`                                       | `true`                                | Show the HUD                                                                    |
-| `hud.dodge`                                         | `true`                                | Move the HUD to the top of the pane while the cursor line runs under it         |
-| `hud.max_locks`                                     | `5`                                   | Locks shown in the HUD                                                          |
-| `hud.max_recent`                                    | `3`                                   | Recent files shown in the HUD                                                   |
+| `hud.enabled`                                       | `true`                                | Show the Lock HUD                                                               |
+| `hud.dodge`                                         | `true`                                | Move the Lock HUD to the top of the pane while the cursor line runs under it    |
+| `hud.max_locks`                                     | `5`                                   | Locks shown in the Lock HUD                                                     |
+| `hud.max_recent`                                    | `3`                                   | Recent files shown in the Lock HUD                                              |
 | `tabs.auto_close`                                   | `true`                                | Close tabs window after selecting                                               |
-| `file_float.win_preset`                             | `"center_narrow"`                    | Window preset for the floating file view (`<C-f>` in the lock editor)           |
+| `file_float.win_preset`                             | `"center_narrow"`                     | Window preset for the floating file view (`<C-f>` in the lock editor)           |
 | `persist.path`                                      | `stdpath("data")/radar/data.json`     | Persistence file location                                                       |
 | `persist.defer_ms`                                  | `500`                                 | Debounce delay for saves                                                        |
 | `win_presets`                                       | `{}`                                  | Override or add custom window presets                                           |
@@ -117,19 +117,19 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 - **`a-g`**: Jump to a recent file
 - **`o`**: Open the alternative file
 - **`l`**: Lock or unlock the current buffer
-- **`h`**: Toggle the HUD for this session
-- **`t`**: Toggle the tabs view
+- **`h`**: Toggle the Lock HUD for this session
+- **`t`**: Toggle the Tab HUD
 - **`e`**: Open the lock editor
 - **`?`**: Show these keys
 - **`<Esc>`** or any other key: Cancel
 
-- **`<leader>t`**: Toggle tabs view
+- **`<leader>t`**: Toggle Tab HUD
 
-**HUD:**
+**Lock HUD:**
 
-The HUD sits at the bottom of the active pane, as wide as the pane, and follows you between splits. It shows the file you are in (`%`, highlighted), the alternative file, up to 5 locks and 3 recent files with the keys that reach them after `<space>`. A locked current file is highlighted; the current file never takes a recent slot. It moves to the top of the pane while your cursor line runs under it and hides while the tabs view or the lock editor is open and when there is nothing to show.
+The Lock HUD sits at the bottom of the active pane, as wide as the pane, and follows you between splits. It shows the file you are in (`%`, highlighted), the alternative file, up to 5 locks and 3 recent files with the keys that reach them after `<space>`. A locked current file is highlighted; the current file never takes a recent slot. It moves to the top of the pane while your cursor line runs under it and hides while the Tab HUD or the lock editor is open and when there is nothing to show.
 
-To keep the HUD at the bottom instead, set `hud = { dodge = false }` and raise `scrolloff` to at least the HUD's height, so the cursor never reaches its rows. On Neovim nightly, `scrolloffpad` keeps that padding at the end of a file too:
+To keep the Lock HUD at the bottom instead, set `hud = { dodge = false }` and raise `scrolloff` to at least the Lock HUD's height, so the cursor never reaches its rows. On Neovim nightly, `scrolloffpad` keeps that padding at the end of a file too:
 
 ```lua
 vim.o.scrolloff = 11      -- the HUD at its tallest: 5 locks, 3 recent files
@@ -137,24 +137,24 @@ vim.o.scrolloffpad = 99   -- Neovim nightly
 require("radar").setup({ hud = { dodge = false } })
 ```
 
-![The HUD follows the active split and moves to the top of the pane when the cursor reaches the bottom](docs/assets/changelog/0.6.0-hud-split.webp)
+![The Lock HUD follows the active split and moves to the top of the pane when the cursor reaches the bottom](docs/assets/changelog/0.6.0-hud-split.webp)
 
 **Lock editor:**
 
-`<space>e` opens the lock editor where the HUD sits: at the bottom of the active pane, as wide as the pane. One lock path per line; the line order sets the labels. `:w` saves, `q` saves and closes. `<CR>`, `<C-v>`, `<C-s>`, `<C-t>` and `<C-f>` save and open the file under the cursor in the current window, a vertical split, a horizontal split, a new tab or a floating window.
+`<space>e` opens the lock editor where the Lock HUD sits: at the bottom of the active pane, as wide as the pane. One lock path per line; the line order sets the labels. `:w` saves, `q` saves and closes. `<CR>`, `<C-v>`, `<C-s>`, `<C-t>` and `<C-f>` save and open the file under the cursor in the current window, a vertical split, a horizontal split, a new tab or a floating window.
 
-![Space l locks the current file, Space e opens the lock editor in the HUD's place, and saving reorders the locks](docs/assets/changelog/0.6.0-hud-edit.webp)
+![Space l locks the current file, Space e opens the lock editor in the Lock HUD's place, and saving reorders the locks](docs/assets/changelog/0.6.0-hud-edit.webp)
 
-**Tabs view:**
+**Tab HUD:**
 
-`<space>t` (or `<leader>t`) opens the tabs view where the HUD sits: every tab with its number and the buffers shown in it, the current tab and buffer in the accent color.
+`<space>t` (or `<leader>t`) opens the Tab HUD where the Lock HUD sits: every tab with its number and the buffers shown in it, the current tab and buffer in the accent color.
 
-![Space t opens the tabs view in the HUD's place, 2 jumps to the second tab, and 1 goes back](docs/assets/changelog/0.7.0-tabs.webp)
+![Space t opens the Tab HUD in the Lock HUD's place, 2 jumps to the second tab, and 1 goes back](docs/assets/changelog/0.7.0-tabs.webp)
 
 - **`<CR>`**: Jump to tab/buffer
 - **`1-9`**: Jump to that tab
 - **`x`**: Close buffer or tab
-- **`q` / `<Esc>`**: Close tabs view
+- **`q` / `<Esc>`**: Close Tab HUD
 
 ### Context-Aware Persistence
 
@@ -211,18 +211,18 @@ If you use [mise](https://mise.jdx.dev), run `mise install` to install `lua-lang
 
 | Command             | Description                     | Dependencies                              |
 | ------------------- | ------------------------------- | ----------------------------------------- |
-| `make test`         | Run all tests                   | None                                      |
-| `make test-verbose` | Run tests with verbose output   | None                                      |
-| `make test-watch`   | Watch for changes and run tests | `entr` (`brew install entr`)              |
-| `make validate`     | Validate test setup             | None                                      |
-| `make check`        | Run all linters and type checks | `stylua`, `lua-language-server`, `selene` |
-| `make lint`         | Check Lua formatting            | `stylua` (`brew install stylua`)          |
-| `make typecheck`    | Run type checking               | `lua-language-server`                     |
-| `make selene`       | Run selene linter               | `selene` (`cargo install selene`)         |
-| `make format`       | Format Lua files                | `stylua` (`brew install stylua`)          |
-| `make install-hooks`| Enable pre-commit hooks         | None                                      |
-| `make clean`        | Clean test artifacts            | None                                      |
-| `make help`         | Show all available commands     | None                                      |
+| `make test`                                         | Run all tests                         | None                                                                            |
+| `make test-verbose`                                 | Run tests with verbose output         | None                                                                            |
+| `make test-watch`                                   | Watch for changes and run tests       | `entr` (`brew install entr`)                                                    |
+| `make validate`                                     | Validate test setup                   | None                                                                            |
+| `make check`                                        | Run all linters and type checks       | `stylua`, `lua-language-server`, `selene`                                       |
+| `make lint`                                         | Check Lua formatting                  | `stylua` (`brew install stylua`)                                                |
+| `make typecheck`                                    | Run type checking                     | `lua-language-server`                                                           |
+| `make selene`                                       | Run selene linter                     | `selene` (`cargo install selene`)                                               |
+| `make format`                                       | Format Lua files                      | `stylua` (`brew install stylua`)                                                |
+| `make install-hooks`                                | Enable pre-commit hooks               | None                                                                            |
+| `make clean`                                        | Clean test artifacts                  | None                                                                            |
+| `make help`                                         | Show all available commands           | None                                                                            |
 
 ### Writing Tests
 
@@ -238,9 +238,9 @@ end)
 
 ## Interface Preview
 
-The HUD at the bottom of the active pane: the current file, the alternative file, locks and recent files, each with the key that reaches it after `<space>`.
+The Lock HUD at the bottom of the active pane: the current file, the alternative file, locks and recent files, each with the key that reaches it after `<space>`.
 
-![The HUD at the bottom of a pane](docs/assets/changelog/0.6.0-hud.webp)
+![The Lock HUD at the bottom of a pane](docs/assets/changelog/0.6.0-hud.webp)
 
 ## Learn More
 
