@@ -4,6 +4,7 @@ local original_filereadable = vim.fn.filereadable
 describe("persistence", function()
   local test_data_path = vim.fn.tempname() .. ".json"
   local test_config = {
+    keys = require("radar.config").default.keys,
     persist = {
       path = test_data_path,
     },

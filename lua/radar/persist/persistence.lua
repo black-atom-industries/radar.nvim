@@ -233,6 +233,9 @@ function M.populate(config)
     -- Always update locks to reflect the current project/branch.
     -- Clears to {} when the new project/branch has no saved locks (e.g.,
     -- switching worktrees) — prevents stale locks from the previous directory.
+    for i, lock in ipairs(locks or {}) do
+      lock.label = config.keys.locks[i] or tostring(i)
+    end
     state.set_locks(locks or {})
 
     -- Update lastAccessed for existing project/branch entries
