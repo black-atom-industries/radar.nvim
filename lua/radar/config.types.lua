@@ -21,6 +21,7 @@
 
 ---@class Radar.Config.Hud
 ---@field enabled boolean Show the HUD on startup
+---@field dodge boolean Move the HUD to the top of the pane while the cursor line runs under it
 ---@field max_locks integer Locks shown in the HUD
 ---@field max_recent integer Recent files shown in the HUD
 

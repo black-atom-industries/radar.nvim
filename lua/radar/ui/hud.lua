@@ -324,7 +324,10 @@ function M.dodge()
     return
   end
   ---@cast hud Radar.Hud
-  if vim.api.nvim_get_current_win() ~= hud.anchor then
+  if
+    not (_config and _config.hud.dodge)
+    or vim.api.nvim_get_current_win() ~= hud.anchor
+  then
     return
   end
 

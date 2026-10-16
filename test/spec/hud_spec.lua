@@ -305,6 +305,17 @@ describe("hud window", function()
     MiniTest.expect.equality(hud.get_winid(), nil)
   end)
 
+  it("stays at the bottom with hud.dodge off", function()
+    test_config.hud.dodge = false
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, vim.fn["repeat"]({ "x" }, 200))
+    hud.refresh()
+    local winid = assert(hud.get_winid())
+    vim.cmd("normal! L")
+    hud.dodge()
+    MiniTest.expect.equality(bottom_of(vim.api.nvim_win_get_config(winid), 0), true)
+    test_config.hud.dodge = true
+  end)
+
   it("moves to the top of the pane while the cursor line runs under it", function()
     vim.api.nvim_buf_set_lines(0, 0, -1, false, vim.fn["repeat"]({ "x" }, 200))
     vim.api.nvim_win_set_cursor(0, { 1, 0 })

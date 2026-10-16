@@ -94,6 +94,7 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 | `keys.help`                                         | `"?"`                                 | Show the keys that follow the prefix (after the prefix)                         |
 | `recent.max_files`                                  | `10`                                  | Recent files kept per project and branch                                        |
 | `hud.enabled`                                       | `true`                                | Show the HUD                                                                    |
+| `hud.dodge`                                         | `true`                                | Move the HUD to the top of the pane while the cursor line runs under it         |
 | `hud.max_locks`                                     | `5`                                   | Locks shown in the HUD                                                          |
 | `hud.max_recent`                                    | `3`                                   | Recent files shown in the HUD                                                   |
 | `tabs.auto_close`                                   | `true`                                | Close tabs window after selecting                                               |

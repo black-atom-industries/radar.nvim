@@ -33,6 +33,7 @@ M.default = {
   -- HUD with the current and alternative file, locks and recent files
   hud = {
     enabled = true,
+    dodge = true,
     max_locks = 5,
     max_recent = 3,
   },
