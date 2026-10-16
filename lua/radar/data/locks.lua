@@ -88,11 +88,13 @@ function M.toggle(filename, config, persistence_module)
   vim.defer_fn(function()
     persistence_module.persist(config, snapshot)
   end, config.persist.defer_ms)
+  require("radar.ui.hud").refresh()
 
   return lock
 end
 
----Toggle the lock of a buffer and re-render the radar
+---Toggle the lock of a buffer and re-render the radar, or open it when the
+---HUD is disabled
 ---@param buf_nr? integer
 ---@param config Radar.Config
 ---@param persistence_module table
@@ -121,7 +123,7 @@ function M.lock_current_buffer(buf_nr, config, persistence_module, radar_module)
 
   if radar_module.exists() then
     radar_module.update(config)
-  else
+  elseif not config.hud.enabled then
     radar_module.create(config)
   end
 end

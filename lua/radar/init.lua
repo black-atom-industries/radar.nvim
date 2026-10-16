@@ -12,6 +12,7 @@ function M.setup(opts)
   require("radar.debug").setup(config)
   require("radar.autocmd").setup(config)
   require("radar.ui.keys").setup(config)
+  require("radar.ui.hud").setup(config)
 
   -- Defer persistence loading to avoid blocking startup with file I/O
   vim.schedule(function()

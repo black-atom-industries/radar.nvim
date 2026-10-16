@@ -23,6 +23,7 @@ end
 ---@return nil
 function M.close()
   state.close_tabs_window()
+  require("radar.ui.hud").refresh()
 end
 
 ---Toggle tabs help popup
@@ -358,6 +359,7 @@ function M.open(config)
   end
 
   vim.api.nvim_win_set_cursor(winid, { cursor_line, 0 })
+  require("radar.ui.hud").refresh()
 end
 
 ---Toggle tabs window

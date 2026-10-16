@@ -11,7 +11,7 @@
 ---@field prefix string
 ---@field lock string
 ---@field locks string[]
----@field alternative string?
+---@field alternative string
 ---@field recent string[]
 ---@field vertical string
 ---@field horizontal string
@@ -19,6 +19,7 @@
 ---@field float string
 ---@field line Radar.Config.Keys.Line
 ---@field tabs_toggle string
+---@field hud_toggle string
 
 ---@class Radar.Config.Persist
 ---@field path string
@@ -48,6 +49,11 @@
 ---@field titles Radar.Config.Titles
 ---@field win_opts table<string, any> Window-local options (see |options-list|)
 
+---@class Radar.Config.Hud
+---@field enabled boolean Show the HUD on startup
+---@field max_locks integer Locks shown in the HUD
+---@field max_recent integer Recent files shown in the HUD
+
 ---@class Radar.Config.RadarEdit
 ---@field win_preset Radar.Config.WinPreset|string
 ---@field win_opts table<string, any> Window-local options (see |options-list|)
@@ -67,6 +73,7 @@
 ---@field persist Radar.Config.Persist
 ---@field win_presets table<Radar.Config.WinPreset|string, table|fun(config: Radar.Config): vim.api.keyset.win_config>
 ---@field radar Radar.Config.Radar
+---@field hud Radar.Config.Hud
 ---@field radar_edit Radar.Config.RadarEdit
 ---@field file_float Radar.Config.FileFloat
 ---@field tabs Radar.Config.Tabs

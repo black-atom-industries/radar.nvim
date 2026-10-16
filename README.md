@@ -11,6 +11,7 @@ A Neovim plugin that treats file navigation like a fighter pilot's radar system.
 - **File Pinning**: Lock your most important files to slots 1-9 for instant access
 - **Smart Persistence**: Context-aware storage per project and git branch
 - **Sections**: One radar window with alternative file, locks, and recent files
+- **Corner HUD**: A small always-visible window in the top-right corner with the alternative file, the first locks and recent files
 - **Tab Navigation**: Sidebar view of all open tabs and buffers
 - **Dynamic Highlighting**: Auto-highlight the currently active locked file
 
@@ -19,9 +20,11 @@ See also [Concept](./docs/concept.md)
 **Keybindings**
 
 ```
+<space> then:
 [1][2][3][4][5][6][7][8][9]  ← Locks (manually locked targets)
 [a][s][d][f][g]              ← Recent files (vim.v.oldfiles)
-[<space>]                    ← Alternative file (test ↔ impl)
+[<Tab>]                      ← Alternative file (test ↔ impl)
+[<space>]                    ← Full radar
 ```
 
 This spatial keyboard layout gives you instant access to **15 files** without moving your left hand from home position.
@@ -81,12 +84,13 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 
 | Option                                              | Default                               | Description                                                                     |
 | --------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------- |
-| `keys.prefix`                                       | `"<space>"`                           | Toggle radar / alternative file (double-tap)                                    |
+| `keys.prefix`                                       | `"<space>"`                           | Prefix that reads one more key; closes the radar inside it                      |
 | `keys.lock`                                         | `"l"`                                 | Lock current buffer to a slot                                                   |
 | `keys.locks`                                        | `{"1".."9"}`                          | Keys for lock slots                                                             |
 | `keys.recent`                                       | `{"a".."g"}`                          | Keys for recent file slots                                                      |
 | `keys.tabs_toggle`                                  | `"<leader>t"`                         | Toggle tabs sidebar                                                             |
-| `keys.alternative`                                  | `nil` (= prefix)                      | Key for alternative file; nil defaults to prefix                                |
+| `keys.alternative`                                  | `"-"`                                 | Alternative file inside the radar                                               |
+| `keys.hud_toggle`                                   | `"h"`                                 | Toggle the HUD for the session (after the prefix)                               |
 | `keys.vertical` / `.horizontal` / `.tab` / `.float` | `<C-v>` / `<C-s>` / `<C-t>` / `<C-f>` | Split mode modifiers                                                            |
 | `radar.size`                                   | `{ width = 50, height = 75 }`         | Window dimensions                                                               |
 | `radar.win_preset`                                  | `"center"`                            | Window preset for the radar                                                     |
@@ -94,6 +98,9 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 | `radar.max_recent_files`                            | `10`                                  | Max recent files shown                                                          |
 | `radar.titles`                                      | (nerd font icons)                     | Section titles for main, locks, recent                      |
 | `radar.win_opts`                                    | `{ cursorline = true, ... }`          | Window-local options applied to radar buffers                                   |
+| `hud.enabled`                                       | `true`                                | Show the corner HUD                                                             |
+| `hud.max_locks`                                     | `5`                                   | Locks shown in the HUD                                                          |
+| `hud.max_recent`                                    | `3`                                   | Recent files shown in the HUD                                                   |
 | `tabs.auto_close`                                   | `true`                                | Close tabs window after selecting                                               |
 | `tabs.win_preset`                                   | `"center"`                            | Window preset for tabs sidebar                                                  |
 | `radar_edit.win_preset`                             | `"center"`                            | Window preset for lock label editor                                             |
@@ -110,20 +117,33 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 
 **Global:**
 
-- **`<space>`**: Toggle radar window
+`<space>` waits for one more key:
+
+- **`1-9`**: Jump to a lock
+- **`a-g`**: Jump to a recent file
+- **`<Tab>`**: Open the alternative file
+- **`<space>`**: Open the radar
+- **`l`**: Lock or unlock the current buffer
+- **`h`**: Toggle the HUD for this session
+- **`<Esc>`** or any other key: Cancel
+
 - **`<leader>t`**: Toggle tabs sidebar
+
+**Corner HUD:**
+
+The HUD sits in the top-right corner of every tab, below the tabline. It shows the alternative file, up to 5 locks and 3 recent files with the keys that reach them after `<space>`, and highlights the current file. It moves to the bottom-right corner while the cursor is under it, and hides while the radar or the tabs sidebar is open and when there is nothing to show.
 
 **Within Radar Window:**
 
 - **`l`**: Lock or unlock the file under the cursor
 - **`1-9`**: Open locked files
 - **`a-g`**: Open recent files
-- **`<space>`**: Open alternative file (e.g., test ↔ implementation)
+- **`-`**: Open alternative file (e.g., test ↔ implementation)
 - **`e`**: Edit lock labels
 - **`t`**: Open tabs sidebar
 - **`?`**: Toggle help
 - **`<Tab>` / `<S-Tab>`**: Cycle focus between sections
-- **`q` / `<Esc>`**: Close radar
+- **`q` / `<Esc>` / `<space>`**: Close radar
 
 **Within Tabs Sidebar:**
 
@@ -139,7 +159,7 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 - **`T`**: Open in new tab
 - **`F`**: Open in floating window
 
-**Split Modifiers (combine with 1-9, a-g, or `<space>`):**
+**Split Modifiers (within radar, combine with 1-9, a-g, or `-`):**
 
 - **`<C-v>` + key**: Open in vertical split
 - **`<C-s>` + key**: Open in horizontal split
@@ -230,7 +250,7 @@ end)
 ```
 ┌──────── 󰐷  RADAR ────────────────────────────────────────────────┐
 │   OTHER                                                          │
-│   [<space>] test/spec/locks_spec.lua                              │
+│   [-] test/spec/locks_spec.lua                                    │
 └───────────────────────────────────────────────────────────────────┘
 
 ┌── 󰋱  LOCKED IN ──────────────┐   ┌── 󰽏  NEAR ──────────────────┐

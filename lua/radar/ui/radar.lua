@@ -50,7 +50,7 @@ local function build_content(config)
   end
 
   -- ── Alternative file ──
-  local alt_label = config.keys.alternative or config.keys.prefix
+  local alt_label = config.keys.alternative
   local alt_file = state.get_source_alt_file()
   local alt_text
   if alt_file then
@@ -311,6 +311,7 @@ function M.close()
   end
   -- Close help window if open
   require("radar.ui.help").close()
+  require("radar.ui.hud").refresh()
 end
 
 ---Toggle radar visibility
@@ -547,10 +548,12 @@ function M.create(config)
       if state.get_radar_bufid() == bufnr then
         reset_state()
         require("radar.ui.help").close()
+        vim.schedule(require("radar.ui.hud").refresh)
       end
     end,
   })
   place_cursor(winid, line_count)
+  require("radar.ui.hud").refresh()
 
   debug.log("  radar window created, winid =", winid)
   debug.flush()
@@ -605,7 +608,7 @@ function M.show_help(config)
       rows = {
         { range(keys.locks), "Open lock" },
         { range(keys.recent), "Open recent" },
-        { keys.alternative or keys.prefix, "Alternative file" },
+        { keys.alternative, "Alternative file" },
         { keys.line.open, "Open file" },
         { keys.line.vertical, "Window vertically" },
         { keys.line.horizontal, "Window horizontally" },
@@ -628,7 +631,18 @@ function M.show_help(config)
         { "t", "Tabs sidebar" },
         { "<Tab>/<S-Tab>", "Cycle section" },
         { "?", "Toggle help" },
-        { "q/<Esc>", "Close radar" },
+        { "q/<Esc>/" .. keys.prefix, "Close radar" },
+      },
+    },
+    {
+      title = "Outside the radar, after " .. keys.prefix,
+      rows = {
+        { range(keys.locks), "Jump to lock" },
+        { range(keys.recent), "Jump to recent" },
+        { keys.prefix, "Open radar" },
+        { "<Tab>", "Alternative file" },
+        { keys.lock, "Lock/unlock buffer" },
+        { keys.hud_toggle, "Toggle HUD" },
       },
     },
   })

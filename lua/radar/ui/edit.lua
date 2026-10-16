@@ -91,6 +91,7 @@ function M.save_buffer(edit_buf, radar_config, radar_module)
   state.set_locks(new_locks)
   persistence.persist(radar_config)
   radar_module.update(radar_config)
+  require("radar.ui.hud").refresh()
 
   -- Mark buffer as saved
   vim.api.nvim_set_option_value("modified", false, { buf = edit_buf })

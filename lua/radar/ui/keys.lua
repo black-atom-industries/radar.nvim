@@ -1,15 +1,56 @@
 local M = {}
 
----Setup global keymaps (only toggle)
+---Read one key after the prefix and run its action
+---@param config Radar.Config
+---@return nil
+local function dispatch(config)
+  local ok, char = pcall(vim.fn.getcharstr)
+  if not ok then
+    return
+  end
+
+  local radar = require("radar.ui.radar")
+  local navigation = require("radar.ui.navigation")
+  local function is(key)
+    return char == vim.keycode(key)
+  end
+
+  if is(config.keys.prefix) then
+    radar.toggle(config)
+  elseif is("<Tab>") then
+    local alt_file = require("radar.data.alternative").get_alternative_file()
+    navigation.open_file(alt_file, nil, config, radar)
+  elseif is(config.keys.lock) then
+    require("radar.data.locks").lock_current_buffer(
+      nil,
+      config,
+      require("radar.persist.persistence"),
+      radar
+    )
+  elseif is(config.keys.hud_toggle) then
+    require("radar.ui.hud").toggle()
+  else
+    for _, label in ipairs(config.keys.locks) do
+      if is(label) then
+        return navigation.open_lock(label, nil, config, radar)
+      end
+    end
+    for _, label in ipairs(config.keys.recent) do
+      if is(label) then
+        require("radar.data.recent").update_state(config)
+        return navigation.open_recent(label, nil, config, radar)
+      end
+    end
+  end
+end
+
+---Setup global keymaps
 ---@param config Radar.Config
 ---@return nil
 function M.setup(config)
-  local radar = require("radar.ui.radar")
-
-  -- Global toggle keymap (prefix becomes toggle)
   vim.keymap.set("n", config.keys.prefix, function()
-    radar.toggle(config)
-  end, { desc = "Toggle Radar" })
+    dispatch(config)
+  end, { desc = "Radar" })
 
   -- Tabs sidebar toggle
   vim.keymap.set("n", config.keys.tabs_toggle, function()
@@ -68,6 +109,10 @@ function M.setup_common_keymaps(bufnr, config, radar, opts)
     radar.close()
   end, vim.tbl_extend("force", opts, { desc = "Close Radar" }))
 
+  vim.keymap.set("n", config.keys.prefix, function()
+    radar.close()
+  end, vim.tbl_extend("force", opts, { desc = "Close Radar" }))
+
   -- Tab cycling
   vim.keymap.set("n", "<Tab>", function()
     radar.cycle_focus_next()
@@ -116,9 +161,8 @@ function M.setup_common_keymaps(bufnr, config, radar, opts)
     require("radar.ui.tabs").open(config)
   end, vim.tbl_extend("force", opts, { desc = "Open Tabs Sidebar" }))
 
-  -- Alternative file (defaults to prefix for double-tap behavior)
-  local alt_key = config.keys.alternative or config.keys.prefix
-  register_split_variants(bufnr, alt_key, function(cmd)
+  -- Alternative file
+  register_split_variants(bufnr, config.keys.alternative, function(cmd)
     local navigation = require("radar.ui.navigation")
     navigation.open_alternative(cmd, config, radar)
   end, "Open alternative file", config)

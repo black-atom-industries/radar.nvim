@@ -238,7 +238,19 @@ describe("locks", function()
       )
     end)
 
-    it("creates mini radar when it doesn't exist", function()
+    it("leaves the radar closed while the HUD is enabled", function()
+      local create_called = false
+      mock_mini_radar.create = function()
+        create_called = true
+      end
+
+      locks.lock_current_buffer(nil, test_config, mock_persistence, mock_mini_radar)
+
+      MiniTest.expect.equality(create_called, false)
+    end)
+
+    it("creates the radar when the HUD is disabled", function()
+      test_config.hud.enabled = false
       local create_called = false
       mock_mini_radar.create = function()
         create_called = true

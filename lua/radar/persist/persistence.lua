@@ -288,6 +288,7 @@ function M.populate(config)
       if radar.exists() then
         radar.update(config)
       end
+      require("radar.ui.hud").refresh()
     end
     return
   end
@@ -305,6 +306,7 @@ function M.populate(config)
   if radar.exists() then
     radar.update(config)
   end
+  require("radar.ui.hud").refresh()
 
   if data ~= nil and locks ~= nil then
     data.projects[project_path][git_branch].lastAccessed = os.time()

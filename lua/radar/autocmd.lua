@@ -17,6 +17,7 @@ function M.setup(config)
       if radar.exists() then
         radar.update(config)
       end
+      require("radar.ui.hud").refresh()
     end,
   })
 
@@ -28,6 +29,7 @@ function M.setup(config)
       if radar.exists() then
         radar.update(config)
       end
+      require("radar.ui.hud").refresh()
     end,
   })
 
@@ -45,6 +47,7 @@ function M.setup(config)
       if radar.exists() then
         radar.update(config)
       end
+      require("radar.ui.hud").refresh()
     end,
   })
 
@@ -62,6 +65,7 @@ function M.setup(config)
       if radar.exists() then
         radar.update(config)
       end
+      require("radar.ui.hud").refresh()
     end,
   })
 
@@ -70,6 +74,21 @@ function M.setup(config)
     group = autogrp("radar.FocusGained", { clear = true }),
     callback = function()
       require("radar.persist.persistence").populate_if_changed(config)
+      require("radar.ui.hud").refresh()
+    end,
+  })
+
+  autocmd("TabEnter", {
+    group = autogrp("radar.HudTabEnter", { clear = true }),
+    callback = function()
+      require("radar.ui.hud").refresh()
+    end,
+  })
+
+  autocmd({ "CursorMoved", "CursorMovedI", "WinScrolled" }, {
+    group = autogrp("radar.HudDodge", { clear = true }),
+    callback = function()
+      require("radar.ui.hud").dodge()
     end,
   })
 

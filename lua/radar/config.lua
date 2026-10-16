@@ -8,7 +8,7 @@ M.default = {
     prefix = "<space>",
     lock = "l",
     locks = { "1", "2", "3", "4", "5", "6", "7", "8", "9" },
-    alternative = nil, -- defaults to prefix (double-tap to open alternative)
+    alternative = "-",
     recent = { "a", "s", "d", "f", "g" },
     vertical = "<C-v>",
     horizontal = "<C-s>",
@@ -22,6 +22,7 @@ M.default = {
       float = "F",
     },
     tabs_toggle = "<leader>t",
+    hud_toggle = "h",
   },
 
   persist = {
@@ -52,6 +53,13 @@ M.default = {
       cursorline = true,
       wrap = false,
     },
+  },
+
+  -- Corner HUD with the alternative file, locks and recent files
+  hud = {
+    enabled = true,
+    max_locks = 5,
+    max_recent = 3,
   },
 
   -- Lock label editor window

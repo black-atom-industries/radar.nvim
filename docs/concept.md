@@ -8,7 +8,7 @@
 
 The plugin provides two complementary views:
 
-- **Mini Radar**: A persistent, always-visible floating window showing your pinned files
+- **Corner HUD**: A small, always-visible window in the top-right corner showing the alternative file, your first locks and recent files
 - **Full Radar**: A comprehensive tactical display showing all file categories
 
 ## 🚀 Key Features
@@ -48,23 +48,23 @@ This gives you instant access to 24 files without moving your left hand from hom
 
 ## 🎨 Interface Design
 
-### Mini Radar (Persistent)
+### Corner HUD (Persistent)
 
 ```
-┌─────────────────┐
-│ 🎯  Locks       │
-│ [1] config.lua  │
-│ [2] init.vim    │
-│ [3] radar.lua   │
-│ [4] setup.ts    │
-└─────────────────┘
+ [<Tab>] spec.lua
+ [1] config.lua
+ [2] init.lua
+ [a] radar.lua
+ [s] setup.ts
 ```
 
-- Always visible in corner of your screen
-- Shows only locked files for minimal distraction
-- Instant visual reference for your working set
+- One per tab, anchored to the editor's top-right corner below the tabline
+- Shows the alternative file, up to 5 locks and 3 recent files, with the current file highlighted
+- Labels are the keys that follow `<space>`: `<space>1` jumps to lock 1, `<space>a` to the first recent file, `<space><Tab>` to the alternative file
+- Moves to the bottom-right corner while the cursor is under it
+- Hidden while the full radar or the tabs sidebar is open, and when empty; `<space>h` toggles it for the session
 
-### Full Radar (`<space>`)
+### Full Radar (`<space><space>`)
 
 ```
 ┌─────────────────────┬───────────────────┐
@@ -87,7 +87,9 @@ This gives you instant access to 24 files without moving your left hand from hom
 ```lua
 require("radar").setup({
   keys = {
-    prefix = "<space>",                             -- toggles the radar, double-tap opens the alternative file
+    prefix = "<space>",                             -- reads one more key; <space><space> opens the radar
+    alternative = "-",                              -- alternative file inside the radar
+    hud_toggle = "h",                               -- <space>h toggles the HUD
     locks = { "1", "2", "3", "4", "5", "6", "7", "8", "9" },
     recent = { "a", "s", "d", "f", "g" },
   },
@@ -96,6 +98,12 @@ require("radar").setup({
     win_preset = "center",                          -- window preset, see AGENTS.md
     size = { width = 50, height = 75 },
     max_recent_files = 10,
+  },
+
+  hud = {
+    enabled = true,
+    max_locks = 5,
+    max_recent = 3,
   },
 
   persist = {
@@ -171,7 +179,7 @@ If you're contributing, please:
 - Explain the "why" behind your changes
 - Keep the code simple and readable
 - Maintain the spatial keybinding philosophy
-- Test with both mini and full radar views
+- Test with both the HUD and the full radar
 
 ## 📚 Inspiration
 
