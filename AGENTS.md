@@ -72,7 +72,7 @@ lua/radar/
 2. **Window Presets**
    - A preset name (e.g. `"center"`) or a full table, resolved by `window.resolve_config`
    - Presets: cursor, center, center_large, center_narrow, top_left, top_right, bottom_left, bottom_right, bottom_center, full_height_sidebar
-   - Used by: tabs (`tabs.win_preset`), file_float (`file_float.win_preset`)
+   - Used by: file_float (`file_float.win_preset`); the HUD, the lock editor and the tabs sidebar sit at the bottom of the active pane via `window.pane_bottom`
    - Custom presets go in `config.win_presets`
 
 3. **Tabs Sidebar**

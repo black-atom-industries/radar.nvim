@@ -61,7 +61,6 @@ M.default = {
   -- Tabs floating window
   tabs = {
     auto_close = true,
-    win_preset = "center",
     win_opts = {
       number = false,
       cursorline = true,

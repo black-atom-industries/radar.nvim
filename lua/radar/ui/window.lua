@@ -212,4 +212,35 @@ function M.resolve_config(config, preset_name, runtime_opts)
   return vim.tbl_deep_extend("force", base_config, runtime_opts)
 end
 
+---Pane a bottom float belongs to: the current window, or the previous one
+---while a float has focus
+---@return integer
+function M.active_pane()
+  local current = vim.api.nvim_get_current_win()
+  if vim.api.nvim_win_get_config(current).relative == "" then
+    return current
+  end
+  return vim.fn.win_getid(vim.fn.winnr("#"))
+end
+
+---Float config at the bottom of a pane, as wide as the pane: where the HUD sits
+---@param pane integer
+---@param lines integer content height, at least 3 rows and at most the pane
+---@return vim.api.keyset.win_config
+function M.pane_bottom(pane, lines)
+  local pane_height = vim.api.nvim_win_get_height(pane)
+  local height = math.min(math.max(lines, 3), pane_height)
+  return {
+    relative = "win",
+    win = pane,
+    row = pane_height - height,
+    col = 0,
+    width = vim.api.nvim_win_get_width(pane),
+    height = height,
+    border = "none",
+    focusable = true,
+    zindex = 20,
+  }
+end
+
 return M

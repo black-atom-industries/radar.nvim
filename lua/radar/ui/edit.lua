@@ -138,17 +138,6 @@ function M.cleanup()
   require("radar.ui.hud").refresh()
 end
 
----Pane the editor sits in: the current window, or the previous one while a
----float has focus
----@return integer
-local function anchor_window()
-  local current = vim.api.nvim_get_current_win()
-  if vim.api.nvim_win_get_config(current).relative == "" then
-    return current
-  end
-  return vim.fn.win_getid(vim.fn.winnr("#"))
-end
-
 ---Create editable buffer for managing locks, at the bottom of the active pane
 ---@param radar_config Radar.Config
 ---@return nil
@@ -200,20 +189,12 @@ function M.edit_locks(radar_config)
 
   vim.api.nvim_buf_set_lines(edit_buf, 0, -1, false, lines)
 
-  local anchor = anchor_window()
-  local pane_height = vim.api.nvim_win_get_height(anchor)
-  local win_height = math.min(math.max(#lines, 3), pane_height)
-  local edit_win = vim.api.nvim_open_win(edit_buf, true, {
-    relative = "win",
-    win = anchor,
-    row = pane_height - win_height,
-    col = 0,
-    width = vim.api.nvim_win_get_width(anchor),
-    height = win_height,
-    border = "none",
-    focusable = true,
-    zindex = 20,
-  })
+  local window = require("radar.ui.window")
+  local edit_win = vim.api.nvim_open_win(
+    edit_buf,
+    true,
+    window.pane_bottom(window.active_pane(), #lines)
+  )
   state.set_edit_winid(edit_win)
   vim.api.nvim_set_option_value("winblend", 0, { win = edit_win })
 

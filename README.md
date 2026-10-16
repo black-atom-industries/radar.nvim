@@ -71,7 +71,6 @@ This spatial keyboard layout gives you instant access to **15 files** without mo
     },
     tabs = {
       auto_close = false,  -- keep open after selecting
-      win_preset = "center",
     }
   }
 }
@@ -98,7 +97,6 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 | `hud.max_locks`                                     | `5`                                   | Locks shown in the HUD                                                          |
 | `hud.max_recent`                                    | `3`                                   | Recent files shown in the HUD                                                   |
 | `tabs.auto_close`                                   | `true`                                | Close tabs window after selecting                                               |
-| `tabs.win_preset`                                   | `"center"`                            | Window preset for tabs sidebar                                                  |
 | `file_float.win_preset`                             | `"center_narrow"`                    | Window preset for the floating file view (`<C-f>` in the lock editor)           |
 | `persist.path`                                      | `stdpath("data")/radar/data.json`     | Persistence file location                                                       |
 | `persist.defer_ms`                                  | `500`                                 | Debounce delay for saves                                                        |

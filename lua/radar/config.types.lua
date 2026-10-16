@@ -33,7 +33,6 @@
 
 ---@class Radar.Config.Tabs
 ---@field auto_close boolean Close window after selecting a tab/buffer
----@field win_preset Radar.Config.WinPreset|string Window preset name
 ---@field win_opts table<string, any> Window-local options (see |options-list|)
 
 ---@class Radar.Config

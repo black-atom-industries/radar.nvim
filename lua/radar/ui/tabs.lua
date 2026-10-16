@@ -275,21 +275,11 @@ function M.open(config)
   local source_filepath = vim.api.nvim_buf_get_name(source_buf)
   local source_tabid = vim.api.nvim_get_current_tabpage()
 
-  -- Resolve window config from preset (before building content to get width)
-  local tabs_opts = {
-    title = "  ☰ TABS ",
-    title_pos = "left",
-    border = "solid",
-  }
-  local win_config = window.resolve_config(config, config.tabs.win_preset, tabs_opts)
-
-  -- Get tabs data
+  local pane = window.active_pane()
   local tabs_data = tabs.get_tabs_data()
-
-  -- Build content with right-aligned indicators
-  ---@diagnostic disable-next-line: undefined-field
-  local content_width = win_config.width - 2 -- subtract border
-  local lines, line_mapping = build_content(tabs_data, content_width)
+  local lines, line_mapping =
+    build_content(tabs_data, vim.api.nvim_win_get_width(pane))
+  local win_config = window.pane_bottom(pane, #lines)
   state.set_tabs_line_mapping(line_mapping)
 
   -- Create buffer
@@ -309,6 +299,7 @@ function M.open(config)
   state.set_tabs_bufid(bufnr)
 
   local winid = vim.api.nvim_open_win(bufnr, true, win_config)
+  vim.api.nvim_set_option_value("winblend", 0, { win = winid })
 
   -- Store window id
   state.set_tabs_winid(winid)
@@ -372,15 +363,9 @@ function M.update()
   -- Get fresh data
   local tabs_data = tabs.get_tabs_data()
 
-  -- Determine window width for alignment
-  local content_width = 73 -- fallback
-  if
-    state.get_tabs_winid() and vim.api.nvim_win_is_valid(state.get_tabs_winid())
-  then
-    content_width = vim.api.nvim_win_get_width(state.get_tabs_winid()) - 2
-  end
-
-  local lines, line_mapping = build_content(tabs_data, content_width)
+  local winid = state.get_tabs_winid()
+  local lines, line_mapping =
+    build_content(tabs_data, vim.api.nvim_win_get_width(winid))
   state.set_tabs_line_mapping(line_mapping)
 
   local bufnr = state.get_tabs_bufid()
@@ -395,6 +380,11 @@ function M.update()
 
   -- Re-apply highlights
   apply_highlights(bufnr, tabs_data)
+
+  local pane = vim.api.nvim_win_get_config(winid).win
+  if pane and vim.api.nvim_win_is_valid(pane) then
+    vim.api.nvim_win_set_config(winid, window.pane_bottom(pane, #lines))
+  end
 end
 
 ---Delete the buffer or close the tab on the current line
