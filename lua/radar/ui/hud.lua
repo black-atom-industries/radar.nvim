@@ -322,9 +322,10 @@ function M.refresh()
       false,
       vim.tbl_extend("force", win_config, {
         style = "minimal",
+        border = "none",
         focusable = false,
         noautocmd = true,
-        zindex = 40,
+        zindex = 10,
       })
     )
     vim.api.nvim_set_option_value(
