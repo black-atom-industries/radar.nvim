@@ -59,7 +59,7 @@ end
 function M.build(config, data, max_width)
   local lines, highlights = {}, {}
 
-  local function add(icon, label, target, current)
+  local function add(icon, label, target)
     local icon_part = " " .. icon .. " "
     local label_part = "[" .. label .. "]"
     local prefix = icon_part .. label_part .. " "
@@ -78,28 +78,21 @@ function M.build(config, data, max_width)
       col_end = #icon_part + #label_part,
       hl_group = "@keyword",
     })
-    if current then
-      table.insert(highlights, {
-        line = #lines - 1,
-        col_start = #prefix,
-        col_end = #line,
-        hl_group = "@function",
-      })
-    end
   end
 
   if data.alt then
-    add(config.hud.icons.alternative, config.keys.alternative, data.alt, false)
+    add(config.hud.icons.alternative, config.keys.alternative, data.alt)
   end
 
-  for i = 1, math.min(#data.locks, config.hud.max_locks) do
-    local lock = data.locks[i]
-    add(
-      config.hud.icons.locks,
-      lock.label,
-      lock.filename,
-      lock.filename == data.current_lock
-    )
+  local shown_locks = 0
+  for _, lock in ipairs(data.locks) do
+    if shown_locks == config.hud.max_locks then
+      break
+    end
+    if lock.filename ~= data.current_lock then
+      add(config.hud.icons.locks, lock.label, lock.filename)
+      shown_locks = shown_locks + 1
+    end
   end
 
   local shown = 0
@@ -109,7 +102,7 @@ function M.build(config, data, max_width)
       break
     end
     if file ~= data.current then
-      add(config.hud.icons.recent, label, file, false)
+      add(config.hud.icons.recent, label, file)
       shown = shown + 1
     end
   end

@@ -59,7 +59,7 @@ This gives you instant access to 24 files without moving your left hand from hom
 ```
 
 - One per tab, anchored to the editor's top-right corner below the tabline
-- Shows the alternative file, up to 5 locks and 3 recent files, with the current file highlighted
+- Shows the alternative file, up to 5 locks and 3 recent files, leaving out the file you are in
 - Labels are the keys that follow `<space>`: `<space>1` jumps to lock 1, `<space>a` to the first recent file, `<space>o` to the alternative file
 - Moves to the bottom-right corner while the cursor is under it
 - Hidden while the full radar or the tabs sidebar is open, and when empty; `<space>h` toggles it for the session
