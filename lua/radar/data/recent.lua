@@ -37,6 +37,11 @@ function M.get_files(config)
     excluded_files[absolute(alt_file)] = true
   end
 
+  local current = vim.api.nvim_buf_get_name(0)
+  if current ~= "" then
+    excluded_files[absolute(current)] = true
+  end
+
   local function add(filepath)
     local filesystem_path = path.to_filesystem_path(filepath)
     local abs_path = absolute(filepath)

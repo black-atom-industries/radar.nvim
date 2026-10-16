@@ -69,6 +69,24 @@ describe("recent", function()
       end
     end)
 
+    it("leaves out the current file", function()
+      local original_get_name = vim.api.nvim_buf_get_name
+      vim.api.nvim_buf_get_name = function()
+        return "/test/project/file1.lua"
+      end
+      local files = recent.get_files(test_config)
+      vim.api.nvim_buf_get_name = original_get_name
+
+      MiniTest.expect.equality(
+        vim.tbl_contains(files, "/test/project/file1.lua"),
+        false
+      )
+      MiniTest.expect.equality(
+        vim.tbl_contains(files, "/test/project/file2.lua"),
+        true
+      )
+    end)
+
     it("excludes locked files", function()
       -- Add a lock for one of the files
       state.set_locks({
