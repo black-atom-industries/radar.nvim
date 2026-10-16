@@ -13,7 +13,7 @@ local cut_item = nil
 ---@type integer?
 local cut_line_num = nil
 
----Fewest rows the tabs view takes: the HUD's height when it opened
+---Fewest rows the Tab HUD takes: the Lock HUD's height when it opened
 ---@type integer?
 local min_height = nil
 

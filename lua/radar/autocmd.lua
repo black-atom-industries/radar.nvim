@@ -78,7 +78,7 @@ function M.setup(config)
     end,
   })
 
-  -- Tabs view updates
+  -- Tab HUD updates
   autocmd({ "BufEnter", "TabEnter", "TabClosed", "WinEnter" }, {
     group = autogrp("radar.TabsUpdate", { clear = true }),
     callback = function()

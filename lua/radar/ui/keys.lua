@@ -20,8 +20,8 @@ function M.prefix_help_section(config)
       { keys.alternative, "Alternative file" },
       { keys.lock, "Lock/unlock buffer" },
       { keys.edit, "Edit locks" },
-      { keys.hud_toggle, "Toggle HUD" },
-      { keys.tabs, "Tabs view" },
+      { keys.hud_toggle, "Toggle Lock HUD" },
+      { keys.tabs, "Tab HUD" },
       { keys.help, "Show help" },
       { "<Esc>", "Cancel" },
     },
@@ -87,10 +87,10 @@ function M.setup(config)
     dispatch(config)
   end, { desc = "Radar" })
 
-  -- Tabs view toggle
+  -- Tab HUD toggle
   vim.keymap.set("n", config.keys.tabs_toggle, function()
     require("radar.ui.tabs").toggle(config)
-  end, { desc = "Toggle tabs view" })
+  end, { desc = "Toggle Tab HUD" })
 end
 
 return M
