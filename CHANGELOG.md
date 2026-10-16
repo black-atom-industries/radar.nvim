@@ -3,6 +3,40 @@
 ## [0.7.0](https://github.com/black-atom-industries/radar.nvim/compare/v0.6.0...v0.7.0) (2026-10-16)
 
 
+### Highlights
+
+#### The tabs view opens where the HUD sits
+
+`<space>t` opens the tabs view in the HUD's place, at least as tall as the HUD, so the bottom of your pane keeps the same frame. Each tab is listed with its number in the HUD's key column, the buffers shown in it sit below, and the current tab and buffer take your accent color. Press a tab's number to jump there. `<leader>t` still works.
+
+![Space t opens the tabs view in the HUD's place, 2 jumps to the second tab, and 1 goes back](https://raw.githubusercontent.com/black-atom-industries/radar.nvim/v0.7.0/docs/assets/changelog/0.7.0-tabs.webp)
+
+#### Keep the HUD at the bottom
+
+`hud = { dodge = false }` keeps the HUD at the bottom of the pane. Pair it with a `scrolloff` at least as tall as the HUD so the cursor never reaches its rows:
+
+```lua
+vim.o.scrolloff = 11      -- the HUD at its tallest: 5 locks, 3 recent files
+vim.o.scrolloffpad = 99   -- Neovim nightly: keep the padding at the end of a file
+require("radar").setup({ hud = { dodge = false } })
+```
+
+#### Important fixes
+
+- With `cmdheight = 0`, the HUD, the tabs view and the lock editor stay put when the command line or a message appears.
+- A global `scrolloff` with `scrolloffpad` no longer hides the first line of the tabs view or the lock editor.
+- A global `signcolumn` no longer pushes the tabs view and the lock editor out of line with the HUD.
+
+#### Upgrading from 0.6
+
+The tabs view follows the active pane, so `tabs.win_preset` is gone:
+
+```diff
+ require("radar").setup({
+-  tabs = { win_preset = "center" },
+ })
+```
+
 ### ⚠ BREAKING CHANGES
 
 * **ui:** tabs.win_preset is gone; the active pane decides where the tabs view opens.
