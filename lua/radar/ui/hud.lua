@@ -280,6 +280,9 @@ function M.refresh()
     return
   end
 
+  if require("radar.data.locks").prune(config) then
+    require("radar.persist.persistence").persist(config)
+  end
   require("radar.data.recent").update_state(config)
   local width = vim.api.nvim_win_get_width(anchor)
   local content = M.build(config, gather(), width)

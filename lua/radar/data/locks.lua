@@ -47,6 +47,33 @@ function M.relabel(locks, config)
   end
 end
 
+---Whether a lock's file or directory still exists. URLs other than Oil
+---directories always count as existing.
+---@param lock Radar.Lock
+---@return boolean
+function M.exists(lock)
+  local path = require("radar.path")
+  if path.is_url(lock.filename) and not path.is_oil_url(lock.filename) then
+    return true
+  end
+  local target = path.to_absolute(path.to_filesystem_path(lock.filename))
+  return vim.uv.fs_stat(target) ~= nil
+end
+
+---Drop locks whose file or directory is gone and relabel the rest
+---@param config Radar.Config
+---@return boolean changed
+function M.prune(config)
+  local state = require("radar.data.state")
+  local kept = vim.tbl_filter(M.exists, state.get_locks())
+  if #kept == #state.get_locks() then
+    return false
+  end
+  M.relabel(kept, config)
+  state.set_locks(kept)
+  return true
+end
+
 ---Remove lock by filename and relabel the remaining locks
 ---@param filename string
 ---@param config Radar.Config

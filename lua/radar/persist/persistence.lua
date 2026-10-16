@@ -298,6 +298,10 @@ function M.populate(config)
 
   local locks =
     vim.tbl_get(data or {}, "projects", project_path, git_branch, "locks")
+  if locks then
+    locks = vim.tbl_filter(require("radar.data.locks").exists, locks)
+    data.projects[project_path][git_branch].locks = locks
+  end
 
   -- Clears to {} when the new project/branch has no saved locks (e.g.,
   -- switching worktrees) so stale locks from the previous directory go away.

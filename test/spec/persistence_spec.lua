@@ -319,14 +319,40 @@ describe("persistence", function()
   describe("Oil lock persistence", function()
     it("preserves Oil URLs when locks are reloaded", function()
       local state = require("radar.data.state")
-      local oil_url = "oil:///test/project/"
-      in_dir_with_branch(function()
+      in_dir_with_branch(function(dir)
+        local oil_url = "oil://" .. dir .. "/"
         state.set_locks({ { label = "1", filename = oil_url } })
         persistence.persist(test_config)
         state.set_locks({})
         persistence.populate(test_config)
 
         MiniTest.expect.equality(state.get_locks()[1].filename, oil_url)
+      end)
+    end)
+  end)
+
+  describe("missing files", function()
+    it("drops locks whose file is gone on load, relabels and saves", function()
+      local state = require("radar.data.state")
+      in_dir_with_branch(function(dir)
+        vim.fn.writefile({}, dir .. "/kept.lua")
+        state.set_locks({
+          { label = "1", filename = "gone.lua" },
+          { label = "2", filename = "oil:///no/such/dir/" },
+          { label = "3", filename = "kept.lua" },
+        })
+        persistence.persist(test_config)
+        state.set_locks({})
+        persistence.populate(test_config)
+
+        MiniTest.expect.equality(
+          state.get_locks(),
+          { { label = "1", filename = "kept.lua" } }
+        )
+        local saved =
+          vim.json.decode(table.concat(vim.fn.readfile(test_data_path), "\n"))
+        local project = vim.tbl_values(saved.projects)[1]
+        MiniTest.expect.equality(#vim.tbl_get(project, "main", "locks"), 1)
       end)
     end)
   end)
