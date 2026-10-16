@@ -1,5 +1,4 @@
 local radar = require("radar.ui.radar")
-local original_filereadable = vim.fn.filereadable
 
 describe("radar path formatting", function()
   it("shows the current Oil directory as ./", function()
@@ -28,7 +27,7 @@ describe("radar rendering", function()
   local state = require("radar.data.state")
   local navigation = require("radar.ui.navigation")
   local config = require("radar.config")
-  local test_config, original_cwd, current_filereadable, root
+  local test_config, original_cwd, root
 
   local function line_of(text)
     local lines = vim.api.nvim_buf_get_lines(state.get_radar_bufid(), 0, -1, false)
@@ -53,8 +52,6 @@ describe("radar rendering", function()
   end
 
   before_each(function()
-    current_filereadable = vim.fn.filereadable
-    vim.fn.filereadable = original_filereadable
     state.reset()
     test_config = vim.deepcopy(config.default)
     test_config.persist.path = vim.fn.tempname() .. ".json"
@@ -76,7 +73,6 @@ describe("radar rendering", function()
     vim.uv.chdir(original_cwd)
     vim.fn.delete(root, "rf")
     state.reset()
-    vim.fn.filereadable = current_filereadable
   end)
 
   it("maps lines past a stale lock to the right targets", function()
@@ -171,5 +167,59 @@ describe("radar rendering", function()
     MiniTest.expect.equality(state.get_locks(), {
       { label = "1", filename = "a.lua" },
     })
+  end)
+
+  it("builds the help from the configured keys", function()
+    test_config.keys.locks = { "x", "y", "z" }
+    test_config.keys.lock = "L"
+    test_config.keys.line.float = "Z"
+
+    radar.open(test_config)
+    radar.show_help(test_config)
+
+    local help_buf = vim.api.nvim_win_get_buf(0)
+    local text =
+      table.concat(vim.api.nvim_buf_get_lines(help_buf, 0, -1, false), "\n")
+    require("radar.ui.help").close()
+    MiniTest.expect.equality(text:find("x-z", 1, true) ~= nil, true)
+    MiniTest.expect.equality(text:find("L%s+Lock/unlock") ~= nil, true)
+    MiniTest.expect.equality(text:find("Z%s+Float") ~= nil, true)
+    MiniTest.expect.equality(text:find("1-9", 1, true), nil)
+  end)
+end)
+
+describe("tabs cut state", function()
+  local state = require("radar.data.state")
+  local tabs = require("radar.ui.tabs")
+  local config = require("radar.config")
+
+  after_each(function()
+    tabs.close()
+    state.reset()
+  end)
+
+  local function cut_marks()
+    local marks = vim.api.nvim_buf_get_extmarks(
+      state.get_tabs_bufid(),
+      -1,
+      0,
+      -1,
+      { details = true }
+    )
+    return #vim.tbl_filter(function(mark)
+      return mark[4].hl_group == "@comment"
+    end, marks)
+  end
+
+  it("is cleared when the tabs window closes", function()
+    local test_config = vim.deepcopy(config.default)
+    tabs.open(test_config)
+    vim.api.nvim_feedkeys("dd", "x", false)
+    MiniTest.expect.equality(cut_marks(), 1)
+
+    vim.api.nvim_win_close(state.get_tabs_winid(), true)
+    tabs.open(test_config)
+
+    MiniTest.expect.equality(cut_marks(), 0)
   end)
 end)

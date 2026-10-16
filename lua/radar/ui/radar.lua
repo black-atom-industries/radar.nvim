@@ -362,19 +362,6 @@ function M.open(config)
   end
 end
 
----Get buffer ID of the single radar window
----@return integer?
-function M.get_focused_bufid()
-  local state = require("radar.data.state")
-  if
-    not state.get_radar_winid()
-    or not vim.api.nvim_win_is_valid(state.get_radar_winid())
-  then
-    return nil
-  end
-  return vim.api.nvim_win_get_buf(state.get_radar_winid())
-end
-
 ---Determine current section from cursor position
 ---@return "locks" | "recent" | nil
 function M.get_focused_section_from_cursor()
@@ -618,33 +605,44 @@ function M.show_help(config)
     return
   end
 
-  local alt_label = config.keys.alternative or config.keys.prefix
-
-  local lines = {
-    "                          ",
-    "  File Keys               ",
-    "    1-9    Open lock        ",
-    "    a-g    Open recent      ",
-    "    <Spc>  Alternative file ",
-    "    <CR>   Open file        ",
-    "    V      Window vertically",
-    "    S      Window horizontally",
-    "    T      Open in new tab  ",
-    "    F      Float            ",
-    "                          ",
-    "  Actions                 ",
-    "    l      Lock/unlock      ",
-    "    e      Edit locks       ",
-    "    t      Tabs sidebar     ",
-    "    <Tab>  Cycle section    ",
-    "    q      Close radar      ",
-    "                          ",
-  }
-
-  -- Substitute actual alt key
-  for i, line in ipairs(lines) do
-    lines[i] = line:gsub("<Spc>", "[" .. alt_label .. "]")
+  local keys = config.keys
+  local function range(labels)
+    return #labels > 1 and (labels[1] .. "-" .. labels[#labels]) or labels[1] or ""
   end
+
+  local lines = require("radar.ui.help").format({
+    {
+      title = "File Keys",
+      rows = {
+        { range(keys.locks), "Open lock" },
+        { range(keys.recent), "Open recent" },
+        { keys.alternative or keys.prefix, "Alternative file" },
+        { keys.line.open, "Open file" },
+        { keys.line.vertical, "Window vertically" },
+        { keys.line.horizontal, "Window horizontally" },
+        { keys.line.tab, "Open in new tab" },
+        { keys.line.float, "Float" },
+        {
+          table.concat(
+            { keys.vertical, keys.horizontal, keys.tab, keys.float },
+            "/"
+          ) .. " + key",
+          "Open in split/tab/float",
+        },
+      },
+    },
+    {
+      title = "Actions",
+      rows = {
+        { keys.lock, "Lock/unlock" },
+        { "e", "Edit locks" },
+        { "t", "Tabs sidebar" },
+        { "<Tab>/<S-Tab>", "Cycle section" },
+        { "?", "Toggle help" },
+        { "q/<Esc>", "Close radar" },
+      },
+    },
+  })
 
   require("radar.ui.help").show({
     parent_winid = state.get_radar_winid(),

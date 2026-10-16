@@ -38,7 +38,6 @@ M.default = {
     win_preset = "center",
     padding = { x = 2, y = 1 },
     border = "solid",
-    position = "center",
     winblend = 0,
     max_recent_files = 10,
     show_empty_message = true,

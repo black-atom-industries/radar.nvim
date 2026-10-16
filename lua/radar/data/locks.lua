@@ -103,69 +103,37 @@ function M.toggle(filename, config, persistence_module)
   return lock
 end
 
----Lock current buffer
+---Toggle the lock of a buffer and re-render the radar
 ---@param buf_nr? integer
 ---@param config Radar.Config
 ---@param persistence_module table
 ---@param radar_module table
 ---@return nil
 function M.lock_current_buffer(buf_nr, config, persistence_module, radar_module)
-  local debug = require("radar.debug")
-  local state = require("radar.data.state")
-
-  debug.log("=== lock_current_buffer ===")
-  debug.log("  source_bufnr (passed) =", buf_nr)
-  debug.log("  state.get_source_bufnr() =", state.get_source_bufnr())
-  debug.log("  nvim_get_current_buf() =", vim.api.nvim_get_current_buf())
-  debug.log(
-    "  nvim_get_current_buf name =",
-    vim.api.nvim_buf_get_name(vim.api.nvim_get_current_buf())
-  )
-  debug.log("  state.get_recent_files() =", state.get_recent_files())
-
   buf_nr = buf_nr or vim.api.nvim_get_current_buf()
-  debug.log("  resolved buf_nr =", buf_nr)
 
-  -- Don't lock radar-related buffers
   local filetype = vim.api.nvim_get_option_value("filetype", { buf = buf_nr })
-  debug.log("  buf filetype =", filetype)
   if filetype == "radar" or filetype == "radar-edit" then
-    debug.log("  EARLY RETURN: radar buffer")
-    debug.flush()
     return
   end
 
-  -- Don't lock terminal buffers
   local buftype = vim.api.nvim_get_option_value("buftype", { buf = buf_nr })
   if buftype == "terminal" then
-    debug.log("  EARLY RETURN: terminal buffer")
-    debug.flush()
     return
   end
 
   local filename = vim.api.nvim_buf_get_name(buf_nr)
-  debug.log("  raw filename =", filename)
-
-  -- Don't lock empty or unnamed buffers
   if filename == "" then
-    debug.log("  EARLY RETURN: empty buffer")
-    debug.flush()
     return
   end
 
-  local normalized_filename = require("radar.path").to_lock_path(filename)
-  debug.log("  normalized filename =", normalized_filename)
+  M.toggle(require("radar.path").to_lock_path(filename), config, persistence_module)
 
-  M.toggle(normalized_filename, config, persistence_module)
-
-  if not radar_module.exists() then
-    debug.log("  radar does not exist, calling create")
-    radar_module.create(config)
-  else
-    debug.log("  radar exists, calling update")
+  if radar_module.exists() then
     radar_module.update(config)
+  else
+    radar_module.create(config)
   end
-  debug.flush()
 end
 
 return M

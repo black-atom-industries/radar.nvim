@@ -28,8 +28,6 @@
 ---@field width number Window width (float 0-1 = percentage of terminal, integer = absolute columns)
 ---@field height number Window height (float 0-1 = percentage of terminal, integer = absolute lines)
 
----@alias Radar.Config.Position "center" | "top_left" | "top_right" | "bottom_left" | "bottom_right"
-
 ---@class Radar.Config.Titles
 ---@field main string
 ---@field locks string
@@ -44,7 +42,6 @@
 ---@field win_preset Radar.Config.WinPreset|string
 ---@field padding? Radar.Config.Padding
 ---@field border? string Border style (see |nvim_open_win()| 'border' option)
----@field position Radar.Config.Position
 ---@field winblend integer
 ---@field max_recent_files integer
 ---@field show_empty_message boolean

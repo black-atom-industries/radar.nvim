@@ -72,6 +72,33 @@ local function setup_close_keymaps(bufnr)
   )
 end
 
+---@class Radar.HelpSection
+---@field title string
+---@field rows { [1]: string, [2]: string }[] key and description
+
+---Format sections of key rows into help lines, keys padded to one column
+---@param sections Radar.HelpSection[]
+---@return string[]
+function M.format(sections)
+  local key_width = 0
+  for _, section in ipairs(sections) do
+    for _, row in ipairs(section.rows) do
+      key_width = math.max(key_width, vim.fn.strdisplaywidth(row[1]))
+    end
+  end
+
+  local lines = { "" }
+  for _, section in ipairs(sections) do
+    table.insert(lines, "  " .. section.title)
+    for _, row in ipairs(section.rows) do
+      local pad = string.rep(" ", key_width - vim.fn.strdisplaywidth(row[1]))
+      table.insert(lines, "    " .. row[1] .. pad .. "  " .. row[2])
+    end
+    table.insert(lines, "")
+  end
+  return lines
+end
+
 ---Show a help popup centered over a parent window
 ---@param opts { parent_winid?: integer, title: string, lines: string[], width?: integer, height?: integer }
 function M.show(opts)

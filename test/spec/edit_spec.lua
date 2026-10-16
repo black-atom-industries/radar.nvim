@@ -5,7 +5,7 @@ local config = require("radar.config")
 describe("edit", function()
   local test_config
   local mock_mini_radar, mock_persistence
-  local original_api, original_persistence_module
+  local original_api, original_persistence_module, original_notify
 
   local function setup_test_state()
     test_config = vim.deepcopy(config.default)
@@ -32,7 +32,8 @@ describe("edit", function()
     }
 
     -- Mock vim.api functions we need
-    original_api = {}
+    original_api = { filereadable = vim.fn.filereadable }
+    original_notify = vim.notify
     for _, func in ipairs({
       "nvim_create_buf",
       "nvim_buf_set_lines",
@@ -149,6 +150,7 @@ describe("edit", function()
         vim.fn[func] = original
       end
     end
+    vim.notify = original_notify
     package.loaded["radar.persist.persistence"] = original_persistence_module
     vim.fn.delete(test_config.persist.path)
   end
@@ -250,21 +252,21 @@ describe("edit", function()
       MiniTest.expect.equality(#lines, 2)
     end)
 
-    it("shows warning when no locks exist", function()
+    it("opens an empty edit buffer when no locks exist", function()
       state.set_locks({})
-      local notify_called = false
-      local original_notify = vim.notify
-      vim.notify = function(msg, level)
-        notify_called = true
-        MiniTest.expect.equality(msg, "No locks to edit")
-        MiniTest.expect.equality(level, vim.log.levels.WARN)
+      local notified = false
+      vim.notify = function()
+        notified = true
       end
 
       edit.edit_locks(test_config, mock_mini_radar)
 
-      vim.notify = original_notify
-      MiniTest.expect.equality(notify_called, true)
-      MiniTest.expect.equality(state.get_edit_bufid(), nil)
+      MiniTest.expect.equality(notified, false)
+      MiniTest.expect.equality(state.get_edit_bufid() ~= nil, true)
+      MiniTest.expect.equality(
+        vim.api.nvim_buf_get_lines(state.get_edit_bufid(), 0, -1, false),
+        {}
+      )
     end)
 
     it("keeps Oil lock URLs intact in the editable buffer", function()
@@ -326,14 +328,11 @@ describe("edit", function()
         cmd_executed = cmd
       end
 
-      -- Mock vim.notify to avoid the notify calls during save_buffer
-      local original_notify = vim.notify
       vim.notify = function() end
 
       edit.open_file_from_edit(buf_id, "edit", test_config, mock_mini_radar)
 
       vim.cmd = original_cmd
-      vim.notify = original_notify
 
       MiniTest.expect.equality(cmd_executed, "edit /test/file1.lua")
       MiniTest.expect.equality(state.get_edit_winid(), nil) -- Should cleanup

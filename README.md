@@ -88,7 +88,6 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 | `keys.tabs_toggle`                                  | `"<leader>t"`                         | Toggle tabs sidebar                                                             |
 | `keys.alternative`                                  | `nil` (= prefix)                      | Key for alternative file; nil defaults to prefix                                |
 | `keys.vertical` / `.horizontal` / `.tab` / `.float` | `<C-v>` / `<C-s>` / `<C-t>` / `<C-f>` | Split mode modifiers                                                            |
-| `radar.position`                                    | `"center"`                            | Grid position: `center`, `top_left`, `top_right`, `bottom_left`, `bottom_right` |
 | `radar.size`                                   | `{ width = 125, height = 20 }`        | Total window dimensions                                                           |
 | `radar.border`                                      | `"single"`                            | Border style (see `:h nvim_open_win`)                                           |
 | `radar.max_recent_files`                            | `25`                                  | Max recent files shown                                                          |

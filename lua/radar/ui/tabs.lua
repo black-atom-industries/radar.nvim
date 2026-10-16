@@ -323,6 +323,15 @@ function M.open(config)
   -- Store window id
   state.set_tabs_winid(winid)
 
+  vim.api.nvim_create_autocmd("WinClosed", {
+    pattern = tostring(winid),
+    once = true,
+    callback = function()
+      cut_item = nil
+      cut_line_num = nil
+    end,
+  })
+
   -- Apply window options
   for opt, value in pairs(config.tabs.win_opts) do
     vim.api.nvim_set_option_value(opt, value, { win = winid })

@@ -10,62 +10,50 @@
 ---@class Radar.State
 local M = {}
 
+---@return table
+local function defaults()
+  return {
+    ---@type Radar.Lock[]
+    locks = {},
+    ---@type string[]
+    recent_files = {},
+    ---@type string[]
+    session_files = {},
+    ---@type integer?
+    radar_winid = nil,
+    ---@type integer?
+    radar_bufid = nil,
+    ---@type table<integer, Radar.RadarLineEntry>
+    radar_line_mapping = {},
+    ---@type "locks" | "recent"?
+    focused_section = nil,
+    ---@type Radar.SectionRanges?
+    section_line_ranges = nil,
+    ---@type { row: integer, col: integer }?
+    radar_origin = nil,
+    ---@type integer?
+    edit_winid = nil,
+    ---@type integer?
+    edit_bufid = nil,
+    ---@type integer?
+    source_bufnr = nil,
+    ---@type string|false?
+    source_alt_file = nil,
+    ---@type integer?
+    tabs_winid = nil,
+    ---@type integer?
+    tabs_bufid = nil,
+    ---@type Radar.TabsLineMapping[]
+    tabs_line_mapping = {},
+  }
+end
+
 -- Internal state (not directly accessible from outside)
-local _state = {
-  ---@type Radar.Lock[]
-  locks = {},
-  ---@type string[]
-  recent_files = {},
-  ---@type string[]
-  session_files = {},
-  ---@type integer?
-  radar_winid = nil,
-  ---@type integer?
-  radar_bufid = nil,
-  ---@type table<integer, Radar.RadarLineEntry>
-  radar_line_mapping = {},
-  ---@type "locks" | "recent"?
-  focused_section = nil,
-  ---@type Radar.SectionRanges?
-  section_line_ranges = nil,
-  ---@type { row: integer, col: integer }?
-  radar_origin = nil,
-  ---@type integer?
-  edit_winid = nil,
-  ---@type integer?
-  edit_bufid = nil,
-  ---@type integer?
-  source_bufnr = nil,
-  ---@type string|false?
-  source_alt_file = nil,
-  ---@type integer?
-  tabs_winid = nil,
-  ---@type integer?
-  tabs_bufid = nil,
-  ---@type Radar.TabsLineMapping[]
-  tabs_line_mapping = {},
-}
+local _state = defaults()
 
 ---Reset all state to defaults (for testing)
 function M.reset()
-  _state = {
-    locks = {},
-    recent_files = {},
-    session_files = {},
-    radar_winid = nil,
-    radar_bufid = nil,
-    radar_line_mapping = {},
-    focused_section = nil,
-    section_line_ranges = nil,
-    radar_origin = nil,
-    edit_winid = nil,
-    edit_bufid = nil,
-    source_bufnr = nil,
-    source_alt_file = nil,
-    tabs_winid = nil,
-    tabs_bufid = nil,
-    tabs_line_mapping = {},
-  }
+  _state = defaults()
 end
 
 -- Getters
@@ -231,12 +219,6 @@ function M.set_tabs_line_mapping(mapping)
 end
 
 -- Methods
-
----Check if radar window is valid
----@return boolean
-function M.are_radar_windows_valid()
-  return _state.radar_winid ~= nil and vim.api.nvim_win_is_valid(_state.radar_winid)
-end
 
 ---Get lock by field value
 ---@param field "label" | "filename"

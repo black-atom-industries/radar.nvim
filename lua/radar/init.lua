@@ -15,7 +15,7 @@ function M.setup(opts)
 
   -- Defer persistence loading to avoid blocking startup with file I/O
   vim.schedule(function()
-    require("radar.persist.persistence").populate(config, require("radar.ui.radar"))
+    require("radar.persist.persistence").populate(config)
   end)
 
   -- Create user command

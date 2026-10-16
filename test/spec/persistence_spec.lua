@@ -1,5 +1,4 @@
 local persistence = require("radar.persist.persistence")
-local original_filereadable = vim.fn.filereadable
 
 describe("persistence", function()
   local test_data_path = vim.fn.tempname() .. ".json"
@@ -326,17 +325,6 @@ describe("persistence", function()
   end)
 
   describe("Oil lock persistence", function()
-    local current_filereadable
-
-    before_each(function()
-      current_filereadable = vim.fn.filereadable
-      vim.fn.filereadable = original_filereadable
-    end)
-
-    after_each(function()
-      vim.fn.filereadable = current_filereadable
-    end)
-
     it("preserves Oil URLs when locks are reloaded", function()
       local state = require("radar.data.state")
       local oil_url = "oil:///test/project/"
