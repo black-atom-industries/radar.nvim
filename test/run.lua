@@ -12,6 +12,9 @@ else
   error("mini.nvim not found. Please ensure it's installed.")
 end
 
+-- Specs must never write the user's real data file
+require("radar.config").default.persist.path = vim.fn.tempname() .. ".json"
+
 -- Load and setup mini.test
 local ok, mini_test = pcall(require, "mini.test")
 if not ok then
