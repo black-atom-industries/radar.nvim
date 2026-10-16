@@ -64,8 +64,17 @@ function M.build(config, data, max_width)
     local label_part = "[" .. label .. "]"
     local prefix = icon_part .. label_part .. " "
     local avail = max_width - vim.fn.strdisplaywidth(prefix) - 1
-    local line = prefix .. fit(path_utils.display(target), avail) .. " "
+    local text = target and fit(path_utils.display(target), avail) or "-"
+    local line = prefix .. text .. " "
     table.insert(lines, line)
+    if not target then
+      table.insert(highlights, {
+        line = #lines - 1,
+        col_start = #prefix,
+        col_end = #line,
+        hl_group = "Comment",
+      })
+    end
     table.insert(highlights, {
       line = #lines - 1,
       col_start = 1,
@@ -80,30 +89,44 @@ function M.build(config, data, max_width)
     })
   end
 
-  if data.alt then
-    add(config.hud.icons.alternative, config.keys.alternative, data.alt)
-  end
-
-  local shown_locks = 0
+  local locks = {}
   for _, lock in ipairs(data.locks) do
-    if shown_locks == config.hud.max_locks then
+    if #locks == config.hud.max_locks then
       break
     end
     if lock.filename ~= data.current_lock then
-      add(config.hud.icons.locks, lock.label, lock.filename)
-      shown_locks = shown_locks + 1
+      table.insert(locks, lock)
     end
   end
 
-  local shown = 0
+  local recent = {}
   for i, file in ipairs(data.recent) do
     local label = config.keys.recent[i]
-    if not label or shown == config.hud.max_recent then
+    if not label or #recent == config.hud.max_recent then
       break
     end
     if file ~= data.current then
-      add(config.hud.icons.recent, label, file)
-      shown = shown + 1
+      table.insert(recent, { label = label, file = file })
+    end
+  end
+
+  if not data.alt and #locks == 0 and #recent == 0 then
+    return { lines = lines, highlights = highlights }
+  end
+
+  add(config.hud.icons.alternative, config.keys.alternative, data.alt)
+
+  if #locks > 0 then
+    table.insert(lines, "")
+    for _, lock in ipairs(locks) do
+      add(config.hud.icons.locks, lock.label, lock.filename)
+    end
+  end
+
+  if #recent > 0 then
+    table.insert(lines, "")
+    for _, entry in ipairs(recent) do
+      add(config.hud.icons.recent, entry.label, entry.file)
     end
   end
 

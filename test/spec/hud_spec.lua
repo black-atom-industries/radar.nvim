@@ -25,8 +25,10 @@ describe("hud content", function()
 
     MiniTest.expect.equality(content.lines, {
       " 󰐷 [o] alt.lua ",
+      "",
       " 󰋱 [1] one.lua ",
       " 󰋱 [2] two.lua ",
+      "",
       " 󰽏 [a] /r/a.lua ",
     })
   end)
@@ -43,9 +45,9 @@ describe("hud content", function()
       current_lock = "",
     }, 60)
 
-    MiniTest.expect.equality(#content.lines, 5 + 3)
-    MiniTest.expect.equality(content.lines[5], " 󰋱 [5] 5.lua ")
-    MiniTest.expect.equality(content.lines[8], " 󰽏 [d] /r/c ")
+    MiniTest.expect.equality(#content.lines, 1 + 1 + 5 + 1 + 3)
+    MiniTest.expect.equality(content.lines[7], " 󰋱 [5] 5.lua ")
+    MiniTest.expect.equality(content.lines[11], " 󰽏 [d] /r/c ")
   end)
 
   it("leaves the current file out of locks and keeps their labels", function()
@@ -58,7 +60,7 @@ describe("hud content", function()
 
     MiniTest.expect.equality(
       content.lines,
-      { " 󰋱 [1] one.lua ", " 󰋱 [3] three.lua " }
+      { " 󰐷 [o] - ", "", " 󰋱 [1] one.lua ", " 󰋱 [3] three.lua " }
     )
   end)
 
@@ -72,7 +74,7 @@ describe("hud content", function()
 
     MiniTest.expect.equality(
       content.lines,
-      { " 󰽏 [a] /r/a ", " 󰽏 [d] /r/c ", " 󰽏 [f] /r/d " }
+      { " 󰐷 [o] - ", "", " 󰽏 [a] /r/a ", " 󰽏 [d] /r/c ", " 󰽏 [f] /r/d " }
     )
   end)
 
@@ -84,8 +86,8 @@ describe("hud content", function()
       current_lock = "",
     }, 20)
 
-    MiniTest.expect.equality(vim.fn.strdisplaywidth(content.lines[1]), 20)
-    MiniTest.expect.equality(vim.endswith(content.lines[1], "file.lua "), true)
+    MiniTest.expect.equality(vim.fn.strdisplaywidth(content.lines[3]), 20)
+    MiniTest.expect.equality(vim.endswith(content.lines[3], "file.lua "), true)
   end)
 
   it("is empty without anything to show", function()
