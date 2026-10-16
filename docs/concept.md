@@ -64,7 +64,7 @@ This gives you instant access to 24 files without moving your left hand from hom
 - Shows only locked files for minimal distraction
 - Instant visual reference for your working set
 
-### Full Radar (`<leader>r`)
+### Full Radar (`<space>`)
 
 ```
 ┌─────────────────────┬───────────────────┐
@@ -85,35 +85,21 @@ This gives you instant access to 24 files without moving your left hand from hom
 ## 🔧 Configuration
 
 ```lua
-require('radar').setup({
+require("radar").setup({
   keys = {
-    prefix = '<leader>',      -- Prefix for all keybindings
-    pins = '123456789',      -- number row
-    modified = 'qwert',       -- upper row
-    recent = 'asdfg',         -- home row
-    pr_files = 'zxcvb',       -- bottom row
+    prefix = "<space>",                             -- toggles the radar, double-tap opens the alternative file
+    locks = { "1", "2", "3", "4", "5", "6", "7", "8", "9" },
+    recent = { "a", "s", "d", "f", "g" },
   },
 
-  behaviour = {
-    deduplicate = true,         -- Remove pinned files from other sections
-    persist_pins = true,        -- Save pins between sessions
+  radar = {
+    win_preset = "center",                          -- window preset, see AGENTS.md
+    size = { width = 50, height = 75 },
+    max_recent_files = 10,
   },
 
-  appearance = {
-    mini = {
-      --- If static, the mini radar will always be visible (My personal preference)
-      --- If dynamic, the mini radar will only be visible when pressing the prefix key, until picking a file
-      ---@alias radar.config.appearance.mini.display "static" | "dynamic"
-      display = "static",
-      ---@alias radar.config.appearance.mini.preset "sidebar_left" | "sidebar_right" | "float_top_right" | "float_top_left" | "float_bottom_right" | "float_bottom_left"
-      preset = "float_top_right",
-      ---@type vim.api.keyset.win_config
-      config = {}
-    },
-    full = {
-        ---@type vim.api.keyset.win_config
-        config = {}
-    },
+  persist = {
+    path = vim.fn.stdpath("data") .. "/radar/data.json",
   },
 })
 ```

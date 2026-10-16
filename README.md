@@ -10,9 +10,9 @@ A Neovim plugin that treats file navigation like a fighter pilot's radar system.
 
 - **File Pinning**: Lock your most important files to slots 1-9 for instant access
 - **Smart Persistence**: Context-aware storage per project and git branch
-- **Grid Layout**: Multi-section radar display with locks, recent files, and alternative file
+- **Sections**: One radar window with alternative file, locks, and recent files
 - **Tab Navigation**: Sidebar view of all open tabs and buffers
-- **Dynamic Highlighting**: Auto-highlight the currently active pinned file
+- **Dynamic Highlighting**: Auto-highlight the currently active locked file
 
 See also [Concept](./docs/concept.md)
 
@@ -46,7 +46,7 @@ This spatial keyboard layout gives you instant access to **15 files** without mo
   "black-atom-industries/radar.nvim",
   opts = {
     radar = {
-      position = "top_right",  -- "center", "top_left", "top_right", "bottom_left", "bottom_right"
+      win_preset = "top_right",  -- see window presets below
       size = { width = 140, height = 25 },
       max_recent_files = 10,
       titles = {
@@ -88,20 +88,21 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 | `keys.tabs_toggle`                                  | `"<leader>t"`                         | Toggle tabs sidebar                                                             |
 | `keys.alternative`                                  | `nil` (= prefix)                      | Key for alternative file; nil defaults to prefix                                |
 | `keys.vertical` / `.horizontal` / `.tab` / `.float` | `<C-v>` / `<C-s>` / `<C-t>` / `<C-f>` | Split mode modifiers                                                            |
-| `radar.size`                                   | `{ width = 125, height = 20 }`        | Total window dimensions                                                           |
-| `radar.border`                                      | `"single"`                            | Border style (see `:h nvim_open_win`)                                           |
-| `radar.max_recent_files`                            | `25`                                  | Max recent files shown                                                          |
-| `radar.titles`                                      | (nerd font icons)                     | Section titles for main, locks, alternative, recent, hints                      |
+| `radar.size`                                   | `{ width = 50, height = 75 }`         | Window dimensions                                                               |
+| `radar.win_preset`                                  | `"center"`                            | Window preset for the radar                                                     |
+| `radar.border`                                      | `"solid"`                             | Border style (see `:h nvim_open_win`)                                           |
+| `radar.max_recent_files`                            | `10`                                  | Max recent files shown                                                          |
+| `radar.titles`                                      | (nerd font icons)                     | Section titles for main, locks, recent                      |
 | `radar.win_opts`                                    | `{ cursorline = true, ... }`          | Window-local options applied to radar buffers                                   |
 | `tabs.auto_close`                                   | `true`                                | Close tabs window after selecting                                               |
 | `tabs.win_preset`                                   | `"center"`                            | Window preset for tabs sidebar                                                  |
 | `radar_edit.win_preset`                             | `"center"`                            | Window preset for lock label editor                                             |
-| `file_float.win_preset`                             | `"center_large"`                      | Window preset for floating file view                                            |
+| `file_float.win_preset`                             | `"center_narrow"`                    | Window preset for floating file view                                            |
 | `persist.path`                                      | `stdpath("data")/radar/data.json`     | Persistence file location                                                       |
 | `persist.defer_ms`                                  | `500`                                 | Debounce delay for saves                                                        |
 | `win_presets`                                       | `{}`                                  | Override or add custom window presets                                           |
 
-**Available window presets** (for `win_preset` fields): `"center"`, `"center_large"`, `"cursor"`, `"top_right"`, `"bottom_center"`, `"full_height_sidebar"`
+**Available window presets** (for `win_preset` fields): `"cursor"`, `"center"`, `"center_large"`, `"center_narrow"`, `"top_left"`, `"top_right"`, `"bottom_left"`, `"bottom_right"`, `"bottom_center"`, `"full_height_sidebar"`
 
 ## Usage
 
@@ -114,11 +115,13 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 
 **Within Radar Window:**
 
-- **`l`**: Lock current buffer (from source window)
+- **`l`**: Lock or unlock the file under the cursor
 - **`1-9`**: Open locked files
 - **`a-g`**: Open recent files
 - **`<space>`**: Open alternative file (e.g., test ↔ implementation)
 - **`e`**: Edit lock labels
+- **`t`**: Open tabs sidebar
+- **`?`**: Toggle help
 - **`<Tab>` / `<S-Tab>`**: Cycle focus between sections
 - **`q` / `<Esc>`**: Close radar
 
@@ -145,7 +148,12 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 
 ### Context-Aware Persistence
 
-Locks are automatically saved and restored per project and git branch, so switching between projects or branches maintains separate lock sets.
+Locks are saved and restored per project and git branch, so switching between projects or branches maintains separate lock sets.
+
+- The project is the git root containing the working directory (the worktree root inside a worktree), or the working directory outside git.
+- Lock paths are stored relative to the project root.
+- Detached HEAD and non-git directories keep locks in memory only.
+- A corrupt data file is moved to `data.json.bad`. Writes are atomic.
 
 ### Data Cleanup
 
@@ -228,9 +236,9 @@ end)
 ┌── 󰋱  LOCKED IN ──────────────┐   ┌── 󰽏  NEAR ──────────────────┐
 │   [1] lua/radar/init.lua      │   │   [a] README.md              │
 │   [2] lua/radar/config.lua  ← │   │   [s] AGENTS.md              │
-│   [3] test/spec/state.lua     │   │   [d] lua/radar/keys.lua     │
-│                               │   │   [e] lua/radar/window.lua   │
-│                               │   │   [f] lua/radar/locks.lua    │
+│   [3] test/spec/state.lua     │   │   [d] lua/radar/ui/keys.lua │
+│                               │   │   [e] lua/radar/ui/window.lua │
+│                               │   │   [f] lua/radar/data/locks.lua │
 └───────────────────────────────┘   └──────────────────────────────┘
 ```
 

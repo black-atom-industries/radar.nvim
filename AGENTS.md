@@ -6,12 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is **Nik's learning project** for Neovim plugin development. The focus is on understanding concepts through hands-on implementation rather than just completing features. Nik writes the code, Claude provides guidance and explanations of the "why" behind decisions.
 
-### Evolution: pins.lua → radar.nvim
-
-- **Origin**: Started as a simple file pinning system (`pins.lua`)
-- **Current State**: Fully modular file navigation system with grid-based radar display, tab sidebar, locks, recent files, and alternative file support
-- **Vision**: Comprehensive file navigation inspired by fighter pilot radar displays
-- **Learning Focus**: Understanding Neovim API patterns, Lua module systems, dynamic UI management
+radar.nvim is a file navigation system inspired by fighter pilot radar displays: one floating radar window with locks, recent files and an alternative file, a tabs sidebar, and locks persisted per project and branch.
 
 ## Architecture Overview
 
@@ -19,63 +14,71 @@ This is **Nik's learning project** for Neovim plugin development. The focus is o
 
 ```
 lua/radar/
-├── init.lua              -- Entry point with setup()
+├── init.lua              -- Entry point with setup(), :RadarCleanup
 ├── config.lua            -- Default configuration values (single source of truth)
 ├── config.types.lua      -- Type definitions only (no implementation)
-├── state.lua             -- Global state management
-├── locks.lua             -- File locking/pinning functionality
-├── recent.lua            -- Recent files logic (vim.v.oldfiles)
-├── alternative.lua       -- Alternative file switching (e.g., test ↔ impl)
-├── persistence.lua       -- Save/load locks per project+branch
-├── navigation.lua        -- File opening logic (vertical/horizontal/tab/float)
-├── keys.lua              -- Keybinding setup (global + buffer-local per section)
 ├── autocmd.lua           -- Autocommand setup
-├── api.lua               -- Public API functions
-├── window.lua            -- Window config resolution & preset definitions
-├── tabs.lua              -- Tab/buffer data gathering (NOT UI)
-├── cleanup.lua           -- Stale persistence data removal (:RadarCleanup)
-├── migration.lua         -- Data format migration (v0 → v1)
+├── path.lua              -- Path and git helpers (see below)
 ├── utils.lua             -- Utility functions (project sorting)
+├── debug.lua             -- Buffered debug logging, gated by config.debug
+├── data/
+│   ├── state.lua         -- Global state (locks, recent files, window handles, line map)
+│   ├── locks.lua         -- Lock add/remove/toggle/relabel
+│   ├── recent.lua        -- Recent files (vim.v.oldfiles + session files)
+│   ├── alternative.lua   -- Alternative file (e.g., test ↔ impl)
+│   └── tabs.lua          -- Tab/buffer data gathering (NOT UI)
+├── persist/
+│   ├── persistence.lua   -- Read, write, load, persist, populate
+│   ├── migration.lua     -- Data format migration (v0 → v1 → v2)
+│   └── cleanup.lua       -- Stale persistence data removal (:RadarCleanup)
 └── ui/
-    ├── radar.lua         -- Main radar grid UI (3-section layout)
-    ├── tabs.lua          -- Tabs sidebar UI (tab/buffer tree)
-    ├── indicators.lua    -- Shared git/LSP indicator utilities
-    ├── edit.lua          -- Lock label editor UI
-    └── path.lua          -- Path shortening utility
+    ├── radar.lua         -- Radar window: build content, render, focus, help
+    ├── keys.lua          -- Keymaps (global toggles + radar buffer-local)
+    ├── navigation.lua    -- File opening (current window/vertical/horizontal/tab/float)
+    ├── help.lua          -- Help popup
+    ├── edit.lua          -- Lock label editor
+    ├── tabs.lua          -- Tabs sidebar (tab/buffer tree)
+    ├── window.lua        -- Window preset definitions and config resolution
+    ├── file_float.lua    -- Floating file view
+    └── indicators.lua    -- Shared git/LSP indicator utilities
 ```
+
+`path.lua` helpers: `is_url`, `git_info`, `git_branch`, `project_root`, `to_absolute`, `to_lock_path`, `display`.
 
 ### Key Architectural Patterns
 
-- **Context-Aware Persistence**: `{[project_path][git_branch] = {locks: [...], lastAccessed: timestamp}}`
-- **Data Versioning**: Persistence data is versioned (currently v1), with automatic migration from older formats
-- **Grid Layout System**: Radar uses a 3-section grid (alternative top, locks bottom-left, recent bottom-right) with position-based placement
+- **Context-Aware Persistence**: `{version, projects = {[project_root] = {[git_branch] = {locks = [...], lastAccessed = timestamp}}}}`
+- **Project Identity**: The project is the git root containing the cwd (the worktree root inside a worktree), or the cwd outside git. The persistence key is that root abbreviated with `~`.
+- **Root-Relative Lock Paths**: Lock filenames are relative to the project root when inside it, absolute otherwise. URLs stay unchanged. `path.to_lock_path` and `path.to_absolute` convert.
+- **Data Versioning**: Persistence data is versioned (currently v2). `migration.migrate` upgrades v0 → v1 → v2 on load.
+- **Safe Persistence**: Writes go to a tmp file that is renamed over the target (atomic). A corrupt data file is moved to `data.json.bad`. An unreadable file is never overwritten. JSON is encoded in Lua with a fixed key order, no external tools.
+- **No Branch, No Persistence**: Detached HEAD and non-git directories keep locks in memory only. One warning per session.
+- **Single Radar Window**: One floating window and buffer holding the alternative, locks and recent sections. `ui/radar.lua` renders it in place and stores a line → entry map in `state`, which navigation and the lock key read.
+- **Relabel by Position**: Lock labels come from the position in `config.keys.locks`. Removing a lock and loading persisted locks both relabel.
 - **Safe String Matching**: Uses `string.find(text, pattern, 1, true)` for literal matching (critical for special chars)
-- **Dynamic Highlighting**: Extmarks with `BufEnter` autocmd for automatic updates
-- **Robust Error Handling**: `vim.tbl_get()` for safe nested access, validation before operations
-- **Window Preset System**: Used for secondary windows (edit, file_float, tabs). The main radar grid uses its own position system.
+- **Dynamic Highlighting**: Extmarks, refreshed on `BufEnter`
+- **Safe Nested Access**: `vim.tbl_get()` for nested persistence data, validation before operations
 - **Type Safety**: Separate type definitions in `config.types.lua`, implementation in `config.lua`
 
 ### Architectural Decisions
 
-1. **Grid-Based Radar Layout**
-   - Main radar is a multi-window grid: alternative file (top), locks (bottom-left), recent files (bottom-right)
-   - Positioned via `config.radar.position` (center, top_left, top_right, bottom_left, bottom_right)
-   - Each section has its own buffer with section-specific keymaps
-   - `<Tab>`/`<S-Tab>` cycles focus between sections
+1. **Radar Layout**
+   - Sections top to bottom: alternative file, locks, recent files
+   - Placement via `config.radar.win_preset`, size via `config.radar.size`
+   - `<Tab>`/`<S-Tab>` cycles the cursor between sections
 
 2. **Config Separation**
    - `config.types.lua` = types only (no values)
    - `config.lua` = single source of truth for all values
-   - Resolved duplicate config bug where types file had different values
 
-3. **Window Preset System** (for secondary windows)
-   - Users can specify `"center"` instead of full table
-   - Presets available: center, center_large, cursor, top_right, bottom_center, full_height_sidebar
-   - Used by: radar_edit, file_float, tabs windows
-   - **Note**: The main radar grid does NOT use presets - it uses `config.radar.position` directly
+3. **Window Presets**
+   - A preset name (e.g. `"center"`) or a full table, resolved by `window.resolve_config`
+   - Presets: cursor, center, center_large, center_narrow, top_left, top_right, bottom_left, bottom_right, bottom_center, full_height_sidebar
+   - Used by: radar (`radar.win_preset`), radar_edit, file_float, tabs
+   - Custom presets go in `config.win_presets`
 
 4. **Tabs Sidebar**
-   - Separate from the main radar - toggled independently via `<leader>t`
+   - Separate from the radar, toggled via `keys.tabs_toggle` (default `<leader>t`) or `t` inside the radar
    - Shows all open tabs with their buffers in a tree structure
    - Supports jumping to tab/buffer and closing buffers/tabs (`x` key)
 
@@ -97,7 +100,7 @@ Always validate handles before use in dynamic environments.
 ### 3. Safe Nested Table Access
 
 ```lua
-local persisted_pins = vim.tbl_get(data, project_path, git_branch, "pins")
+local locks = vim.tbl_get(data, "projects", project_path, git_branch, "locks")
 ```
 
 **Why**: Avoids nil errors when navigating nested persistence data.
@@ -106,7 +109,7 @@ local persisted_pins = vim.tbl_get(data, project_path, git_branch, "pins")
 
 ```lua
 vim.defer_fn(function()
-    persistence.save(config)
+    persistence.persist(config)
 end, config.persist.defer_ms)
 ```
 
@@ -115,11 +118,14 @@ end, config.persist.defer_ms)
 ### 5. Window Preset Resolution Pattern
 
 ```lua
--- For secondary windows (edit, file_float, tabs)
-local win_opts = window.resolve_config(preset_name, config)
+local win_opts = window.resolve_config(config, preset_name, overrides)
 ```
 
 **Why**: Allows flexible configuration - simple presets for common cases, full customization when needed.
+
+### 6. Populate on Context Change
+
+`persistence.populate` loads locks for the current project and branch into state. `populate_if_changed` runs on `DirChanged` and reloads only when the project root or branch differs from the last populate.
 
 ## Spatial Design & Keybinding Layout
 
@@ -134,14 +140,14 @@ From [docs/concept.md](docs/concept.md):
 **Implemented:**
 
 - Locks (1-9 keys)
-- Recent files (a-g keys, filtered by cwd)
+- Recent files (a-g keys, filtered by project root)
 - Alternative file (double-tap prefix key, detects test/impl pairs)
-- Tabs sidebar (`<leader>t`, separate view)
+- Tabs sidebar
 
 **Planned (tracked in GitHub Issues):**
 
-- Modified files (git status) - DEV-260
-- PR files (branch changes) - DEV-261
+- Modified files (git status) - #6
+- PR files (branch changes) - #7
 
 ## Development Patterns
 
@@ -165,20 +171,21 @@ end
 
 ## Implemented Features
 
-- **Locks**: Manual file pinning system with 1-9 keybindings
-- **Recent Files**: MRU list filtered by current working directory (a-g keys)
+- **Locks**: Manual file locking with 1-9 keybindings
+- **Recent Files**: MRU list filtered by project root (a-g keys)
 - **Alternative Files**: Smart test ↔ implementation file switching (double-tap prefix)
-- **Grid Radar UI**: 3-section grid layout with section cycling
+- **Radar Window**: One floating window with three sections and section cycling
 - **Tabs Sidebar**: Tab/buffer tree view with jump and close support
 - **Line Navigation**: Navigate within radar using `<CR>`, `V`, `S`, `T`, `F`
 - **Label Editing**: Customize lock labels via floating editor (supports protocol URLs)
-- **Context Persistence**: Saves locks per project + git branch with data versioning
+- **Context Persistence**: Saves locks per project root + git branch with data versioning
+- **Help Popup**: `?` in the radar, built from the configured keys
 - **Data Cleanup**: `:RadarCleanup` command removes entries for deleted branches/projects
-- **Path Shortening**: Smart path display that fits within available width
+- **Path Display**: Paths shown relative to the project root
 
 ### Known Limitations
 
-- **Non-git Folders**: Persistence system requires git for branch context
+- **Detached HEAD and non-git folders**: Locks live in memory only. Persistence needs a branch.
 
 ## Issue Tracking
 
@@ -197,13 +204,14 @@ All future work is tracked in [GitHub Issues](https://github.com/black-atom-indu
 - **[lua/radar/init.lua](lua/radar/init.lua)**: Plugin entry point (calls setup on modules)
 - **[lua/radar/config.lua](lua/radar/config.lua)**: Single source of truth for configuration values
 - **[lua/radar/config.types.lua](lua/radar/config.types.lua)**: Type definitions only (no implementation)
-- **[lua/radar/ui/radar.lua](lua/radar/ui/radar.lua)**: Main grid UI rendering logic
+- **[lua/radar/ui/radar.lua](lua/radar/ui/radar.lua)**: Radar window rendering logic
 - **[lua/radar/ui/tabs.lua](lua/radar/ui/tabs.lua)**: Tabs sidebar UI
-- **[lua/radar/locks.lua](lua/radar/locks.lua)**: Lock/pin management
-- **[lua/radar/recent.lua](lua/radar/recent.lua)**: Recent file tracking
-- **[lua/radar/alternative.lua](lua/radar/alternative.lua)**: Alternative file detection (test ↔ impl)
-- **[lua/radar/cleanup.lua](lua/radar/cleanup.lua)**: Stale data cleanup logic
-- **[lua/radar/migration.lua](lua/radar/migration.lua)**: Data format versioning and migration
+- **[lua/radar/data/locks.lua](lua/radar/data/locks.lua)**: Lock management
+- **[lua/radar/data/recent.lua](lua/radar/data/recent.lua)**: Recent file tracking
+- **[lua/radar/data/alternative.lua](lua/radar/data/alternative.lua)**: Alternative file detection (test ↔ impl)
+- **[lua/radar/persist/persistence.lua](lua/radar/persist/persistence.lua)**: Load, persist, populate
+- **[lua/radar/persist/cleanup.lua](lua/radar/persist/cleanup.lua)**: Stale data cleanup logic
+- **[lua/radar/persist/migration.lua](lua/radar/persist/migration.lua)**: Data format versioning and migration
 
 ## Development Approach
 
