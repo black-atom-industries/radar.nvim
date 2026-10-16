@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.7.0](https://github.com/black-atom-industries/radar.nvim/compare/v0.6.0...v0.7.0) (2026-10-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* **ui:** tabs.win_preset is gone; the active pane decides where the tabs view opens.
+
+### Features
+
+* **keys:** toggle the tabs sidebar with &lt;space&gt;t ([e8f7283](https://github.com/black-atom-industries/radar.nvim/commit/e8f72832ece3e0eab3197f9b0232fada6d1cf154))
+* **ui:** let the HUD stay at the bottom with hud.dodge = false ([5fc3af8](https://github.com/black-atom-industries/radar.nvim/commit/5fc3af8be8df4ab3acc78a4c9e48688dc42bdd10))
+* **ui:** open the tabs view at least as tall as the HUD ([4b59929](https://github.com/black-atom-industries/radar.nvim/commit/4b5992998c86c05de84175484f052fde444cb618))
+* **ui:** open the tabs view where the HUD sits ([e681ede](https://github.com/black-atom-industries/radar.nvim/commit/e681ede0ba890fb0f1c93e7f35f16cb3266f1928))
+* **ui:** style the tabs view like the HUD ([7bc191d](https://github.com/black-atom-industries/radar.nvim/commit/7bc191d7a44e82e4bdb6e6a71b647207bb29b327))
+
+
+### Bug Fixes
+
+* **ui:** keep the HUD still when the command line opens with cmdheight 0 ([f05083e](https://github.com/black-atom-industries/radar.nvim/commit/f05083ef8ac41a9693368059d3f06abe1cb94bdf))
+* **ui:** line up the tabs view keys with the HUD ([9f7df48](https://github.com/black-atom-industries/radar.nvim/commit/9f7df483733502bc4c6ba3bf0c108e2f84571b69))
+* **ui:** name the tabs view in the tabline and help ([5952ea6](https://github.com/black-atom-industries/radar.nvim/commit/5952ea6ad181e7cdc0e89dede5787b294dffdd3a))
+* **ui:** show every line of the tabs view and the lock editor ([e7d928c](https://github.com/black-atom-industries/radar.nvim/commit/e7d928ccb40d30cf655f09d93d7f07dc6769a472))
+
+
+### Documentation
+
+* describe radar.nvim by what it does ([6aef5c0](https://github.com/black-atom-industries/radar.nvim/commit/6aef5c09c64b7e03b8fb12ebb3c44faef8f09e97))
+* drop the contributing section from the README ([18a49d1](https://github.com/black-atom-industries/radar.nvim/commit/18a49d196de5e4d1510d7c67d48aa7006ff2e47f))
+* show the tabs view and the scrolloff alternative to dodging ([19f5190](https://github.com/black-atom-industries/radar.nvim/commit/19f51905365fc2cebd0b77615e3fcf55f6f78080))
+
 ## [0.6.0](https://github.com/black-atom-industries/radar.nvim/compare/v0.5.0...v0.6.0) (2026-10-16)
 
 
