@@ -228,15 +228,6 @@ The HUD at the bottom of the active pane: the current file, the alternative file
 
 ![The HUD at the bottom of a pane](docs/assets/changelog/0.6.0-hud.webp)
 
-## Contributing
-
-This is primarily a learning project focused on understanding Neovim plugin development patterns. Contributions are welcome, but please:
-
-- Explain the "why" behind changes
-- Maintain the spatial keybinding philosophy
-- Keep code simple and educational
-- Test with both basic and edge cases
-
 ## Learn More
 
 - [docs/concept.md](docs/concept.md) - Comprehensive design vision and philosophy
