@@ -50,9 +50,9 @@ describe("hud content", function()
     MiniTest.expect.equality(content.lines[11], " 󰽏 [d] /r/c ")
   end)
 
-  it("leaves the current file out of locks and keeps their labels", function()
+  it("keeps the current file in locks and highlights it", function()
     local content = hud.build(test_config, {
-      locks = { lock("1", "one.lua"), lock("2", "two.lua"), lock("3", "three.lua") },
+      locks = { lock("1", "one.lua"), lock("2", "two.lua") },
       recent = {},
       current = "/r/two.lua",
       current_lock = "two.lua",
@@ -60,8 +60,13 @@ describe("hud content", function()
 
     MiniTest.expect.equality(
       content.lines,
-      { " 󰐷 [o] - ", "", " 󰋱 [1] one.lua ", " 󰋱 [3] three.lua " }
+      { " 󰐷 [o] - ", "", " 󰋱 [1] one.lua ", " 󰋱 [2] two.lua " }
     )
+    local current = vim.tbl_filter(function(hl)
+      return hl.hl_group == "Title"
+    end, content.highlights)
+    MiniTest.expect.equality(#current, 1)
+    MiniTest.expect.equality(current[1].line, 3)
   end)
 
   it("skips the current file in recent and keeps its labels", function()

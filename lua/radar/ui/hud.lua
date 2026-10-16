@@ -59,7 +59,7 @@ end
 function M.build(config, data, max_width)
   local lines, highlights = {}, {}
 
-  local function add(icon, label, target)
+  local function add(icon, label, target, current)
     local icon_part = " " .. icon .. " "
     local label_part = "[" .. label .. "]"
     local prefix = icon_part .. label_part .. " "
@@ -67,12 +67,12 @@ function M.build(config, data, max_width)
     local text = target and fit(path_utils.display(target), avail) or "-"
     local line = prefix .. text .. " "
     table.insert(lines, line)
-    if not target then
+    if not target or current then
       table.insert(highlights, {
         line = #lines - 1,
         col_start = #prefix,
         col_end = #line,
-        hl_group = "Comment",
+        hl_group = current and "Title" or "Comment",
       })
     end
     table.insert(highlights, {
@@ -89,15 +89,7 @@ function M.build(config, data, max_width)
     })
   end
 
-  local locks = {}
-  for _, lock in ipairs(data.locks) do
-    if #locks == config.hud.max_locks then
-      break
-    end
-    if lock.filename ~= data.current_lock then
-      table.insert(locks, lock)
-    end
-  end
+  local locks = vim.list_slice(data.locks, 1, config.hud.max_locks)
 
   local recent = {}
   for i, file in ipairs(data.recent) do
@@ -119,7 +111,12 @@ function M.build(config, data, max_width)
   if #locks > 0 then
     table.insert(lines, "")
     for _, lock in ipairs(locks) do
-      add(config.hud.icons.locks, lock.label, lock.filename)
+      add(
+        config.hud.icons.locks,
+        lock.label,
+        lock.filename,
+        lock.filename == data.current_lock
+      )
     end
   end
 
