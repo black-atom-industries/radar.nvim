@@ -133,7 +133,7 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 
 **Corner HUD:**
 
-The HUD sits in the top-right corner of every tab, below the tabline. It shows the alternative file, up to 5 locks and 3 recent files with the keys that reach them after `<space>`. A locked current file is highlighted; the current file never takes a recent slot. It moves to the bottom-right corner while the cursor is under it, stays visible next to the open radar, and hides while the tabs sidebar is open and when there is nothing to show.
+The HUD sits in the top-right corner of every tab, below the tabline. It shows the file you are in (`[%]`, highlighted), the alternative file, up to 5 locks and 3 recent files with the keys that reach them after `<space>`. A locked current file is highlighted; the current file never takes a recent slot. It moves to the bottom-right corner while the cursor is under it, stays visible next to the open radar, and hides while the tabs sidebar is open and when there is nothing to show.
 
 **Within Radar Window:**
 

@@ -72,7 +72,7 @@ function M.build(config, data, max_width)
         line = #lines - 1,
         col_start = #prefix,
         col_end = #line,
-        hl_group = current and "Title" or "Comment",
+        hl_group = target and current and "Title" or "Comment",
       })
     end
     table.insert(highlights, {
@@ -102,10 +102,16 @@ function M.build(config, data, max_width)
     end
   end
 
-  if not data.alt and #locks == 0 and #recent == 0 then
+  if data.current == "" and not data.alt and #locks == 0 and #recent == 0 then
     return { lines = lines, highlights = highlights }
   end
 
+  add(
+    config.hud.icons.current,
+    "%",
+    data.current ~= "" and data.current or nil,
+    true
+  )
   add(config.hud.icons.alternative, config.keys.alternative, data.alt)
 
   if #locks > 0 then

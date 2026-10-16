@@ -62,6 +62,7 @@ M.default = {
     max_locks = 5,
     max_recent = 3,
     icons = {
+      current = "󰈔",
       alternative = "󰐷",
       locks = "󰋱",
       recent = "󰽏",

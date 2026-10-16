@@ -24,6 +24,7 @@ describe("hud content", function()
     }, 60)
 
     MiniTest.expect.equality(content.lines, {
+      " 󰈔 [%] - ",
       " 󰐷 [o] alt.lua ",
       "",
       " 󰋱 [1] one.lua ",
@@ -45,9 +46,9 @@ describe("hud content", function()
       current_lock = "",
     }, 60)
 
-    MiniTest.expect.equality(#content.lines, 1 + 1 + 5 + 1 + 3)
-    MiniTest.expect.equality(content.lines[7], " 󰋱 [5] 5.lua ")
-    MiniTest.expect.equality(content.lines[11], " 󰽏 [d] /r/c ")
+    MiniTest.expect.equality(#content.lines, 2 + 1 + 5 + 1 + 3)
+    MiniTest.expect.equality(content.lines[8], " 󰋱 [5] 5.lua ")
+    MiniTest.expect.equality(content.lines[12], " 󰽏 [d] /r/c ")
   end)
 
   it("keeps the current file in locks and highlights it", function()
@@ -58,15 +59,22 @@ describe("hud content", function()
       current_lock = "two.lua",
     }, 60)
 
-    MiniTest.expect.equality(
-      content.lines,
-      { " 󰐷 [o] - ", "", " 󰋱 [1] one.lua ", " 󰋱 [2] two.lua " }
-    )
+    MiniTest.expect.equality(content.lines, {
+      " 󰈔 [%] /r/two.lua ",
+      " 󰐷 [o] - ",
+      "",
+      " 󰋱 [1] one.lua ",
+      " 󰋱 [2] two.lua ",
+    })
     local current = vim.tbl_filter(function(hl)
       return hl.hl_group == "Title"
     end, content.highlights)
-    MiniTest.expect.equality(#current, 1)
-    MiniTest.expect.equality(current[1].line, 3)
+    MiniTest.expect.equality(
+      vim.tbl_map(function(hl)
+        return hl.line
+      end, current),
+      { 0, 4 }
+    )
   end)
 
   it("skips the current file in recent and keeps its labels", function()
@@ -77,10 +85,14 @@ describe("hud content", function()
       current_lock = "",
     }, 60)
 
-    MiniTest.expect.equality(
-      content.lines,
-      { " 󰐷 [o] - ", "", " 󰽏 [a] /r/a ", " 󰽏 [d] /r/c ", " 󰽏 [f] /r/d " }
-    )
+    MiniTest.expect.equality(content.lines, {
+      " 󰈔 [%] /r/b ",
+      " 󰐷 [o] - ",
+      "",
+      " 󰽏 [a] /r/a ",
+      " 󰽏 [d] /r/c ",
+      " 󰽏 [f] /r/d ",
+    })
   end)
 
   it("shortens long paths to the width", function()
@@ -91,8 +103,8 @@ describe("hud content", function()
       current_lock = "",
     }, 20)
 
-    MiniTest.expect.equality(vim.fn.strdisplaywidth(content.lines[3]), 20)
-    MiniTest.expect.equality(vim.endswith(content.lines[3], "file.lua "), true)
+    MiniTest.expect.equality(vim.fn.strdisplaywidth(content.lines[4]), 20)
+    MiniTest.expect.equality(vim.endswith(content.lines[4], "file.lua "), true)
   end)
 
   it("is empty without anything to show", function()
@@ -168,8 +180,8 @@ describe("hud window", function()
     MiniTest.expect.equality(win_config.row, 0)
     MiniTest.expect.equality(win_config.col + win_config.width, vim.o.columns)
     MiniTest.expect.equality(
-      vim.api.nvim_buf_get_lines(vim.api.nvim_win_get_buf(winid), 0, 1, false),
-      { " 󰐷 [o] a.lua " }
+      vim.api.nvim_buf_get_lines(vim.api.nvim_win_get_buf(winid), 0, 2, false),
+      { " 󰈔 [%] b.lua ", " 󰐷 [o] a.lua " }
     )
   end)
 
@@ -251,8 +263,7 @@ describe("hud window", function()
       -1,
       false
     )
-    local radar_text = table.concat(before, "\n")
-    MiniTest.expect.equality(radar_text:find("b.lua", 1, true), nil)
+    MiniTest.expect.equality(before[1], " 󰈔 [%] b.lua ")
 
     require("radar.data.locks").toggle(
       "c.lua",

@@ -57,6 +57,7 @@
 ---@field icons Radar.Config.HudIcons Icon prefixed to each line, per section
 
 ---@class Radar.Config.HudIcons
+---@field current string
 ---@field alternative string
 ---@field locks string
 ---@field recent string
