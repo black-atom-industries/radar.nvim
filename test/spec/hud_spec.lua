@@ -1,6 +1,5 @@
 local hud = require("radar.ui.hud")
 local state = require("radar.data.state")
-local radar = require("radar.ui.radar")
 local config = require("radar.config")
 
 describe("hud content", function()
@@ -164,7 +163,6 @@ describe("hud window", function()
     vim.fn.getcharstr = original_getcharstr
     require("radar.ui.edit").cleanup()
     require("radar.ui.help").close()
-    radar.close()
     require("radar.ui.tabs").close()
     hud.reset()
     pcall(vim.keymap.del, "n", test_config.keys.prefix)
@@ -234,8 +232,6 @@ describe("hud window", function()
     for _ = 1, 20 do
       hud.refresh()
     end
-    radar.open(test_config)
-    radar.close()
 
     MiniTest.expect.equality(#vim.api.nvim_list_bufs(), buffer_count)
   end)
@@ -257,12 +253,8 @@ describe("hud window", function()
     MiniTest.expect.equality(vim.api.nvim_buf_is_valid(second_buf), false)
   end)
 
-  it("stays visible next to the radar and hides for the tabs sidebar", function()
+  it("hides for the tabs sidebar", function()
     hud.refresh()
-
-    radar.open(test_config)
-    MiniTest.expect.equality(hud.get_winid() ~= nil, true)
-    radar.close()
     MiniTest.expect.equality(hud.get_winid() ~= nil, true)
 
     require("radar.ui.tabs").open(test_config)
@@ -271,8 +263,8 @@ describe("hud window", function()
     MiniTest.expect.equality(hud.get_winid() ~= nil, true)
   end)
 
-  it("updates while the radar is open and ignores the radar buffer", function()
-    radar.open(test_config)
+  it("updates on lock changes", function()
+    hud.refresh()
     local before = vim.api.nvim_buf_get_lines(
       vim.api.nvim_win_get_buf(assert(hud.get_winid())),
       0,
@@ -353,9 +345,11 @@ describe("hud window", function()
       MiniTest.expect.equality(vim.api.nvim_buf_get_name(0), file("c.lua"))
     end)
 
-    it("opens the radar with the prefix again", function()
+    it("does nothing on the prefix again", function()
+      local windows = #vim.api.nvim_list_wins()
       press(" ")
-      MiniTest.expect.equality(radar.exists(), true)
+      MiniTest.expect.equality(vim.api.nvim_buf_get_name(0), file("b.lua"))
+      MiniTest.expect.equality(#vim.api.nvim_list_wins(), windows)
     end)
 
     it("opens the alternative file with o", function()
@@ -363,15 +357,13 @@ describe("hud window", function()
       MiniTest.expect.equality(vim.api.nvim_buf_get_name(0), file("a.lua"))
     end)
 
-    it("locks the current buffer without opening the radar", function()
+    it("locks and unlocks the current buffer", function()
       hud.refresh()
       press("l")
       MiniTest.expect.equality(state.get_locks()[1].filename, "b.lua")
-      MiniTest.expect.equality(radar.exists(), false)
 
       press("l")
       MiniTest.expect.equality(#state.get_locks(), 0)
-      MiniTest.expect.equality(radar.exists(), false)
     end)
 
     it("toggles the HUD with h", function()
@@ -380,56 +372,50 @@ describe("hud window", function()
       MiniTest.expect.equality(hud.get_winid(), nil)
     end)
 
-    it(
-      "opens the lock editor at the bottom of the pane without the radar",
-      function()
-        local winborder = vim.o.winborder
-        vim.o.winborder = "rounded"
-        state.set_locks({ { label = "1", filename = "c.lua" } })
-        hud.refresh()
-        local pane = vim.api.nvim_get_current_win()
-        local buffer_count = #vim.api.nvim_list_bufs()
+    it("opens the lock editor at the bottom of the pane", function()
+      local winborder = vim.o.winborder
+      vim.o.winborder = "rounded"
+      state.set_locks({ { label = "1", filename = "c.lua" } })
+      hud.refresh()
+      local pane = vim.api.nvim_get_current_win()
+      local buffer_count = #vim.api.nvim_list_bufs()
 
-        press("e")
-        vim.o.winborder = winborder
-        local edit_win = assert(state.get_edit_winid())
-        local win_config = vim.api.nvim_win_get_config(edit_win)
-        MiniTest.expect.equality(vim.api.nvim_get_current_win(), edit_win)
-        MiniTest.expect.equality(win_config.relative, "win")
-        MiniTest.expect.equality(win_config.win, pane)
-        MiniTest.expect.equality(win_config.border, "none")
-        MiniTest.expect.equality(win_config.focusable, true)
-        MiniTest.expect.equality(win_config.zindex > 10, true)
-        MiniTest.expect.equality(win_config.col, 0)
-        MiniTest.expect.equality(win_config.width, vim.api.nvim_win_get_width(pane))
-        MiniTest.expect.equality(win_config.height, 3)
-        MiniTest.expect.equality(bottom_of(win_config, pane), true)
-        MiniTest.expect.equality(vim.wo[edit_win].winblend, 0)
-        MiniTest.expect.equality(hud.get_winid(), nil)
-        MiniTest.expect.equality(radar.exists(), false)
+      press("e")
+      vim.o.winborder = winborder
+      local edit_win = assert(state.get_edit_winid())
+      local win_config = vim.api.nvim_win_get_config(edit_win)
+      MiniTest.expect.equality(vim.api.nvim_get_current_win(), edit_win)
+      MiniTest.expect.equality(win_config.relative, "win")
+      MiniTest.expect.equality(win_config.win, pane)
+      MiniTest.expect.equality(win_config.border, "none")
+      MiniTest.expect.equality(win_config.focusable, true)
+      MiniTest.expect.equality(win_config.zindex > 10, true)
+      MiniTest.expect.equality(win_config.col, 0)
+      MiniTest.expect.equality(win_config.width, vim.api.nvim_win_get_width(pane))
+      MiniTest.expect.equality(win_config.height, 3)
+      MiniTest.expect.equality(bottom_of(win_config, pane), true)
+      MiniTest.expect.equality(vim.wo[edit_win].winblend, 0)
+      MiniTest.expect.equality(hud.get_winid(), nil)
 
-        vim.api.nvim_buf_set_lines(0, 0, -1, false, { "a.lua", "c.lua" })
-        vim.cmd("silent write")
-        MiniTest.expect.equality(
-          vim.tbl_map(function(lock)
-            return lock.filename
-          end, state.get_locks()),
-          { "a.lua", "c.lua" }
-        )
-        MiniTest.expect.equality(radar.exists(), false)
+      vim.api.nvim_buf_set_lines(0, 0, -1, false, { "a.lua", "c.lua" })
+      vim.cmd("silent write")
+      MiniTest.expect.equality(
+        vim.tbl_map(function(lock)
+          return lock.filename
+        end, state.get_locks()),
+        { "a.lua", "c.lua" }
+      )
 
-        vim.api.nvim_feedkeys("q", "x", false)
-        vim.wait(100, function()
-          return state.get_edit_winid() == nil
-        end)
-        MiniTest.expect.equality(vim.api.nvim_win_is_valid(edit_win), false)
-        MiniTest.expect.equality(state.get_edit_winid(), nil)
-        MiniTest.expect.equality(vim.api.nvim_get_current_win(), pane)
-        MiniTest.expect.equality(radar.exists(), false)
-        MiniTest.expect.equality(hud.get_winid() ~= nil, true)
-        MiniTest.expect.equality(#vim.api.nvim_list_bufs(), buffer_count)
-      end
-    )
+      vim.api.nvim_feedkeys("q", "x", false)
+      vim.wait(100, function()
+        return state.get_edit_winid() == nil
+      end)
+      MiniTest.expect.equality(vim.api.nvim_win_is_valid(edit_win), false)
+      MiniTest.expect.equality(state.get_edit_winid(), nil)
+      MiniTest.expect.equality(vim.api.nvim_get_current_win(), pane)
+      MiniTest.expect.equality(hud.get_winid() ~= nil, true)
+      MiniTest.expect.equality(#vim.api.nvim_list_bufs(), buffer_count)
+    end)
 
     it("discards lock editor changes on :quit!", function()
       state.set_locks({ { label = "1", filename = "c.lua" } })
@@ -449,7 +435,6 @@ describe("hud window", function()
       MiniTest.expect.equality(state.get_edit_winid(), nil)
       MiniTest.expect.equality(vim.api.nvim_get_current_win(), pane)
       MiniTest.expect.equality(hud.get_winid() ~= nil, true)
-      MiniTest.expect.equality(radar.exists(), false)
       MiniTest.expect.equality(#vim.api.nvim_list_bufs(), buffer_count)
     end)
 
@@ -473,7 +458,6 @@ describe("hud window", function()
       state.set_locks({ { label = "1", filename = "c.lua" } })
       press("\27")
       MiniTest.expect.equality(vim.api.nvim_buf_get_name(0), file("b.lua"))
-      MiniTest.expect.equality(radar.exists(), false)
     end)
 
     it("cancels when reading the key fails", function()
@@ -481,22 +465,6 @@ describe("hud window", function()
         error("Keyboard interrupt")
       end
       vim.fn.maparg(test_config.keys.prefix, "n", false, true).callback()
-      MiniTest.expect.equality(radar.exists(), false)
-    end)
-  end)
-
-  describe("inside the radar", function()
-    it("opens the alternative file with o", function()
-      radar.open(test_config)
-      vim.api.nvim_feedkeys("o", "x", false)
-      MiniTest.expect.equality(radar.exists(), false)
-      MiniTest.expect.equality(vim.api.nvim_buf_get_name(0), file("a.lua"))
-    end)
-
-    it("closes with the prefix", function()
-      radar.open(test_config)
-      vim.api.nvim_feedkeys(vim.keycode(test_config.keys.prefix), "x", false)
-      MiniTest.expect.equality(radar.exists(), false)
       MiniTest.expect.equality(vim.api.nvim_buf_get_name(0), file("b.lua"))
     end)
   end)

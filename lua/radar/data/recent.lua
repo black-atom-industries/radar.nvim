@@ -30,22 +30,10 @@ function M.get_files(config)
     excluded_files[absolute(lock.filename)] = true
   end
 
-  -- Exclude alternative file — use stored source alt file when available
-  -- (set during radar.open()) to ensure consistent exclusion before and after
-  -- BufEnter during nvim_open_win, where re-evaluating get_alternative_file()
-  -- gives different results (radar buffer vs source buffer).
-  -- `false` means radar.open() found no alternative file.
-  local alt_file = state.get_source_alt_file()
-  if alt_file == nil then
-    local ok, result = pcall(function()
-      local alternative = require("radar.data.alternative")
-      return alternative.get_alternative_file()
-    end)
-    if ok then
-      alt_file = result
-    end
-  end
-  if alt_file then
+  local ok, alt_file = pcall(function()
+    return require("radar.data.alternative").get_alternative_file()
+  end)
+  if ok and alt_file then
     excluded_files[absolute(alt_file)] = true
   end
 
@@ -56,7 +44,7 @@ function M.get_files(config)
     if
       not seen_files[abs_path]
       and not excluded_files[abs_path]
-      and #recent_files < config.radar.max_recent_files
+      and #recent_files < config.recent.max_files
     then
       if path.relative_to(abs_path, root) and exists(filepath, filesystem_path) then
         table.insert(recent_files, filepath)
@@ -134,7 +122,7 @@ function M.track_current_file(config)
   table.insert(state.get_session_files(), abs_path)
 
   -- Keep only last N session files
-  if #state.get_session_files() > config.radar.max_recent_files then
+  if #state.get_session_files() > config.recent.max_files then
     table.remove(state.get_session_files(), 1)
   end
   return true

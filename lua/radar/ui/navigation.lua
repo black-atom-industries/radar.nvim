@@ -1,35 +1,12 @@
 local M = {}
 local path_utils = require("radar.path")
 
----Get file path from current line in radar window
----@param section "locks" | "recent"
----@return string? filepath
-function M.get_file_from_line(section)
-  local state = require("radar.data.state")
-
-  if
-    not state.get_radar_winid()
-    or not vim.api.nvim_win_is_valid(state.get_radar_winid())
-  then
-    return nil
-  end
-
-  local current_line_nr = vim.api.nvim_win_get_cursor(state.get_radar_winid())[1]
-  local entry = state.get_radar_line_mapping()[current_line_nr]
-  if entry and entry.section == section then
-    return entry.target
-  end
-
-  return nil
-end
-
----Open a file with the given command, ensuring radar exists
+---Open a file with the given command
 ---@param filepath string? File path to open
 ---@param open_cmd? string Command to open file (edit, vsplit, split, tabedit, float)
 ---@param config Radar.Config
----@param radar_module table
 ---@return nil
-function M.open_file(filepath, open_cmd, config, radar_module)
+function M.open_file(filepath, open_cmd, config)
   if not filepath then
     return
   end
@@ -41,8 +18,8 @@ function M.open_file(filepath, open_cmd, config, radar_module)
     return
   end
 
-  -- Close radar first, so file opens in the previous window
-  radar_module.close()
+  -- Close the help popup first, so the file opens in its parent window
+  require("radar.ui.help").close()
 
   local path = vim.fn.fnameescape(filepath)
   open_cmd = open_cmd or "edit"
@@ -54,61 +31,29 @@ function M.open_file(filepath, open_cmd, config, radar_module)
   end
 end
 
----Open lock by label
+---Open lock by label in the current window
 ---@param label string
----@param open_cmd? string Command to open file (edit, vsplit, split, tabedit, float)
 ---@param config Radar.Config
----@param radar_module table
 ---@return nil
-function M.open_lock(label, open_cmd, config, radar_module)
+function M.open_lock(label, config)
   local state = require("radar.data.state")
   local lock = state.get_lock_by_field("label", tostring(label))
   if lock then
-    M.open_file(lock.filename, open_cmd, config, radar_module)
+    M.open_file(lock.filename, nil, config)
   end
 end
 
----Open alternative file
----@param open_cmd? string Command to open file (edit, vsplit, split, tabedit, float)
----@param config Radar.Config
----@param radar_module table
----@return nil
-function M.open_alternative(open_cmd, config, radar_module)
-  local state = require("radar.data.state")
-  -- Use the alternate file captured when radar was opened
-  local alt_file = state.get_source_alt_file()
-  if alt_file then
-    M.open_file(alt_file, open_cmd, config, radar_module)
-  end
-end
-
----Open recent file by label
+---Open recent file by label in the current window
 ---@param label string
----@param open_cmd? string Command to open file (edit, vsplit, split, tabedit, float)
 ---@param config Radar.Config
----@param radar_module table
 ---@return nil
-function M.open_recent(label, open_cmd, config, radar_module)
+function M.open_recent(label, config)
   local state = require("radar.data.state")
-  -- Find the recent file by label
   for i, recent_label in ipairs(config.keys.recent) do
     if recent_label == label and state.get_recent_files()[i] then
-      M.open_file(state.get_recent_files()[i], open_cmd, config, radar_module)
+      M.open_file(state.get_recent_files()[i], nil, config)
       return
     end
-  end
-end
-
----Open file from current line in radar window
----@param open_cmd? string Command to open file (edit, vsplit, split, tabedit, float)
----@param config Radar.Config
----@param radar_module table
----@param section "locks" | "recent"
----@return nil
-function M.open_file_from_line(open_cmd, config, radar_module, section)
-  local filepath = M.get_file_from_line(section)
-  if filepath then
-    M.open_file(filepath, open_cmd, config, radar_module)
   end
 end
 

@@ -316,7 +316,7 @@ function M.persist(config, snapshot)
       git_branch,
       "recent"
     ) or {}
-    recent = merge_recent(snapshot.recent, saved, config.radar.max_recent_files)
+    recent = merge_recent(snapshot.recent, saved, config.recent.max_files)
   end
 
   local merged_projects =
@@ -353,16 +353,12 @@ function M.populate(config)
   local same_project = populated ~= nil and populated.project == context.project
   populated = context
   local state = require("radar.data.state")
-  local radar = require("radar.ui.radar")
 
   if not context.project or not context.branch then
     warn_no_branch()
     if not same_project then
       state.set_locks({})
       state.set_history({})
-      if radar.exists() then
-        radar.update(config)
-      end
       require("radar.ui.hud").refresh()
     end
     return
@@ -387,9 +383,6 @@ function M.populate(config)
   -- switching worktrees) so stale locks from the previous directory go away.
   require("radar.data.locks").relabel(locks or {}, config)
   state.set_locks(locks or {})
-  if radar.exists() then
-    radar.update(config)
-  end
   require("radar.ui.hud").refresh()
 
   if data ~= nil and locks ~= nil then

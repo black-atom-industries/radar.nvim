@@ -3,7 +3,7 @@ local M = {}
 ---Base window presets (not user-configurable)
 ---@type table<string, fun(config: Radar.Config): vim.api.keyset.win_config>
 local BASE_PRESETS = {
-  cursor = function(config)
+  cursor = function(_config)
     return {
       relative = "cursor",
       anchor = "NW",
@@ -13,14 +13,13 @@ local BASE_PRESETS = {
       col = 0,
       border = "single",
       style = "minimal",
-      title = config.radar.titles.main,
       title_pos = "left",
       focusable = true,
       zindex = 100,
     }
   end,
 
-  center = function(config)
+  center = function(_config)
     local width = 75
     local height = 10
 
@@ -33,14 +32,13 @@ local BASE_PRESETS = {
       col = math.floor((vim.o.columns - width) / 2),
       border = "shadow",
       style = "minimal",
-      title = config.radar.titles.main,
       title_pos = "center",
       focusable = true,
       zindex = 100,
     }
   end,
 
-  center_large = function(config)
+  center_large = function(_config)
     local width = math.floor(vim.o.columns * 0.9)
     local height = math.floor(vim.o.lines * 0.8)
 
@@ -53,14 +51,13 @@ local BASE_PRESETS = {
       col = math.floor((vim.o.columns - width) / 2),
       border = "solid",
       style = "minimal",
-      title = config.radar.titles.main,
       title_pos = "center",
       focusable = true,
       zindex = 50,
     }
   end,
 
-  center_narrow = function(config)
+  center_narrow = function(_config)
     local width = math.floor(vim.o.columns * 0.5)
     -- local height = math.floor(vim.o.lines * 0.8)
     local height = 75
@@ -74,14 +71,13 @@ local BASE_PRESETS = {
       col = math.floor((vim.o.columns - width) / 2),
       border = "solid",
       style = "minimal",
-      title = config.radar.titles.main,
       title_pos = "center",
       focusable = true,
       zindex = 100,
     }
   end,
 
-  top_right = function(config)
+  top_right = function(_config)
     return {
       relative = "editor",
       anchor = "NE",
@@ -91,14 +87,13 @@ local BASE_PRESETS = {
       col = vim.o.columns,
       border = "single",
       style = "minimal",
-      title = config.radar.titles.main,
       title_pos = "left",
       focusable = true,
       zindex = 100,
     }
   end,
 
-  bottom_center = function(config)
+  bottom_center = function(_config)
     local width = 75
     local height = 10
 
@@ -111,14 +106,13 @@ local BASE_PRESETS = {
       col = math.floor((vim.o.columns - width) / 2),
       border = "single",
       style = "minimal",
-      title = config.radar.titles.main,
       title_pos = "center",
       focusable = true,
       zindex = 100,
     }
   end,
 
-  full_height_sidebar = function(config)
+  full_height_sidebar = function(_config)
     return {
       relative = "editor",
       anchor = "NE",
@@ -128,7 +122,6 @@ local BASE_PRESETS = {
       col = vim.o.columns,
       border = "single",
       style = "minimal",
-      title = config.radar.titles.main,
       title_pos = "left",
       focusable = true,
       zindex = 100,

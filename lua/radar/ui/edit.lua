@@ -4,9 +4,8 @@ local path = require("radar.path")
 ---Setup autocmds for edit buffer save and close handling
 ---@param edit_buf integer
 ---@param radar_config Radar.Config
----@param radar_module table?
 ---@return nil
-local function setup_edit_autocmds(edit_buf, radar_config, radar_module)
+local function setup_edit_autocmds(edit_buf, radar_config)
   local augroup = vim.api.nvim_create_augroup("radar.EditLocks", { clear = true })
 
   -- Handle buffer save (:w)
@@ -14,7 +13,7 @@ local function setup_edit_autocmds(edit_buf, radar_config, radar_module)
     group = augroup,
     buffer = edit_buf,
     callback = function()
-      M.save_buffer(edit_buf, radar_config, radar_module)
+      M.save_buffer(edit_buf, radar_config)
     end,
   })
 
@@ -32,9 +31,8 @@ end
 ---Parse and save changes from edit buffer
 ---@param edit_buf integer
 ---@param radar_config Radar.Config
----@param radar_module table? radar to re-render after saving
 ---@return nil
-function M.save_buffer(edit_buf, radar_config, radar_module)
+function M.save_buffer(edit_buf, radar_config)
   local lines = vim.api.nvim_buf_get_lines(edit_buf, 0, -1, false)
   local new_locks = {}
   local errors = {}
@@ -72,9 +70,6 @@ function M.save_buffer(edit_buf, radar_config, radar_module)
   require("radar.data.locks").relabel(new_locks, radar_config)
   state.set_locks(new_locks)
   persistence.persist(radar_config)
-  if radar_module then
-    radar_module.update(radar_config)
-  end
   require("radar.ui.hud").refresh()
 
   -- Mark buffer as saved
@@ -86,9 +81,8 @@ end
 ---@param edit_buf integer
 ---@param open_cmd string Command to open file (edit, vsplit, split, tabedit, float)
 ---@param radar_config Radar.Config
----@param radar_module table?
 ---@return nil
-function M.open_file_from_edit(edit_buf, open_cmd, radar_config, radar_module)
+function M.open_file_from_edit(edit_buf, open_cmd, radar_config)
   local state = require("radar.data.state")
   local cursor = vim.api.nvim_win_get_cursor(state.get_edit_winid())
   local line_nr = cursor[1]
@@ -108,7 +102,7 @@ function M.open_file_from_edit(edit_buf, open_cmd, radar_config, radar_module)
   end
 
   -- Save current state first
-  M.save_buffer(edit_buf, radar_config, radar_module)
+  M.save_buffer(edit_buf, radar_config)
 
   -- Extract and expand filepath
   local filepath = line:match("^%s*(.-)%s*$")
@@ -125,12 +119,7 @@ function M.open_file_from_edit(edit_buf, open_cmd, radar_config, radar_module)
 
   -- Open the file using navigation module
   local navigation = require("radar.ui.navigation")
-  navigation.open_file(
-    full_path,
-    open_cmd,
-    radar_config,
-    radar_module or require("radar.ui.radar")
-  )
+  navigation.open_file(full_path, open_cmd, radar_config)
 end
 
 ---Cleanup edit mode state
@@ -146,7 +135,7 @@ function M.cleanup()
   state.set_edit_winid(nil)
   state.set_edit_bufid(nil)
 
-  require("radar.ui.radar").close()
+  require("radar.ui.hud").refresh()
 end
 
 ---Pane the editor sits in: the current window, or the previous one while a
@@ -162,20 +151,9 @@ end
 
 ---Create editable buffer for managing locks, at the bottom of the active pane
 ---@param radar_config Radar.Config
----@param radar_module table? radar to close now and re-render after saving
 ---@return nil
-function M.edit_locks(radar_config, radar_module)
+function M.edit_locks(radar_config)
   local state = require("radar.data.state")
-
-  -- Close radar window before opening edit window, keeping its source so
-  -- saving recreates the same radar
-  if radar_module then
-    local source_bufnr, source_alt_file =
-      state.get_source_bufnr(), state.get_source_alt_file()
-    radar_module.close()
-    state.set_source_bufnr(source_bufnr)
-    state.set_source_alt_file(source_alt_file)
-  end
 
   -- Clean up ALL existing buffers with this name (handles orphaned buffers)
   -- Loop because BufUnload callbacks during deletion can cause re-entrancy
@@ -247,7 +225,7 @@ function M.edit_locks(radar_config, radar_module)
   require("radar.ui.hud").refresh()
 
   -- Set up buffer autocmds for save and close
-  setup_edit_autocmds(edit_buf, radar_config, radar_module)
+  setup_edit_autocmds(edit_buf, radar_config)
 
   -- Set up buffer-local keymaps
   vim.api.nvim_buf_set_keymap(edit_buf, "n", "q", "", {
@@ -255,8 +233,7 @@ function M.edit_locks(radar_config, radar_module)
     silent = true,
     desc = "Save and quit radar edit buffer",
     callback = function()
-      -- Save changes first (this also updates radar via radar_module.update())
-      M.save_buffer(edit_buf, radar_config, radar_module)
+      M.save_buffer(edit_buf, radar_config)
       -- Close the edit window (BufUnload calls M.cleanup())
       if vim.api.nvim_win_is_valid(edit_win) then
         vim.api.nvim_win_close(edit_win, true)
@@ -270,7 +247,7 @@ function M.edit_locks(radar_config, radar_module)
     silent = true,
     desc = "Open file under cursor",
     callback = function()
-      M.open_file_from_edit(edit_buf, "edit", radar_config, radar_module)
+      M.open_file_from_edit(edit_buf, "edit", radar_config)
     end,
   })
 
@@ -279,7 +256,7 @@ function M.edit_locks(radar_config, radar_module)
     silent = true,
     desc = "Open file in vertical split",
     callback = function()
-      M.open_file_from_edit(edit_buf, "vsplit", radar_config, radar_module)
+      M.open_file_from_edit(edit_buf, "vsplit", radar_config)
     end,
   })
 
@@ -288,7 +265,7 @@ function M.edit_locks(radar_config, radar_module)
     silent = true,
     desc = "Open file in horizontal split",
     callback = function()
-      M.open_file_from_edit(edit_buf, "split", radar_config, radar_module)
+      M.open_file_from_edit(edit_buf, "split", radar_config)
     end,
   })
 
@@ -297,7 +274,7 @@ function M.edit_locks(radar_config, radar_module)
     silent = true,
     desc = "Open file in new tab",
     callback = function()
-      M.open_file_from_edit(edit_buf, "tabedit", radar_config, radar_module)
+      M.open_file_from_edit(edit_buf, "tabedit", radar_config)
     end,
   })
 
@@ -306,7 +283,7 @@ function M.edit_locks(radar_config, radar_module)
     silent = true,
     desc = "Open file in floating window",
     callback = function()
-      M.open_file_from_edit(edit_buf, "float", radar_config, radar_module)
+      M.open_file_from_edit(edit_buf, "float", radar_config)
     end,
   })
 end

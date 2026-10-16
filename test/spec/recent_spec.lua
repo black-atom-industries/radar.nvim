@@ -254,7 +254,7 @@ describe("recent", function()
 
     it("limits session files to max_session_files", function()
       -- Fill up session files to max
-      for i = 1, test_config.radar.max_recent_files do
+      for i = 1, test_config.recent.max_files do
         table.insert(state.get_session_files(), "/test/project/file" .. i .. ".lua")
       end
 
@@ -263,7 +263,7 @@ describe("recent", function()
       -- Should not exceed max
       MiniTest.expect.equality(
         #state.get_session_files(),
-        test_config.radar.max_recent_files
+        test_config.recent.max_files
       )
       -- Current file should be at the end
       MiniTest.expect.equality(

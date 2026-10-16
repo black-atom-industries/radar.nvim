@@ -10,7 +10,7 @@ A Neovim plugin that treats file navigation like a fighter pilot's radar system.
 
 - **File Pinning**: Lock your most important files to slots 1-9 for instant access
 - **Smart Persistence**: Context-aware storage per project and git branch
-- **Sections**: One radar window with alternative file, locks, and recent files
+- **Prefix Keys**: `<space>` plus one key jumps to a lock, a recent file or the alternative file
 - **HUD**: A small always-visible window at the bottom of the active pane with the current and alternative file, the first locks and recent files
 - **Tab Navigation**: Sidebar view of all open tabs and buffers
 - **Dynamic Highlighting**: Auto-highlight the currently active locked file
@@ -24,7 +24,6 @@ See also [Concept](./docs/concept.md)
 [1][2][3][4][5][6][7][8][9]  ← Locks (manually locked targets)
 [a][s][d][f][g]              ← Recent files (per project and branch)
 [o]                          ← Alternative file (test ↔ impl)
-[<space>]                    ← Full radar
 ```
 
 This spatial keyboard layout gives you instant access to **15 files** without moving your left hand from home position.
@@ -48,15 +47,13 @@ This spatial keyboard layout gives you instant access to **15 files** without mo
 {
   "black-atom-industries/radar.nvim",
   opts = {
-    radar = {
-      win_preset = "top_right",  -- see window presets below
-      size = { width = 140, height = 25 },
-      max_recent_files = 10,
-      titles = {
-        main = "MY RADAR",
-        locks = "LOCKED",
-      }
-    }
+    hud = {
+      max_locks = 9,
+      max_recent = 5,
+    },
+    recent = {
+      max_files = 20,
+    },
   }
 }
 ```
@@ -84,29 +81,23 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 
 | Option                                              | Default                               | Description                                                                     |
 | --------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------- |
-| `keys.prefix`                                       | `"<space>"`                           | Prefix that reads one more key; closes the radar inside it                      |
+| `keys.prefix`                                       | `"<space>"`                           | Prefix that reads one more key                                                  |
 | `keys.lock`                                         | `"l"`                                 | Lock current buffer to a slot                                                   |
 | `keys.locks`                                        | `{"1".."9"}`                          | Keys for lock slots                                                             |
 | `keys.recent`                                       | `{"a".."g"}`                          | Keys for recent file slots                                                      |
 | `keys.tabs_toggle`                                  | `"<leader>t"`                         | Toggle tabs sidebar                                                             |
-| `keys.alternative`                                  | `"o"`                                 | Alternative file, after the prefix and inside the radar                         |
+| `keys.alternative`                                  | `"o"`                                 | Alternative file (after the prefix)                                             |
 | `keys.hud_toggle`                                   | `"h"`                                 | Toggle the HUD for the session (after the prefix)                               |
 | `keys.edit`                                         | `"e"`                                 | Open the lock editor (after the prefix)                                         |
 | `keys.help`                                         | `"?"`                                 | Show the keys that follow the prefix (after the prefix)                         |
-| `keys.vertical` / `.horizontal` / `.tab` / `.float` | `<C-v>` / `<C-s>` / `<C-t>` / `<C-f>` | Split mode modifiers                                                            |
-| `radar.size`                                   | `{ width = 50, height = 75 }`         | Window dimensions                                                               |
-| `radar.win_preset`                                  | `"center"`                            | Window preset for the radar                                                     |
-| `radar.border`                                      | `"solid"`                             | Border style (see `:h nvim_open_win`)                                           |
-| `radar.max_recent_files`                            | `10`                                  | Max recent files shown                                                          |
-| `radar.titles`                                      | (nerd font icons)                     | Section titles for main, locks, recent                      |
-| `radar.win_opts`                                    | `{ cursorline = true, ... }`          | Window-local options applied to radar buffers                                   |
+| `recent.max_files`                                  | `10`                                  | Recent files kept per project and branch                                        |
 | `hud.enabled`                                       | `true`                                | Show the HUD                                                                    |
 | `hud.max_locks`                                     | `5`                                   | Locks shown in the HUD                                                          |
 | `hud.max_recent`                                    | `3`                                   | Recent files shown in the HUD                                                   |
-| `hud.icons`                                         | radar section icons                   | Icon in front of each HUD line, per section                                     |
+| `hud.icons`                                         | (nerd font icons)                     | Icon in front of each HUD line, per section                                     |
 | `tabs.auto_close`                                   | `true`                                | Close tabs window after selecting                                               |
 | `tabs.win_preset`                                   | `"center"`                            | Window preset for tabs sidebar                                                  |
-| `file_float.win_preset`                             | `"center_narrow"`                    | Window preset for floating file view                                            |
+| `file_float.win_preset`                             | `"center_narrow"`                    | Window preset for the floating file view (`<C-f>` in the lock editor)           |
 | `persist.path`                                      | `stdpath("data")/radar/data.json`     | Persistence file location                                                       |
 | `persist.defer_ms`                                  | `500`                                 | Debounce delay for saves                                                        |
 | `win_presets`                                       | `{}`                                  | Override or add custom window presets                                           |
@@ -124,10 +115,9 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 - **`1-9`**: Jump to a lock
 - **`a-g`**: Jump to a recent file
 - **`o`**: Open the alternative file
-- **`<space>`**: Open the radar
 - **`l`**: Lock or unlock the current buffer
 - **`h`**: Toggle the HUD for this session
-- **`e`**: Edit locks without opening the radar
+- **`e`**: Open the lock editor
 - **`?`**: Show these keys
 - **`<Esc>`** or any other key: Cancel
 
@@ -135,23 +125,11 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 
 **HUD:**
 
-The HUD sits at the bottom of the active pane, as wide as the pane, and follows you between splits. It shows the file you are in (`[%]`, highlighted), the alternative file, up to 5 locks and 3 recent files with the keys that reach them after `<space>`. A locked current file is highlighted; the current file never takes a recent slot. It moves to the top of the pane while your cursor line runs under it, stays visible next to the open radar, and hides while the tabs sidebar or the lock editor is open and when there is nothing to show.
+The HUD sits at the bottom of the active pane, as wide as the pane, and follows you between splits. It shows the file you are in (`[%]`, highlighted), the alternative file, up to 5 locks and 3 recent files with the keys that reach them after `<space>`. A locked current file is highlighted; the current file never takes a recent slot. It moves to the top of the pane while your cursor line runs under it and hides while the tabs sidebar or the lock editor is open and when there is nothing to show.
 
 **Lock editor:**
 
-`<space>e` and `e` in the radar open the lock editor where the HUD sits: at the bottom of the active pane, as wide as the pane. One lock path per line; the line order sets the labels. `:w` saves, `q` saves and closes.
-
-**Within Radar Window:**
-
-- **`l`**: Lock or unlock the file under the cursor
-- **`1-9`**: Open locked files
-- **`a-g`**: Open recent files
-- **`o`**: Open alternative file (e.g., test ↔ implementation)
-- **`e`**: Edit lock labels
-- **`t`**: Open tabs sidebar
-- **`?`**: Toggle help
-- **`<Tab>` / `<S-Tab>`**: Cycle focus between sections
-- **`q` / `<Esc>` / `<space>`**: Close radar
+`<space>e` opens the lock editor where the HUD sits: at the bottom of the active pane, as wide as the pane. One lock path per line; the line order sets the labels. `:w` saves, `q` saves and closes. `<CR>`, `<C-v>`, `<C-s>`, `<C-t>` and `<C-f>` save and open the file under the cursor in the current window, a vertical split, a horizontal split, a new tab or a floating window.
 
 **Within Tabs Sidebar:**
 
@@ -159,28 +137,13 @@ The HUD sits at the bottom of the active pane, as wide as the pane, and follows 
 - **`x`**: Close buffer or tab
 - **`q` / `<Esc>`**: Close tabs sidebar
 
-**Line-based Navigation (within radar):**
-
-- **`<CR>`**: Open file under cursor
-- **`V`**: Open in vertical split
-- **`S`**: Open in horizontal split
-- **`T`**: Open in new tab
-- **`F`**: Open in floating window
-
-**Split Modifiers (within radar, combine with 1-9, a-g, or `o`):**
-
-- **`<C-v>` + key**: Open in vertical split
-- **`<C-s>` + key**: Open in horizontal split
-- **`<C-t>` + key**: Open in new tab
-- **`<C-f>` + key**: Open in floating window
-
 ### Context-Aware Persistence
 
 Locks and recent files are saved and restored per project and git branch, so switching between projects or branches maintains separate lock sets and file histories.
 
 - The project is the git root containing the working directory (the worktree root inside a worktree), or the working directory outside git.
 - Lock and recent file paths are stored relative to the project root.
-- Recent files list this session's files first, then the saved history (up to `radar.max_recent_files`), then `vim.v.oldfiles`. Missing files are dropped on load.
+- Recent files list this session's files first, then the saved history (up to `recent.max_files`), then `vim.v.oldfiles`. Missing files are dropped on load.
 - Detached HEAD and non-git directories keep locks and recent files in memory only, until you switch to another project.
 - A corrupt data file is moved to `data.json.bad`. Writes are atomic.
 
@@ -256,19 +219,18 @@ end)
 
 ## Interface Preview
 
-```
-┌──────── 󰐷  RADAR ────────────────────────────────────────────────┐
-│   OTHER                                                          │
-│   [-] test/spec/locks_spec.lua                                    │
-└───────────────────────────────────────────────────────────────────┘
+The HUD at the bottom of the active pane:
 
-┌── 󰋱  LOCKED IN ──────────────┐   ┌── 󰽏  NEAR ──────────────────┐
-│   [1] lua/radar/init.lua      │   │   [a] README.md              │
-│   [2] lua/radar/config.lua  ← │   │   [s] AGENTS.md              │
-│   [3] test/spec/state.lua     │   │   [d] lua/radar/ui/keys.lua │
-│                               │   │   [e] lua/radar/ui/window.lua │
-│                               │   │   [f] lua/radar/data/locks.lua │
-└───────────────────────────────┘   └──────────────────────────────┘
+```
+ 󰈔 [%] lua/radar/config.lua
+ 󰐷 [o] test/spec/hud_spec.lua
+
+ 󰋱 [1] lua/radar/init.lua
+ 󰋱 [2] lua/radar/config.lua
+
+ 󰽏 [a] README.md
+ 󰽏 [s] AGENTS.md
+ 󰽏 [d] lua/radar/ui/keys.lua
 ```
 
 ## Contributing

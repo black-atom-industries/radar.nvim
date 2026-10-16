@@ -365,7 +365,6 @@ describe("project identity", function()
     before_each(function()
       state.set_session_files({})
       state.set_history({})
-      state.set_source_alt_file(false)
       original_oldfiles = vim.v.oldfiles
       vim.v.oldfiles = {}
     end)
@@ -373,7 +372,6 @@ describe("project identity", function()
     after_each(function()
       state.set_session_files({})
       state.set_history({})
-      state.set_source_alt_file(nil)
       vim.v.oldfiles = original_oldfiles
     end)
 
@@ -448,7 +446,7 @@ describe("project identity", function()
         { locks = {}, recent = { "src/b.lua", "a.lua" }, lastAccessed = 1 }
       )
       vim.uv.chdir(root)
-      test_config.radar.max_recent_files = 2
+      test_config.recent.max_files = 2
 
       persistence.persist(test_config)
       MiniTest.expect.equality(

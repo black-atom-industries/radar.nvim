@@ -162,12 +162,11 @@ describe("locks", function()
   end)
 
   describe("toggle", function()
-    local mock_persistence, mock_mini_radar
+    local mock_persistence
 
     before_each(function()
       setup_test_state()
       mock_persistence = { persist = function() end }
-      mock_mini_radar = {}
     end)
 
     it("adds lock when file not locked", function()
@@ -192,7 +191,7 @@ describe("locks", function()
   end)
 
   describe("lock_current_buffer", function()
-    local mock_persistence, mock_mini_radar
+    local mock_persistence
     local original_api
 
     before_each(function()
@@ -201,14 +200,6 @@ describe("locks", function()
         persist = function() end,
         populate_if_changed = function() end,
       }
-      mock_mini_radar = {
-        exists = function()
-          return false
-        end,
-        create = function() end,
-        update = function() end,
-      }
-
       -- Mock vim.api functions
       original_api = {
         nvim_get_current_buf = vim.api.nvim_get_current_buf,
@@ -228,7 +219,7 @@ describe("locks", function()
     end)
 
     it("uses current buffer when buf_nr is nil", function()
-      locks.lock_current_buffer(nil, test_config, mock_persistence, mock_mini_radar)
+      locks.lock_current_buffer(nil, test_config, mock_persistence)
 
       MiniTest.expect.equality(#state.get_locks(), 1)
       -- Should use normalized filename (relative to cwd)
@@ -236,43 +227,6 @@ describe("locks", function()
         state.get_locks()[1].filename,
         vim.fn.fnamemodify("/test/path/file.lua", ":p:.")
       )
-    end)
-
-    it("leaves the radar closed while the HUD is enabled", function()
-      local create_called = false
-      mock_mini_radar.create = function()
-        create_called = true
-      end
-
-      locks.lock_current_buffer(nil, test_config, mock_persistence, mock_mini_radar)
-
-      MiniTest.expect.equality(create_called, false)
-    end)
-
-    it("creates the radar when the HUD is disabled", function()
-      test_config.hud.enabled = false
-      local create_called = false
-      mock_mini_radar.create = function()
-        create_called = true
-      end
-
-      locks.lock_current_buffer(nil, test_config, mock_persistence, mock_mini_radar)
-
-      MiniTest.expect.equality(create_called, true)
-    end)
-
-    it("updates mini radar when it exists", function()
-      local update_called = false
-      mock_mini_radar.exists = function()
-        return true
-      end
-      mock_mini_radar.update = function()
-        update_called = true
-      end
-
-      locks.lock_current_buffer(nil, test_config, mock_persistence, mock_mini_radar)
-
-      MiniTest.expect.equality(update_called, true)
     end)
 
     it("preserves Oil and other protocol URLs as lock names", function()
@@ -286,7 +240,7 @@ describe("locks", function()
           return filename
         end
 
-        locks.lock_current_buffer(1, test_config, mock_persistence, mock_mini_radar)
+        locks.lock_current_buffer(1, test_config, mock_persistence)
 
         MiniTest.expect.equality(state.get_locks()[1].filename, filename)
       end

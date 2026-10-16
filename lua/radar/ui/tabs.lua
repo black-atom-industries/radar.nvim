@@ -58,7 +58,6 @@ function M.show_help()
     "  Navigation              ",
     "    <CR>   Jump to tab/buffer ",
     "    <Esc>  Close tabs window  ",
-    "    r      Return to radar    ",
     "                          ",
     "  Actions                 ",
     "    x      Close buffer/tab   ",
@@ -221,12 +220,6 @@ local function setup_keymaps(bufnr, config)
     M.close()
   end, vim.tbl_extend("force", opts, { desc = "Close tabs window" }))
 
-  -- Return to radar
-  vim.keymap.set("n", "r", function()
-    M.close()
-    require("radar.ui.radar").open(config)
-  end, vim.tbl_extend("force", opts, { desc = "Return to Radar" }))
-
   -- Delete buffer / close tab
   vim.keymap.set("n", "x", function()
     M.delete_line(config)
@@ -283,15 +276,11 @@ function M.open(config)
   local source_tabid = vim.api.nvim_get_current_tabpage()
 
   -- Resolve window config from preset (before building content to get width)
-  local row_override = {}
-  if state.get_radar_origin() then
-    row_override.row = state.get_radar_origin().row
-  end
-  local tabs_opts = vim.tbl_extend("force", row_override, {
+  local tabs_opts = {
     title = "  ☰ TABS ",
     title_pos = "left",
     border = "solid",
-  })
+  }
   local win_config = window.resolve_config(config, config.tabs.win_preset, tabs_opts)
 
   -- Get tabs data

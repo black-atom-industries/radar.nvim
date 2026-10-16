@@ -1,23 +1,11 @@
 ---@alias Radar.Config.WinPreset "center" | "center_large" | "cursor" | "top_right" | "bottom_center" | "full_height_sidebar"
 
----@class Radar.Config.Keys.Line
----@field open string
----@field vertical string
----@field horizontal string
----@field tab string
----@field float string
-
 ---@class Radar.Config.Keys
 ---@field prefix string
 ---@field lock string
 ---@field locks string[]
 ---@field alternative string
 ---@field recent string[]
----@field vertical string
----@field horizontal string
----@field tab string
----@field float string
----@field line Radar.Config.Keys.Line
 ---@field tabs_toggle string
 ---@field hud_toggle string
 ---@field edit string
@@ -27,29 +15,8 @@
 ---@field path string
 ---@field defer_ms integer
 
----@class Radar.Config.Size
----@field width number Window width (float 0-1 = percentage of terminal, integer = absolute columns)
----@field height number Window height (float 0-1 = percentage of terminal, integer = absolute lines)
-
----@class Radar.Config.Titles
----@field main string
----@field locks string
----@field recent string
-
----@class Radar.Config.Padding
----@field x integer Horizontal padding (cells on each side)
----@field y integer Vertical padding (empty lines top and bottom)
-
----@class Radar.Config.Radar
----@field size Radar.Config.Size
----@field win_preset Radar.Config.WinPreset|string
----@field padding? Radar.Config.Padding
----@field border? string Border style (see |nvim_open_win()| 'border' option)
----@field winblend integer
----@field max_recent_files integer
----@field show_empty_message boolean
----@field titles Radar.Config.Titles
----@field win_opts table<string, any> Window-local options (see |options-list|)
+---@class Radar.Config.Recent
+---@field max_files integer Recent files kept per project and branch
 
 ---@class Radar.Config.Hud
 ---@field enabled boolean Show the HUD on startup
@@ -80,7 +47,7 @@
 ---@field keys Radar.Config.Keys
 ---@field persist Radar.Config.Persist
 ---@field win_presets table<Radar.Config.WinPreset|string, table|fun(config: Radar.Config): vim.api.keyset.win_config>
----@field radar Radar.Config.Radar
+---@field recent Radar.Config.Recent
 ---@field hud Radar.Config.Hud
 ---@field radar_edit Radar.Config.RadarEdit
 ---@field file_float Radar.Config.FileFloat
@@ -104,12 +71,3 @@
 ---@class Radar.PersistenceData
 ---@field version number
 ---@field projects Radar.Projects
-
----@class Radar.SectionBounds
----@field start integer 1-indexed line number
----@field ["end"] integer 1-indexed line number (end is a Lua keyword)
-
----@class Radar.SectionRanges
----@field alt Radar.SectionBounds
----@field locks Radar.SectionBounds
----@field recent Radar.SectionBounds

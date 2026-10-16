@@ -10,17 +10,6 @@ M.default = {
     locks = { "1", "2", "3", "4", "5", "6", "7", "8", "9" },
     alternative = "o",
     recent = { "a", "s", "d", "f", "g" },
-    vertical = "<C-v>",
-    horizontal = "<C-s>",
-    tab = "<C-t>",
-    float = "<C-f>",
-    line = {
-      open = "<CR>",
-      vertical = "V",
-      horizontal = "S",
-      tab = "T",
-      float = "F",
-    },
     tabs_toggle = "<leader>t",
     hud_toggle = "h",
     edit = "e",
@@ -35,26 +24,9 @@ M.default = {
   -- Window presets - users can override or add custom presets
   win_presets = {},
 
-  -- Main radar window
-  radar = {
-    size = { width = 50, height = 75 },
-    win_preset = "center",
-    padding = { x = 2, y = 1 },
-    border = "solid",
-    winblend = 0,
-    max_recent_files = 10,
-    show_empty_message = true,
-    titles = {
-      main = "󰐷  RADAR",
-      locks = "󰋱  LOCKED IN",
-      recent = "󰽏  NEAR",
-    },
-    win_opts = {
-      number = false,
-      relativenumber = false,
-      cursorline = true,
-      wrap = false,
-    },
+  -- Recent files history
+  recent = {
+    max_files = 10,
   },
 
   -- Corner HUD with the alternative file, locks and recent files

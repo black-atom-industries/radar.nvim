@@ -4,7 +4,7 @@ local config = require("radar.config")
 
 describe("edit", function()
   local test_config
-  local mock_mini_radar, mock_persistence
+  local mock_persistence
   local original_api, original_persistence_module, original_notify
 
   local function setup_test_state()
@@ -19,11 +19,6 @@ describe("edit", function()
     state.set_edit_bufid(nil)
 
     -- Mock dependencies
-    mock_mini_radar = {
-      update = function() end,
-      close = function() end,
-    }
-
     mock_persistence = {
       persist = function() end,
     }
@@ -169,7 +164,7 @@ describe("edit", function()
         "/test/file2.lua",
       })
 
-      edit.save_buffer(buf_id, test_config, mock_mini_radar)
+      edit.save_buffer(buf_id, test_config)
 
       MiniTest.expect.equality(#state.get_locks(), 2)
       MiniTest.expect.equality(state.get_locks()[1].filename, "/test/newfile.lua")
@@ -187,7 +182,7 @@ describe("edit", function()
         "/test/file2.lua",
       })
 
-      edit.save_buffer(buf_id, test_config, mock_mini_radar)
+      edit.save_buffer(buf_id, test_config)
 
       MiniTest.expect.equality(#state.get_locks(), 2)
     end)
@@ -239,7 +234,7 @@ describe("edit", function()
     after_each(cleanup_mocks)
 
     it("creates edit buffer with current locks", function()
-      edit.edit_locks(test_config, mock_mini_radar)
+      edit.edit_locks(test_config)
 
       MiniTest.expect.equality(state.get_edit_bufid() ~= nil, true)
       MiniTest.expect.equality(state.get_edit_winid() ~= nil, true)
@@ -256,7 +251,7 @@ describe("edit", function()
         notified = true
       end
 
-      edit.edit_locks(test_config, mock_mini_radar)
+      edit.edit_locks(test_config)
 
       MiniTest.expect.equality(notified, false)
       MiniTest.expect.equality(state.get_edit_bufid() ~= nil, true)
@@ -270,7 +265,7 @@ describe("edit", function()
       local oil_url = "oil://" .. vim.uv.cwd() .. "/"
       state.set_locks({ { label = "1", filename = oil_url } })
 
-      edit.edit_locks(test_config, mock_mini_radar)
+      edit.edit_locks(test_config)
 
       local edit_buf = state.get_edit_bufid()
       local lines = vim.api.nvim_buf_get_lines(edit_buf, 0, -1, false)
@@ -278,7 +273,7 @@ describe("edit", function()
       MiniTest.expect.equality(lines, { oil_url })
 
       package.loaded["radar.persist.persistence"] = mock_persistence
-      edit.save_buffer(edit_buf, test_config, mock_mini_radar)
+      edit.save_buffer(edit_buf, test_config)
 
       MiniTest.expect.equality(state.get_locks()[1].filename, oil_url)
     end)
@@ -291,7 +286,7 @@ describe("edit", function()
         end
       end
 
-      edit.edit_locks(test_config, mock_mini_radar)
+      edit.edit_locks(test_config)
 
       MiniTest.expect.equality(buf_options.buftype, "acwrite")
       MiniTest.expect.equality(buf_options.filetype, "radar-edit")
@@ -325,7 +320,7 @@ describe("edit", function()
 
       vim.notify = function() end
 
-      edit.open_file_from_edit(buf_id, "edit", test_config, mock_mini_radar)
+      edit.open_file_from_edit(buf_id, "edit", test_config)
 
       vim.cmd = original_cmd
 
@@ -346,7 +341,7 @@ describe("edit", function()
         MiniTest.expect.equality(msg, "Empty line - no file to open")
       end
 
-      edit.open_file_from_edit(buf_id, "edit", test_config, mock_mini_radar)
+      edit.open_file_from_edit(buf_id, "edit", test_config)
 
       MiniTest.expect.equality(notify_called, true)
     end)

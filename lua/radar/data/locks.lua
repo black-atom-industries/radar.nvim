@@ -120,18 +120,16 @@ function M.toggle(filename, config, persistence_module)
   return lock
 end
 
----Toggle the lock of a buffer and re-render the radar, or open it when the
----HUD is disabled
+---Toggle the lock of a buffer
 ---@param buf_nr? integer
 ---@param config Radar.Config
 ---@param persistence_module table
----@param radar_module table
 ---@return nil
-function M.lock_current_buffer(buf_nr, config, persistence_module, radar_module)
+function M.lock_current_buffer(buf_nr, config, persistence_module)
   buf_nr = buf_nr or vim.api.nvim_get_current_buf()
 
   local filetype = vim.api.nvim_get_option_value("filetype", { buf = buf_nr })
-  if filetype == "radar" or filetype == "radar-edit" then
+  if filetype == "radar-edit" then
     return
   end
 
@@ -147,12 +145,6 @@ function M.lock_current_buffer(buf_nr, config, persistence_module, radar_module)
 
   persistence_module.populate_if_changed(config)
   M.toggle(require("radar.path").to_lock_path(filename), config, persistence_module)
-
-  if radar_module.exists() then
-    radar_module.update(config)
-  elseif not config.hud.enabled then
-    radar_module.create(config)
-  end
 end
 
 return M
