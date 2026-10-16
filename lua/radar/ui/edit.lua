@@ -160,8 +160,7 @@ function M.cleanup()
     vim.api.nvim_win_close(state.get_edit_winid(), true)
   end
 
-  -- Close all radar windows
-  state.close_all_radar_windows()
+  require("radar.ui.radar").close()
 
   state.set_edit_winid(nil)
   state.set_edit_bufid(nil)
@@ -174,8 +173,13 @@ end
 function M.edit_locks(radar_config, radar_module)
   local state = require("radar.data.state")
 
-  -- Close radar window before opening edit window
+  -- Close radar window before opening edit window, keeping its source so
+  -- saving recreates the same radar
+  local source_bufnr, source_alt_file =
+    state.get_source_bufnr(), state.get_source_alt_file()
   radar_module.close()
+  state.set_source_bufnr(source_bufnr)
+  state.set_source_alt_file(source_alt_file)
 
   -- Clean up ALL existing buffers with this name (handles orphaned buffers)
   -- Loop because BufUnload callbacks during deletion can cause re-entrancy

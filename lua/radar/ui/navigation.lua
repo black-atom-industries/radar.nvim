@@ -16,35 +16,9 @@ function M.get_file_from_line(_config, section)
   end
 
   local current_line_nr = vim.api.nvim_win_get_cursor(state.get_radar_winid())[1]
-  local ranges = state.get_section_line_ranges()
-
-  if not ranges or not ranges[section] then
-    return nil
-  end
-
-  -- Calculate entry index from line number with section offset
-  -- First line in section range is the section header, so entries start at header + 1
-  local section_start = ranges[section].start
-  local entry_index = current_line_nr - section_start
-
-  -- Compute visible entries, matching the filter in build_content
-  if section == "locks" then
-    local visible_locks = {}
-    for _, lock in ipairs(state.get_locks()) do
-      if
-        path_utils.is_url(lock.filename)
-        or vim.fn.filereadable(path_utils.to_absolute(lock.filename)) == 1
-      then
-        table.insert(visible_locks, lock)
-      end
-    end
-    if entry_index > 0 and entry_index <= #visible_locks then
-      return visible_locks[entry_index].filename
-    end
-  elseif section == "recent" then
-    if entry_index > 0 and entry_index <= #state.get_recent_files() then
-      return state.get_recent_files()[entry_index]
-    end
+  local entry = state.get_radar_line_mapping()[current_line_nr]
+  if entry and entry.section == section then
+    return entry.target
   end
 
   return nil

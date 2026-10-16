@@ -21,9 +21,10 @@ local function resolve_dimension(value, terminal_size, min_size)
   return math.max(resolved, min_size)
 end
 
----Build the content lines and section line ranges for the unified buffer
+---Build the content lines, section line ranges and line targets for the
+---unified buffer
 ---@param config Radar.Config
----@return string[], Radar.SectionRanges
+---@return string[], Radar.SectionRanges, table<integer, Radar.RadarLineEntry>
 local function build_content(config)
   local state = require("radar.data.state")
   local width = resolve_dimension(config.radar.size.width, vim.o.columns, 80)
@@ -35,6 +36,8 @@ local function build_content(config)
 
   ---@type string[]
   local lines = {}
+  ---@type table<integer, Radar.RadarLineEntry>
+  local line_map = {}
 
   -- Top vertical padding
   for _ = 1, pad_y do
@@ -99,7 +102,7 @@ local function build_content(config)
         local buf_indicators = indicators.get_buffer_indicators(bufnr)
         local line =
           indicators.right_align_line(left, buf_indicators, content_width, 0)
-        add_line(line)
+        line_map[add_line(line)] = { section = "locks", target = lock.filename }
         has_visible_locks = true
       end
     end
@@ -144,7 +147,7 @@ local function build_content(config)
       local buf_indicators = indicators.get_buffer_indicators(bufnr)
       local line =
         indicators.right_align_line(left, buf_indicators, content_width, 0)
-      add_line(line)
+      line_map[add_line(line)] = { section = "recent", target = filename }
     end
   elseif config.radar.show_empty_message then
     add_line(pad_str .. "No recent files yet")
@@ -156,7 +159,7 @@ local function build_content(config)
     table.insert(lines, pad_str)
   end
 
-  return lines, section_ranges
+  return lines, section_ranges, line_map
 end
 
 ---Apply highlights to the unified buffer
@@ -267,33 +270,17 @@ local function apply_highlights(bufnr, config)
     curr_filepath_formatted = path_utils.to_lock_path(curr_filepath)
   end
 
-  -- Highlight locks entries that match current file
-  if section_ranges.locks and section_ranges.locks.start > 0 then
-    local lock_start = section_ranges.locks.start
-    for i, lock in ipairs(state.get_locks()) do
-      local line_nr = lock_start + i
-      local line = lines[line_nr]
-      if line and lock.filename == curr_filepath_formatted then
-        vim.api.nvim_buf_set_extmark(bufnr, locks_ns, line_nr - 1, 0, {
-          end_col = #line,
-          hl_group = "@function",
-        })
-      end
-    end
-  end
-
-  -- Highlight recent entries that match current file
-  if section_ranges.recent and section_ranges.recent.start > 0 then
-    local recent_start = section_ranges.recent.start
-    for i, filename in ipairs(state.get_recent_files()) do
-      local line_nr = recent_start + i
-      local line = lines[line_nr]
-      if line and filename == curr_filepath then
-        vim.api.nvim_buf_set_extmark(bufnr, recent_ns, line_nr - 1, 0, {
-          end_col = #line,
-          hl_group = "@function",
-        })
-      end
+  -- Locks store lock paths, recent entries store buffer names
+  for line_nr, entry in pairs(state.get_radar_line_mapping()) do
+    local is_lock = entry.section == "locks"
+    local current = is_lock and curr_filepath_formatted or curr_filepath
+    local line = lines[line_nr]
+    if line and entry.target == current then
+      local entry_ns = is_lock and locks_ns or recent_ns
+      vim.api.nvim_buf_set_extmark(bufnr, entry_ns, line_nr - 1, 0, {
+        end_col = #line,
+        hl_group = "@function",
+      })
     end
   end
 
@@ -309,21 +296,32 @@ function M.exists()
     and vim.api.nvim_win_is_valid(state.get_radar_winid())
 end
 
+---Forget the radar window and everything captured for it
+---@return nil
+local function reset_state()
+  local state = require("radar.data.state")
+  state.set_radar_winid(nil)
+  state.set_radar_bufid(nil)
+  state.set_source_bufnr(nil)
+  state.set_source_alt_file(nil)
+  state.set_focused_section(nil)
+  state.set_section_line_ranges(nil)
+  state.set_radar_line_mapping({})
+end
+
 ---Close radar window
 ---@return nil
 function M.close()
   local state = require("radar.data.state")
-  -- Clear winid BEFORE closing the window so BufEnter autocmds don't
+  -- Reset BEFORE closing the window so BufEnter autocmds don't
   -- see a valid radar and trigger a spurious update().
   local winid = state.get_radar_winid()
-  state.set_radar_winid(nil)
+  reset_state()
   if winid and vim.api.nvim_win_is_valid(winid) then
     vim.api.nvim_win_close(winid, false)
   end
   -- Close help window if open
   require("radar.ui.help").close()
-  state.set_focused_section(nil)
-  state.set_section_line_ranges(nil)
 end
 
 ---Toggle radar visibility
@@ -438,6 +436,99 @@ function M.cycle_focus_prev()
   M.cycle_focus_next()
 end
 
+---Render content, line targets and highlights into the radar buffer
+---@param bufnr integer
+---@param config Radar.Config
+---@return integer line_count
+local function render(bufnr, config)
+  local state = require("radar.data.state")
+
+  require("radar.data.recent").update_state(config)
+
+  local lines, section_ranges, line_map = build_content(config)
+  state.set_section_line_ranges(section_ranges)
+  state.set_radar_line_mapping(line_map)
+
+  vim.api.nvim_set_option_value("modifiable", true, { buf = bufnr })
+  vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+  vim.api.nvim_set_option_value("modifiable", false, { buf = bufnr })
+
+  apply_highlights(bufnr, config)
+
+  return #lines
+end
+
+---Resolve the radar window config and remember its origin for tabs/edit
+---@param config Radar.Config
+---@param line_count integer
+---@return vim.api.keyset.win_config
+local function resolve_win_config(config, line_count)
+  local state = require("radar.data.state")
+  local width = resolve_dimension(config.radar.size.width, vim.o.columns, 80)
+  local height = math.min(
+    line_count,
+    resolve_dimension(config.radar.size.height, vim.o.lines, 12)
+  )
+
+  local win_config =
+    require("radar.ui.window").resolve_config(config, config.radar.win_preset, {
+      width = width,
+      height = height,
+      title = " " .. config.radar.titles.main .. " ",
+      title_pos = "left",
+      border = config.radar.border,
+    })
+
+  ---@diagnostic disable-next-line: undefined-field
+  state.set_radar_origin({
+    ---@diagnostic disable-next-line: undefined-field
+    row = math.floor(win_config.row or 0),
+    ---@diagnostic disable-next-line: undefined-field
+    col = math.floor(win_config.col or 0),
+  })
+
+  return win_config
+end
+
+---Line and section of the source file's entry, else the first lock line
+---@param line_count integer
+---@return integer, "locks" | "recent"
+local function source_cursor(line_count)
+  local state = require("radar.data.state")
+  local line_map = state.get_radar_line_mapping()
+
+  local src_buf = state.get_source_bufnr()
+  local buf_name = src_buf
+      and vim.api.nvim_buf_is_valid(src_buf)
+      and vim.api.nvim_buf_get_name(src_buf)
+    or ""
+  if buf_name ~= "" then
+    local src_filepath = path_utils.to_lock_path(buf_name)
+    for line = 1, line_count do
+      local entry = line_map[line]
+      if
+        entry
+        and entry.target == (entry.section == "locks" and src_filepath or buf_name)
+      then
+        return line, entry.section
+      end
+    end
+  end
+
+  return state.get_section_line_ranges().locks.start + 1, "locks"
+end
+
+---Place the cursor on the source file's entry
+---@param winid integer
+---@param line_count integer
+local function place_cursor(winid, line_count)
+  local cursor_line, focused_section = source_cursor(line_count)
+  require("radar.data.state").set_focused_section(focused_section)
+  if cursor_line <= line_count then
+    vim.api.nvim_win_set_cursor(winid, { cursor_line, 0 })
+  end
+end
+
 ---Create the unified radar window
 ---@param config Radar.Config
 ---@return nil
@@ -449,104 +540,17 @@ function M.create(config)
   debug.log("  locks count =", #state.get_locks())
   debug.log("  recent count =", #state.get_recent_files())
 
-  -- Update recent files first
-  local recent = require("radar.data.recent")
-  recent.update_state(config)
-
-  -- Build content lines
-  local lines, section_ranges = build_content(config)
-  state.set_section_line_ranges(section_ranges)
-
-  debug.log("  content lines =", #lines)
-  debug.log("  section_ranges =", section_ranges)
-
-  -- Calculate window dimensions
-  local width = resolve_dimension(config.radar.size.width, vim.o.columns, 80)
-  local content_height = #lines
-  local total_height = math.min(
-    content_height,
-    resolve_dimension(config.radar.size.height, vim.o.lines, 12)
-  )
-
-  -- Resolve window config from preset
-  local window = require("radar.ui.window")
-  local win_config = window.resolve_config(config, config.radar.win_preset, {
-    width = width,
-    height = total_height,
-    title = " " .. config.radar.titles.main .. " ",
-    title_pos = "left",
-    border = config.radar.border,
-  })
-
-  debug.log("  window: ", width, "x", total_height)
-
-  -- Store origin for tabs/edit to reuse
-  ---@diagnostic disable-next-line: undefined-field
-  state.set_radar_origin({
-    ---@diagnostic disable-next-line: undefined-field
-    row = math.floor(win_config.row or 0),
-    ---@diagnostic disable-next-line: undefined-field
-    col = math.floor(win_config.col or 0),
-  })
-
-  -- Create buffer
   local bufnr = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_set_option_value("buftype", "nofile", { buf = bufnr })
-  vim.api.nvim_set_option_value("bufhidden", "hide", { buf = bufnr })
+  vim.api.nvim_set_option_value("bufhidden", "wipe", { buf = bufnr })
   vim.api.nvim_set_option_value("swapfile", false, { buf = bufnr })
-  vim.api.nvim_set_option_value("modifiable", false, { buf = bufnr })
 
-  -- Set content
-  vim.api.nvim_set_option_value("modifiable", true, { buf = bufnr })
-  vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
-  vim.api.nvim_set_option_value("modifiable", false, { buf = bufnr })
+  local line_count = render(bufnr, config)
+  require("radar.ui.keys").setup_all_keymaps(bufnr, config)
 
-  -- Set up buffer-local keymaps
-  local keys = require("radar.ui.keys")
-  keys.setup_all_keymaps(bufnr, config)
-
-  -- Compute cursor position BEFORE creating window (BufEnter autocmds
-  -- triggered by nvim_open_win can mutate state.get_recent_files() via
-  -- get_alternative_file() returning the source buffer as alt file)
-  local cursor_line = nil
-  local focused_section = "locks"
-
-  local src_buf = state.get_source_bufnr()
-  if src_buf and vim.api.nvim_buf_is_valid(src_buf) then
-    local buf_name = vim.api.nvim_buf_get_name(src_buf)
-    local src_filepath = buf_name ~= "" and path_utils.to_lock_path(buf_name) or ""
-    if src_filepath ~= "" then
-      -- Check locks first
-      for i, lock in ipairs(state.get_locks()) do
-        if lock.filename == src_filepath then
-          cursor_line = section_ranges.locks.start + i
-          focused_section = "locks"
-          break
-        end
-      end
-
-      -- Check recent files if not found in locks
-      if not cursor_line then
-        for i, filename in ipairs(state.get_recent_files()) do
-          if filename == buf_name then
-            cursor_line = section_ranges.recent.start + i
-            focused_section = "recent"
-            break
-          end
-        end
-      end
-    end
-  end
-
-  -- Fallback to first locks entry
-  if not cursor_line then
-    cursor_line = section_ranges.locks.start + 1
-  end
-
-  -- Create window from resolved preset config
+  local win_config = resolve_win_config(config, line_count)
   local winid = vim.api.nvim_open_win(bufnr, true, win_config)
 
-  -- Apply window options
   vim.api.nvim_set_option_value("winblend", config.radar.winblend, { win = winid })
   vim.api.nvim_set_option_value(
     "winhighlight",
@@ -557,18 +561,20 @@ function M.create(config)
     vim.api.nvim_set_option_value(opt, value, { win = winid })
   end
 
-  -- Apply highlights
-  apply_highlights(bufnr, config)
-
-  -- Store in state
   state.set_radar_winid(winid)
-  state.set_focused_section(focused_section)
-
-  if cursor_line <= #lines then
-    vim.api.nvim_win_set_cursor(winid, { cursor_line, 0 })
-  end
-
-  debug.flush()
+  state.set_radar_bufid(bufnr)
+  -- Windows closed without M.close() (:q, <C-w>c) still wipe the buffer
+  vim.api.nvim_create_autocmd("BufWipeout", {
+    buffer = bufnr,
+    once = true,
+    callback = function()
+      if state.get_radar_bufid() == bufnr then
+        reset_state()
+        require("radar.ui.help").close()
+      end
+    end,
+  })
+  place_cursor(winid, line_count)
 
   debug.log("  radar window created, winid =", winid)
   debug.flush()
@@ -647,11 +653,12 @@ function M.show_help(config)
   })
 end
 
----Update radar window (close and recreate)
+---Re-render the open radar in place, or create it
 ---@param config Radar.Config
 ---@return nil
 function M.update(config)
   local debug = require("radar.debug")
+  local state = require("radar.data.state")
   debug.log("update() called")
 
   if not M.exists() then
@@ -660,14 +667,33 @@ function M.update(config)
     return
   end
 
-  -- Update recent files
-  local recent = require("radar.data.recent")
-  recent.update_state(config)
+  local winid = state.get_radar_winid() --[[@as integer]]
+  local bufnr = state.get_radar_bufid()
+  if not bufnr or vim.api.nvim_win_get_buf(winid) ~= bufnr then
+    local source_bufnr, source_alt_file =
+      state.get_source_bufnr(), state.get_source_alt_file()
+    M.close()
+    state.set_source_bufnr(source_bufnr)
+    state.set_source_alt_file(source_alt_file)
+    M.create(config)
+    return
+  end
 
-  -- Close and recreate
-  debug.log("  closing window and recreating")
-  M.close()
-  M.create(config)
+  local line_count = render(bufnr, config)
+
+  local win_config = resolve_win_config(config, line_count)
+  ---@type vim.api.keyset.win_config
+  local geometry = { width = win_config.width, height = win_config.height }
+  if win_config.relative ~= "cursor" then
+    geometry.relative = win_config.relative
+    geometry.win = win_config.win
+    geometry.anchor = win_config.anchor
+    geometry.row = win_config.row
+    geometry.col = win_config.col
+  end
+  vim.api.nvim_win_set_config(winid, geometry)
+
+  place_cursor(winid, line_count)
   debug.flush()
 end
 

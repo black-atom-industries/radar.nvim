@@ -3,6 +3,10 @@
 ---@field winid integer?
 ---@field filepath string?
 
+---@class Radar.RadarLineEntry
+---@field section "locks" | "recent"
+---@field target string lock filename or recent file path
+
 ---@class Radar.State
 local M = {}
 
@@ -16,6 +20,10 @@ local _state = {
   session_files = {},
   ---@type integer?
   radar_winid = nil,
+  ---@type integer?
+  radar_bufid = nil,
+  ---@type table<integer, Radar.RadarLineEntry>
+  radar_line_mapping = {},
   ---@type "locks" | "recent"?
   focused_section = nil,
   ---@type Radar.SectionRanges?
@@ -45,6 +53,8 @@ function M.reset()
     recent_files = {},
     session_files = {},
     radar_winid = nil,
+    radar_bufid = nil,
+    radar_line_mapping = {},
     focused_section = nil,
     section_line_ranges = nil,
     radar_origin = nil,
@@ -77,6 +87,16 @@ end
 ---@return integer?
 function M.get_radar_winid()
   return _state.radar_winid
+end
+
+---@return integer?
+function M.get_radar_bufid()
+  return _state.radar_bufid
+end
+
+---@return table<integer, Radar.RadarLineEntry>
+function M.get_radar_line_mapping()
+  return _state.radar_line_mapping
 end
 
 ---@return "locks"|"recent"?
@@ -150,6 +170,16 @@ function M.set_radar_winid(winid)
   _state.radar_winid = winid
 end
 
+---@param bufid integer?
+function M.set_radar_bufid(bufid)
+  _state.radar_bufid = bufid
+end
+
+---@param mapping table<integer, Radar.RadarLineEntry>
+function M.set_radar_line_mapping(mapping)
+  _state.radar_line_mapping = mapping or {}
+end
+
 ---@param section "locks"|"recent"?
 function M.set_focused_section(section)
   _state.focused_section = section
@@ -206,22 +236,6 @@ end
 ---@return boolean
 function M.are_radar_windows_valid()
   return _state.radar_winid ~= nil and vim.api.nvim_win_is_valid(_state.radar_winid)
-end
-
----Close radar window
----@return nil
-function M.close_all_radar_windows()
-  -- Clear winid BEFORE closing the window so BufEnter autocmds don't
-  -- see a valid radar and trigger a spurious update().
-  local winid = _state.radar_winid
-  _state.radar_winid = nil
-  if winid and vim.api.nvim_win_is_valid(winid) then
-    vim.api.nvim_win_close(winid, false)
-  end
-
-  _state.focused_section = nil
-  _state.section_line_ranges = nil
-  _state.radar_origin = nil
 end
 
 ---Get lock by field value
