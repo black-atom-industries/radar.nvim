@@ -31,6 +31,8 @@ describe("hud content", function()
       " 󰋱 [2] two.lua ",
       "",
       " 󰽏 [a] /r/a.lua ",
+      " 󰽏 [ ] - ",
+      " 󰽏 [ ] - ",
     })
   end)
 
@@ -65,6 +67,10 @@ describe("hud content", function()
       "",
       " 󰋱 [1] one.lua ",
       " 󰋱 [2] two.lua ",
+      "",
+      " 󰽏 [ ] - ",
+      " 󰽏 [ ] - ",
+      " 󰽏 [ ] - ",
     })
     local current = vim.tbl_filter(function(hl)
       return hl.hl_group == "Title"

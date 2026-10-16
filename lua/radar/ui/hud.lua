@@ -126,10 +126,15 @@ function M.build(config, data, max_width)
     end
   end
 
-  if #recent > 0 then
+  if config.hud.max_recent > 0 then
     table.insert(lines, "")
-    for _, entry in ipairs(recent) do
-      add(config.hud.icons.recent, entry.label, entry.file)
+    for i = 1, config.hud.max_recent do
+      local entry = recent[i]
+      add(
+        config.hud.icons.recent,
+        entry and entry.label or " ",
+        entry and entry.file
+      )
     end
   end
 
