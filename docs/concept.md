@@ -64,7 +64,7 @@ This gives you instant access to 24 files without moving your left hand from hom
 - Shows the current file, the alternative file, up to 5 locks and 3 recent files; a locked current file is highlighted
 - Labels are the keys that follow `<space>`: `<space>1` jumps to lock 1, `<space>a` to the first recent file, `<space>o` to the alternative file
 - Moves to the top of the pane while the cursor line runs under it
-- Updates as you lock; hidden while the tabs sidebar or the lock editor is open and when empty; `<space>h` toggles it for the session
+- Updates as you lock; hidden while the tabs view or the lock editor is open and when empty; `<space>h` toggles it for the session
 
 ## 🔧 Configuration
 

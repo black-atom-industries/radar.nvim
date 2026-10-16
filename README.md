@@ -14,7 +14,7 @@ radar.nvim shows the file you're in, its alternative, your locks and recent file
 - **Smart Persistence**: Context-aware storage per project and git branch
 - **Prefix Keys**: `<space>` plus one key jumps to a lock, a recent file or the alternative file
 - **HUD**: A small always-visible window at the bottom of the active pane with the current and alternative file, the first locks and recent files
-- **Tab Navigation**: Sidebar view of all open tabs and buffers
+- **Tabs view**: All open tabs and their buffers, where the HUD sits
 - **Dynamic Highlighting**: Auto-highlight the currently active locked file
 
 See also [Concept](./docs/concept.md)
@@ -60,7 +60,7 @@ This spatial keyboard layout gives you instant access to **15 files** without mo
 }
 ```
 
-**Customize tabs sidebar:**
+**Customize tabs view:**
 
 ```lua
 {
@@ -86,10 +86,10 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 | `keys.lock`                                         | `"l"`                                 | Lock current buffer to a slot                                                   |
 | `keys.locks`                                        | `{"1".."9"}`                          | Keys for lock slots                                                             |
 | `keys.recent`                                       | `{"a".."g"}`                          | Keys for recent file slots                                                      |
-| `keys.tabs_toggle`                                  | `"<leader>t"`                         | Toggle tabs sidebar                                                             |
+| `keys.tabs_toggle`                                  | `"<leader>t"`                         | Toggle tabs view                                                             |
 | `keys.alternative`                                  | `"o"`                                 | Alternative file (after the prefix)                                             |
 | `keys.hud_toggle`                                   | `"h"`                                 | Toggle the HUD for the session (after the prefix)                               |
-| `keys.tabs`                                         | `"t"`                                 | Toggle the tabs sidebar (after the prefix)                                      |
+| `keys.tabs`                                         | `"t"`                                 | Toggle the tabs view (after the prefix)                                      |
 | `keys.edit`                                         | `"e"`                                 | Open the lock editor (after the prefix)                                         |
 | `keys.help`                                         | `"?"`                                 | Show the keys that follow the prefix (after the prefix)                         |
 | `recent.max_files`                                  | `10`                                  | Recent files kept per project and branch                                        |
@@ -118,16 +118,24 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 - **`o`**: Open the alternative file
 - **`l`**: Lock or unlock the current buffer
 - **`h`**: Toggle the HUD for this session
-- **`t`**: Toggle the tabs sidebar
+- **`t`**: Toggle the tabs view
 - **`e`**: Open the lock editor
 - **`?`**: Show these keys
 - **`<Esc>`** or any other key: Cancel
 
-- **`<leader>t`**: Toggle tabs sidebar
+- **`<leader>t`**: Toggle tabs view
 
 **HUD:**
 
-The HUD sits at the bottom of the active pane, as wide as the pane, and follows you between splits. It shows the file you are in (`%`, highlighted), the alternative file, up to 5 locks and 3 recent files with the keys that reach them after `<space>`. A locked current file is highlighted; the current file never takes a recent slot. It moves to the top of the pane while your cursor line runs under it and hides while the tabs sidebar or the lock editor is open and when there is nothing to show.
+The HUD sits at the bottom of the active pane, as wide as the pane, and follows you between splits. It shows the file you are in (`%`, highlighted), the alternative file, up to 5 locks and 3 recent files with the keys that reach them after `<space>`. A locked current file is highlighted; the current file never takes a recent slot. It moves to the top of the pane while your cursor line runs under it and hides while the tabs view or the lock editor is open and when there is nothing to show.
+
+To keep the HUD at the bottom instead, set `hud = { dodge = false }` and raise `scrolloff` to at least the HUD's height, so the cursor never reaches its rows. On Neovim nightly, `scrolloffpad` keeps that padding at the end of a file too:
+
+```lua
+vim.o.scrolloff = 11      -- the HUD at its tallest: 5 locks, 3 recent files
+vim.o.scrolloffpad = 99   -- Neovim nightly
+require("radar").setup({ hud = { dodge = false } })
+```
 
 ![The HUD follows the active split and moves to the top of the pane when the cursor reaches the bottom](docs/assets/changelog/0.6.0-hud-split.webp)
 
@@ -137,12 +145,16 @@ The HUD sits at the bottom of the active pane, as wide as the pane, and follows 
 
 ![Space l locks the current file, Space e opens the lock editor in the HUD's place, and saving reorders the locks](docs/assets/changelog/0.6.0-hud-edit.webp)
 
-**Within Tabs Sidebar:**
+**Tabs view:**
+
+`<space>t` (or `<leader>t`) opens the tabs view where the HUD sits: every tab with its number and the buffers shown in it, the current tab and buffer in the accent color.
+
+![Space t opens the tabs view in the HUD's place, 2 jumps to the second tab, and 1 goes back](docs/assets/changelog/0.7.0-tabs.webp)
 
 - **`<CR>`**: Jump to tab/buffer
 - **`1-9`**: Jump to that tab
 - **`x`**: Close buffer or tab
-- **`q` / `<Esc>`**: Close tabs sidebar
+- **`q` / `<Esc>`**: Close tabs view
 
 ### Context-Aware Persistence
 
