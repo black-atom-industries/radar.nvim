@@ -598,9 +598,8 @@ function M.show_help(config)
   end
 
   local keys = config.keys
-  local function range(labels)
-    return #labels > 1 and (labels[1] .. "-" .. labels[#labels]) or labels[1] or ""
-  end
+  local keys_ui = require("radar.ui.keys")
+  local range = keys_ui.range
 
   local lines = require("radar.ui.help").format({
     {
@@ -634,17 +633,7 @@ function M.show_help(config)
         { "q/<Esc>/" .. keys.prefix, "Close radar" },
       },
     },
-    {
-      title = "Outside the radar, after " .. keys.prefix,
-      rows = {
-        { range(keys.locks), "Jump to lock" },
-        { range(keys.recent), "Jump to recent" },
-        { keys.prefix, "Open radar" },
-        { keys.alternative, "Alternative file" },
-        { keys.lock, "Lock/unlock buffer" },
-        { keys.hud_toggle, "Toggle HUD" },
-      },
-    },
+    keys_ui.prefix_help_section(config),
   })
 
   require("radar.ui.help").show({

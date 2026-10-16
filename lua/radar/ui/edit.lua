@@ -1,29 +1,10 @@
 local M = {}
 local path = require("radar.path")
 
----Calculate optimal window width based on longest file path
----@return integer
-local function calculate_window_width()
-  local max_width = 60 -- Minimum width
-
-  local state = require("radar.data.state")
-  -- Check locked files
-  for _, lock in ipairs(state.get_locks()) do
-    local formatted_path = lock.filename
-    if not path.is_oil_url(lock.filename) then
-      formatted_path = path.display(lock.filename)
-    end
-    local entry_text = string.format("   [%s] %s  ", lock.label, formatted_path)
-    max_width = math.max(max_width, vim.fn.strdisplaywidth(entry_text))
-  end
-
-  return max_width
-end
-
 ---Setup autocmds for edit buffer save and close handling
 ---@param edit_buf integer
 ---@param radar_config Radar.Config
----@param radar_module table
+---@param radar_module table?
 ---@return nil
 local function setup_edit_autocmds(edit_buf, radar_config, radar_module)
   local augroup = vim.api.nvim_create_augroup("radar.EditLocks", { clear = true })
@@ -37,12 +18,13 @@ local function setup_edit_autocmds(edit_buf, radar_config, radar_module)
     end,
   })
 
-  -- Handle buffer close/unload
+  -- Handle buffer close/unload; deferred because floats (the HUD) cannot
+  -- open while a buffer is closing
   vim.api.nvim_create_autocmd("BufUnload", {
     group = augroup,
     buffer = edit_buf,
     callback = function()
-      M.cleanup()
+      vim.schedule(M.cleanup)
     end,
   })
 end
@@ -50,7 +32,7 @@ end
 ---Parse and save changes from edit buffer
 ---@param edit_buf integer
 ---@param radar_config Radar.Config
----@param radar_module table
+---@param radar_module table? radar to re-render after saving
 ---@return nil
 function M.save_buffer(edit_buf, radar_config, radar_module)
   local lines = vim.api.nvim_buf_get_lines(edit_buf, 0, -1, false)
@@ -90,7 +72,9 @@ function M.save_buffer(edit_buf, radar_config, radar_module)
   require("radar.data.locks").relabel(new_locks, radar_config)
   state.set_locks(new_locks)
   persistence.persist(radar_config)
-  radar_module.update(radar_config)
+  if radar_module then
+    radar_module.update(radar_config)
+  end
   require("radar.ui.hud").refresh()
 
   -- Mark buffer as saved
@@ -102,7 +86,7 @@ end
 ---@param edit_buf integer
 ---@param open_cmd string Command to open file (edit, vsplit, split, tabedit, float)
 ---@param radar_config Radar.Config
----@param radar_module table
+---@param radar_module table?
 ---@return nil
 function M.open_file_from_edit(edit_buf, open_cmd, radar_config, radar_module)
   local state = require("radar.data.state")
@@ -141,7 +125,12 @@ function M.open_file_from_edit(edit_buf, open_cmd, radar_config, radar_module)
 
   -- Open the file using navigation module
   local navigation = require("radar.ui.navigation")
-  navigation.open_file(full_path, open_cmd, radar_config, radar_module)
+  navigation.open_file(
+    full_path,
+    open_cmd,
+    radar_config,
+    radar_module or require("radar.ui.radar")
+  )
 end
 
 ---Cleanup edit mode state
@@ -154,26 +143,39 @@ function M.cleanup()
     vim.api.nvim_win_close(state.get_edit_winid(), true)
   end
 
-  require("radar.ui.radar").close()
-
   state.set_edit_winid(nil)
   state.set_edit_bufid(nil)
+
+  require("radar.ui.radar").close()
 end
 
----Create editable buffer for managing locks
+---Pane the editor sits in: the current window, or the previous one while a
+---float has focus
+---@return integer
+local function anchor_window()
+  local current = vim.api.nvim_get_current_win()
+  if vim.api.nvim_win_get_config(current).relative == "" then
+    return current
+  end
+  return vim.fn.win_getid(vim.fn.winnr("#"))
+end
+
+---Create editable buffer for managing locks, at the bottom of the active pane
 ---@param radar_config Radar.Config
----@param radar_module table
+---@param radar_module table? radar to close now and re-render after saving
 ---@return nil
 function M.edit_locks(radar_config, radar_module)
   local state = require("radar.data.state")
 
   -- Close radar window before opening edit window, keeping its source so
   -- saving recreates the same radar
-  local source_bufnr, source_alt_file =
-    state.get_source_bufnr(), state.get_source_alt_file()
-  radar_module.close()
-  state.set_source_bufnr(source_bufnr)
-  state.set_source_alt_file(source_alt_file)
+  if radar_module then
+    local source_bufnr, source_alt_file =
+      state.get_source_bufnr(), state.get_source_alt_file()
+    radar_module.close()
+    state.set_source_bufnr(source_bufnr)
+    state.set_source_alt_file(source_alt_file)
+  end
 
   -- Clean up ALL existing buffers with this name (handles orphaned buffers)
   -- Loop because BufUnload callbacks during deletion can cause re-entrancy
@@ -220,35 +222,29 @@ function M.edit_locks(radar_config, radar_module)
 
   vim.api.nvim_buf_set_lines(edit_buf, 0, -1, false, lines)
 
-  -- Open floating window with dynamic sizing
-  local calculated_width = calculate_window_width()
-  local win_width = calculated_width + 10 -- Add padding
-  local win_height = math.max(math.min(#lines + 2, 20), 5) -- min 5, max 20
-
-  -- Resolve window config from preset with dynamic width/height
-  local window = require("radar.ui.window")
-  local row_override = {}
-  if state.get_radar_origin() then
-    row_override.row = state.get_radar_origin().row
-  end
-  local win_opts = window.resolve_config(
-    radar_config,
-    radar_config.radar_edit.win_preset,
-    vim.tbl_extend("force", row_override, {
-      width = win_width,
-      height = win_height,
-      title = " Edit Locks ",
-      title_pos = "center",
-    })
-  )
-
-  local edit_win = vim.api.nvim_open_win(edit_buf, true, win_opts)
+  local anchor = anchor_window()
+  local pane_height = vim.api.nvim_win_get_height(anchor)
+  local win_height = math.min(math.max(#lines, 3), pane_height)
+  local edit_win = vim.api.nvim_open_win(edit_buf, true, {
+    relative = "win",
+    win = anchor,
+    row = pane_height - win_height,
+    col = 0,
+    width = vim.api.nvim_win_get_width(anchor),
+    height = win_height,
+    border = "none",
+    focusable = true,
+    zindex = 20,
+  })
   state.set_edit_winid(edit_win)
+  vim.api.nvim_set_option_value("winblend", 0, { win = edit_win })
 
   -- Apply window-local options
   for opt, value in pairs(radar_config.radar_edit.win_opts) do
     vim.api.nvim_set_option_value(opt, value, { win = edit_win })
   end
+
+  require("radar.ui.hud").refresh()
 
   -- Set up buffer autocmds for save and close
   setup_edit_autocmds(edit_buf, radar_config, radar_module)

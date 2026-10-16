@@ -20,6 +20,8 @@
 ---@field line Radar.Config.Keys.Line
 ---@field tabs_toggle string
 ---@field hud_toggle string
+---@field edit string
+---@field help string
 
 ---@class Radar.Config.Persist
 ---@field path string
@@ -62,7 +64,6 @@
 ---@field recent string
 
 ---@class Radar.Config.RadarEdit
----@field win_preset Radar.Config.WinPreset|string
 ---@field win_opts table<string, any> Window-local options (see |options-list|)
 
 ---@class Radar.Config.FileFloat

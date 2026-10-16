@@ -23,6 +23,8 @@ M.default = {
     },
     tabs_toggle = "<leader>t",
     hud_toggle = "h",
+    edit = "e",
+    help = "?",
   },
 
   persist = {
@@ -70,7 +72,6 @@ M.default = {
 
   -- Lock label editor window
   radar_edit = {
-    win_preset = "center",
     win_opts = {
       number = true,
       relativenumber = false,

@@ -1,5 +1,33 @@
 local M = {}
 
+---Label range like "1-9"
+---@param labels string[]
+---@return string
+function M.range(labels)
+  return #labels > 1 and (labels[1] .. "-" .. labels[#labels]) or labels[1] or ""
+end
+
+---Help section for the keys read after the prefix
+---@param config Radar.Config
+---@return Radar.HelpSection
+function M.prefix_help_section(config)
+  local keys = config.keys
+  return {
+    title = "Outside the radar, after " .. keys.prefix,
+    rows = {
+      { M.range(keys.locks), "Jump to lock" },
+      { M.range(keys.recent), "Jump to recent" },
+      { keys.prefix, "Open radar" },
+      { keys.alternative, "Alternative file" },
+      { keys.lock, "Lock/unlock buffer" },
+      { keys.edit, "Edit locks" },
+      { keys.hud_toggle, "Toggle HUD" },
+      { keys.help, "Show help" },
+      { "<Esc>", "Cancel" },
+    },
+  }
+end
+
 ---Read one key after the prefix and run its action
 ---@param config Radar.Config
 ---@return nil
@@ -27,8 +55,17 @@ local function dispatch(config)
       require("radar.persist.persistence"),
       radar
     )
+  elseif is(config.keys.edit) then
+    require("radar.ui.edit").edit_locks(config)
   elseif is(config.keys.hud_toggle) then
     require("radar.ui.hud").toggle()
+  elseif is(config.keys.help) then
+    local help = require("radar.ui.help")
+    help.show({
+      parent_winid = vim.api.nvim_get_current_win(),
+      title = "  RADAR HELP  ",
+      lines = help.format({ M.prefix_help_section(config) }),
+    })
   else
     for _, label in ipairs(config.keys.locks) do
       if is(label) then

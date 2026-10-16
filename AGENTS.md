@@ -57,7 +57,8 @@ lua/radar/
 - **No Branch, No Persistence**: Detached HEAD and non-git directories keep locks in memory only, as long as the project root stays the same. One warning per session.
 - **Single Radar Window**: One floating window and buffer holding the alternative, locks and recent sections. `ui/radar.lua` renders it in place and stores a line → entry map in `state`, which navigation and the lock key read.
 - **HUD**: `ui/hud.lua` keeps one non-focusable float and scratch buffer per tabpage, anchored (`relative = "win"`) to the bottom of the active pane and as wide as it; while a float such as the radar has focus it stays on the previous pane. `hud.build` is a pure content builder (lines + highlight ranges); `hud.refresh()` rebuilds and shows or hides the current tab's HUD and runs on lock changes, populate, radar/tabs open and close, `BufEnter`, `TabEnter`, `WinEnter`, `WinResized`, `VimResized`, `DirChanged`, `FocusGained` and `VimEnter`. `hud.dodge()` only repositions on `CursorMoved`, `CursorMovedI` and `WinScrolled`: the HUD moves to the top of its pane while the cursor line runs under it.
-- **Prefix Dispatch**: The global `keys.prefix` mapping reads one key with `vim.fn.getcharstr()` and dispatches: lock and recent labels jump, prefix opens the radar, `keys.alternative` (`o`) opens the alternative file, `keys.lock` locks the current buffer, `keys.hud_toggle` toggles the HUD, anything else cancels. Split variants exist only inside the radar.
+- **Lock Editor**: `ui/edit.lua` opens a focusable float anchored (`relative = "win"`) to the bottom of the active pane, as wide as it, `border = "none"`, above the HUD, which hides while the editor is open. From the prefix it runs without the radar; from the radar's `e` saving re-renders the radar.
+- **Prefix Dispatch**: The global `keys.prefix` mapping reads one key with `vim.fn.getcharstr()` and dispatches: lock and recent labels jump, prefix opens the radar, `keys.alternative` (`o`) opens the alternative file, `keys.lock` locks the current buffer, `keys.hud_toggle` toggles the HUD, `keys.edit` opens the lock editor, `keys.help` shows a help popup for these keys (`prefix_help_section` in `ui/keys.lua`, also part of the radar help), anything else cancels. Split variants exist only inside the radar.
 - **Relabel by Position**: Lock labels come from the position in `config.keys.locks`. Removing a lock and loading persisted locks both relabel.
 - **Safe String Matching**: Uses `string.find(text, pattern, 1, true)` for literal matching (critical for special chars)
 - **Dynamic Highlighting**: Extmarks, refreshed on `BufEnter`
@@ -79,7 +80,7 @@ lua/radar/
 3. **Window Presets**
    - A preset name (e.g. `"center"`) or a full table, resolved by `window.resolve_config`
    - Presets: cursor, center, center_large, center_narrow, top_left, top_right, bottom_left, bottom_right, bottom_center, full_height_sidebar
-   - Used by: radar (`radar.win_preset`), radar_edit, file_float, tabs
+   - Used by: radar (`radar.win_preset`), file_float, tabs
    - Custom presets go in `config.win_presets`
 
 4. **Tabs Sidebar**
@@ -153,6 +154,8 @@ From [docs/concept.md](docs/concept.md):
 - Recent files (a-g keys, filtered by project root)
 - Alternative file (`<space>o`, `o` inside the radar)
 - HUD (`<space>h` toggles it)
+- Lock editor (`<space>e`, `e` inside the radar)
+- Prefix help (`<space>?`)
 - Tabs sidebar
 
 **Planned (tracked in GitHub Issues):**
@@ -185,13 +188,13 @@ end
 - **Locks**: Manual file locking with 1-9 keybindings
 - **Recent Files**: MRU history per project root + git branch, filled up from `vim.v.oldfiles` (a-g keys)
 - **Alternative Files**: Smart test ↔ implementation file switching (`<space>o`, `o` inside the radar)
-- **HUD**: Always-visible float at the bottom of the active pane with the alternative file, up to `hud.max_locks` locks and `hud.max_recent` recent files; dodges the cursor, stays visible next to the radar (using the radar's source buffer as current file), hides while the tabs sidebar is open
+- **HUD**: Always-visible float at the bottom of the active pane with the alternative file, up to `hud.max_locks` locks and `hud.max_recent` recent files; dodges the cursor, stays visible next to the radar (using the radar's source buffer as current file), hides while the tabs sidebar or the lock editor is open
 - **Radar Window**: One floating window with three sections and section cycling
 - **Tabs Sidebar**: Tab/buffer tree view with jump and close support
 - **Line Navigation**: Navigate within radar using `<CR>`, `V`, `S`, `T`, `F`
-- **Label Editing**: Customize lock labels via floating editor (supports protocol URLs)
+- **Label Editing**: Customize lock labels in an editor at the bottom of the active pane (`<space>e`, `e` inside the radar; supports protocol URLs)
 - **Context Persistence**: Saves locks and recent files per project root + git branch with data versioning
-- **Help Popup**: `?` in the radar, built from the configured keys
+- **Help Popup**: `?` in the radar and `<space>?` outside it, built from the configured keys
 - **Data Cleanup**: `:RadarCleanup` command removes entries for deleted branches/projects
 - **Path Display**: Paths shown relative to the project root
 

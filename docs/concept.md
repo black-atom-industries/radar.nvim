@@ -62,7 +62,7 @@ This gives you instant access to 24 files without moving your left hand from hom
 - Shows the current file, the alternative file, up to 5 locks and 3 recent files; a locked current file is highlighted
 - Labels are the keys that follow `<space>`: `<space>1` jumps to lock 1, `<space>a` to the first recent file, `<space>o` to the alternative file
 - Moves to the top of the pane while the cursor line runs under it
-- Stays visible next to the full radar and updates as you lock; hidden while the tabs sidebar is open and when empty; `<space>h` toggles it for the session
+- Stays visible next to the full radar and updates as you lock; hidden while the tabs sidebar or the lock editor is open and when empty; `<space>h` toggles it for the session
 
 ### Full Radar (`<space><space>`)
 
@@ -90,6 +90,8 @@ require("radar").setup({
     prefix = "<space>",                             -- reads one more key; <space><space> opens the radar
     alternative = "o",                              -- alternative file, after the prefix and inside the radar
     hud_toggle = "h",                               -- <space>h toggles the HUD
+    edit = "e",                                     -- <space>e opens the lock editor at the bottom of the pane
+    help = "?",                                     -- <space>? lists the keys after the prefix
     locks = { "1", "2", "3", "4", "5", "6", "7", "8", "9" },
     recent = { "a", "s", "d", "f", "g" },
   },

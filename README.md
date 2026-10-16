@@ -91,6 +91,8 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 | `keys.tabs_toggle`                                  | `"<leader>t"`                         | Toggle tabs sidebar                                                             |
 | `keys.alternative`                                  | `"o"`                                 | Alternative file, after the prefix and inside the radar                         |
 | `keys.hud_toggle`                                   | `"h"`                                 | Toggle the HUD for the session (after the prefix)                               |
+| `keys.edit`                                         | `"e"`                                 | Open the lock editor (after the prefix)                                         |
+| `keys.help`                                         | `"?"`                                 | Show the keys that follow the prefix (after the prefix)                         |
 | `keys.vertical` / `.horizontal` / `.tab` / `.float` | `<C-v>` / `<C-s>` / `<C-t>` / `<C-f>` | Split mode modifiers                                                            |
 | `radar.size`                                   | `{ width = 50, height = 75 }`         | Window dimensions                                                               |
 | `radar.win_preset`                                  | `"center"`                            | Window preset for the radar                                                     |
@@ -104,7 +106,6 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 | `hud.icons`                                         | radar section icons                   | Icon in front of each HUD line, per section                                     |
 | `tabs.auto_close`                                   | `true`                                | Close tabs window after selecting                                               |
 | `tabs.win_preset`                                   | `"center"`                            | Window preset for tabs sidebar                                                  |
-| `radar_edit.win_preset`                             | `"center"`                            | Window preset for lock label editor                                             |
 | `file_float.win_preset`                             | `"center_narrow"`                    | Window preset for floating file view                                            |
 | `persist.path`                                      | `stdpath("data")/radar/data.json`     | Persistence file location                                                       |
 | `persist.defer_ms`                                  | `500`                                 | Debounce delay for saves                                                        |
@@ -126,13 +127,19 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 - **`<space>`**: Open the radar
 - **`l`**: Lock or unlock the current buffer
 - **`h`**: Toggle the HUD for this session
+- **`e`**: Edit locks without opening the radar
+- **`?`**: Show these keys
 - **`<Esc>`** or any other key: Cancel
 
 - **`<leader>t`**: Toggle tabs sidebar
 
 **HUD:**
 
-The HUD sits at the bottom of the active pane, as wide as the pane, and follows you between splits. It shows the file you are in (`[%]`, highlighted), the alternative file, up to 5 locks and 3 recent files with the keys that reach them after `<space>`. A locked current file is highlighted; the current file never takes a recent slot. It moves to the top of the pane while your cursor line runs under it, stays visible next to the open radar, and hides while the tabs sidebar is open and when there is nothing to show.
+The HUD sits at the bottom of the active pane, as wide as the pane, and follows you between splits. It shows the file you are in (`[%]`, highlighted), the alternative file, up to 5 locks and 3 recent files with the keys that reach them after `<space>`. A locked current file is highlighted; the current file never takes a recent slot. It moves to the top of the pane while your cursor line runs under it, stays visible next to the open radar, and hides while the tabs sidebar or the lock editor is open and when there is nothing to show.
+
+**Lock editor:**
+
+`<space>e` and `e` in the radar open the lock editor where the HUD sits: at the bottom of the active pane, as wide as the pane. One lock path per line; the line order sets the labels. `:w` saves, `q` saves and closes.
 
 **Within Radar Window:**
 

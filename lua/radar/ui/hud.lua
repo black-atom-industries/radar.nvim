@@ -182,12 +182,12 @@ end
 local function should_show(config)
   local state = require("radar.data.state")
   local tab = vim.api.nvim_get_current_tabpage()
-  local tabs_winid = state.get_tabs_winid()
-  if
-    tabs_winid
-    and vim.api.nvim_win_is_valid(tabs_winid)
-    and vim.api.nvim_win_get_tabpage(tabs_winid) == tab
-  then
+  local function covers(winid)
+    return winid ~= nil
+      and vim.api.nvim_win_is_valid(winid)
+      and vim.api.nvim_win_get_tabpage(winid) == tab
+  end
+  if covers(state.get_tabs_winid()) or covers(state.get_edit_winid()) then
     return false
   end
   return enabled(config)

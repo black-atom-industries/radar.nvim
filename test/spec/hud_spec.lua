@@ -162,6 +162,8 @@ describe("hud window", function()
 
   after_each(function()
     vim.fn.getcharstr = original_getcharstr
+    require("radar.ui.edit").cleanup()
+    require("radar.ui.help").close()
     radar.close()
     require("radar.ui.tabs").close()
     hud.reset()
@@ -376,6 +378,95 @@ describe("hud window", function()
       hud.refresh()
       press("h")
       MiniTest.expect.equality(hud.get_winid(), nil)
+    end)
+
+    it(
+      "opens the lock editor at the bottom of the pane without the radar",
+      function()
+        local winborder = vim.o.winborder
+        vim.o.winborder = "rounded"
+        state.set_locks({ { label = "1", filename = "c.lua" } })
+        hud.refresh()
+        local pane = vim.api.nvim_get_current_win()
+        local buffer_count = #vim.api.nvim_list_bufs()
+
+        press("e")
+        vim.o.winborder = winborder
+        local edit_win = assert(state.get_edit_winid())
+        local win_config = vim.api.nvim_win_get_config(edit_win)
+        MiniTest.expect.equality(vim.api.nvim_get_current_win(), edit_win)
+        MiniTest.expect.equality(win_config.relative, "win")
+        MiniTest.expect.equality(win_config.win, pane)
+        MiniTest.expect.equality(win_config.border, "none")
+        MiniTest.expect.equality(win_config.focusable, true)
+        MiniTest.expect.equality(win_config.zindex > 10, true)
+        MiniTest.expect.equality(win_config.col, 0)
+        MiniTest.expect.equality(win_config.width, vim.api.nvim_win_get_width(pane))
+        MiniTest.expect.equality(win_config.height, 3)
+        MiniTest.expect.equality(bottom_of(win_config, pane), true)
+        MiniTest.expect.equality(vim.wo[edit_win].winblend, 0)
+        MiniTest.expect.equality(hud.get_winid(), nil)
+        MiniTest.expect.equality(radar.exists(), false)
+
+        vim.api.nvim_buf_set_lines(0, 0, -1, false, { "a.lua", "c.lua" })
+        vim.cmd("silent write")
+        MiniTest.expect.equality(
+          vim.tbl_map(function(lock)
+            return lock.filename
+          end, state.get_locks()),
+          { "a.lua", "c.lua" }
+        )
+        MiniTest.expect.equality(radar.exists(), false)
+
+        vim.api.nvim_feedkeys("q", "x", false)
+        vim.wait(100, function()
+          return state.get_edit_winid() == nil
+        end)
+        MiniTest.expect.equality(vim.api.nvim_win_is_valid(edit_win), false)
+        MiniTest.expect.equality(state.get_edit_winid(), nil)
+        MiniTest.expect.equality(vim.api.nvim_get_current_win(), pane)
+        MiniTest.expect.equality(radar.exists(), false)
+        MiniTest.expect.equality(hud.get_winid() ~= nil, true)
+        MiniTest.expect.equality(#vim.api.nvim_list_bufs(), buffer_count)
+      end
+    )
+
+    it("discards lock editor changes on :quit!", function()
+      state.set_locks({ { label = "1", filename = "c.lua" } })
+      hud.refresh()
+      local pane = vim.api.nvim_get_current_win()
+      local buffer_count = #vim.api.nvim_list_bufs()
+
+      press("e")
+      vim.api.nvim_buf_set_lines(0, 0, -1, false, { "a.lua" })
+      vim.cmd("quit!")
+      vim.wait(100, function()
+        return state.get_edit_winid() == nil
+      end)
+
+      MiniTest.expect.equality(state.get_locks()[1].filename, "c.lua")
+      MiniTest.expect.equality(#state.get_locks(), 1)
+      MiniTest.expect.equality(state.get_edit_winid(), nil)
+      MiniTest.expect.equality(vim.api.nvim_get_current_win(), pane)
+      MiniTest.expect.equality(hud.get_winid() ~= nil, true)
+      MiniTest.expect.equality(radar.exists(), false)
+      MiniTest.expect.equality(#vim.api.nvim_list_bufs(), buffer_count)
+    end)
+
+    it("opens and closes the help with ?", function()
+      local pane = vim.api.nvim_get_current_win()
+      press("?")
+      local help = require("radar.ui.help")
+      MiniTest.expect.equality(help.is_open(), true)
+      local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+      MiniTest.expect.equality(
+        table.concat(lines, "\n"):find("Edit locks", 1, true) ~= nil,
+        true
+      )
+
+      vim.api.nvim_feedkeys("q", "x", false)
+      MiniTest.expect.equality(help.is_open(), false)
+      MiniTest.expect.equality(vim.api.nvim_get_current_win(), pane)
     end)
 
     it("does nothing on <Esc>", function()
