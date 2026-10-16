@@ -29,17 +29,11 @@ M.default = {
     max_files = 10,
   },
 
-  -- Corner HUD with the alternative file, locks and recent files
+  -- HUD with the current and alternative file, locks and recent files
   hud = {
     enabled = true,
     max_locks = 5,
     max_recent = 3,
-    icons = {
-      current = "󰈔",
-      alternative = "󰐷",
-      locks = "󰋱",
-      recent = "󰽏",
-    },
   },
 
   -- Lock label editor window

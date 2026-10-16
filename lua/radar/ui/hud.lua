@@ -59,14 +59,18 @@ end
 function M.build(config, data, max_width)
   local lines, highlights = {}, {}
 
-  local function add(icon, label, target, current)
-    local icon_part = " " .. icon .. " "
-    local label_part = "[" .. label .. "]"
-    local prefix = icon_part .. label_part .. " "
+  local function add(label, target, current)
+    local prefix = " " .. label .. "  "
     local avail = max_width - vim.fn.strdisplaywidth(prefix) - 1
     local text = target and fit(path_utils.display(target), avail) or "-"
     local line = prefix .. text .. " "
     table.insert(lines, line)
+    table.insert(highlights, {
+      line = #lines - 1,
+      col_start = 1,
+      col_end = 1 + #label,
+      hl_group = "@keyword",
+    })
     if not target or current then
       table.insert(highlights, {
         line = #lines - 1,
@@ -75,18 +79,6 @@ function M.build(config, data, max_width)
         hl_group = target and current and "Title" or "Comment",
       })
     end
-    table.insert(highlights, {
-      line = #lines - 1,
-      col_start = 1,
-      col_end = #icon_part - 1,
-      hl_group = "Comment",
-    })
-    table.insert(highlights, {
-      line = #lines - 1,
-      col_start = #icon_part,
-      col_end = #icon_part + #label_part,
-      hl_group = "@keyword",
-    })
   end
 
   local locks = vim.list_slice(data.locks, 1, config.hud.max_locks)
@@ -106,23 +98,13 @@ function M.build(config, data, max_width)
     return { lines = lines, highlights = highlights }
   end
 
-  add(
-    config.hud.icons.current,
-    "%",
-    data.current ~= "" and data.current or nil,
-    true
-  )
-  add(config.hud.icons.alternative, config.keys.alternative, data.alt)
+  add("%", data.current ~= "" and data.current or nil, true)
+  add(config.keys.alternative, data.alt)
 
   if #locks > 0 then
     table.insert(lines, "")
     for _, lock in ipairs(locks) do
-      add(
-        config.hud.icons.locks,
-        lock.label,
-        lock.filename,
-        lock.filename == data.current_lock
-      )
+      add(lock.label, lock.filename, lock.filename == data.current_lock)
     end
   end
 
@@ -130,11 +112,7 @@ function M.build(config, data, max_width)
     table.insert(lines, "")
     for i = 1, config.hud.max_recent do
       local entry = recent[i]
-      add(
-        config.hud.icons.recent,
-        entry and entry.label or " ",
-        entry and entry.file
-      )
+      add(entry and entry.label or " ", entry and entry.file)
     end
   end
 

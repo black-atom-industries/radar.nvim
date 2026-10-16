@@ -22,13 +22,6 @@
 ---@field enabled boolean Show the HUD on startup
 ---@field max_locks integer Locks shown in the HUD
 ---@field max_recent integer Recent files shown in the HUD
----@field icons Radar.Config.HudIcons Icon prefixed to each line, per section
-
----@class Radar.Config.HudIcons
----@field current string
----@field alternative string
----@field locks string
----@field recent string
 
 ---@class Radar.Config.RadarEdit
 ---@field win_opts table<string, any> Window-local options (see |options-list|)

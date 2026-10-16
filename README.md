@@ -94,7 +94,6 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 | `hud.enabled`                                       | `true`                                | Show the HUD                                                                    |
 | `hud.max_locks`                                     | `5`                                   | Locks shown in the HUD                                                          |
 | `hud.max_recent`                                    | `3`                                   | Recent files shown in the HUD                                                   |
-| `hud.icons`                                         | (nerd font icons)                     | Icon in front of each HUD line, per section                                     |
 | `tabs.auto_close`                                   | `true`                                | Close tabs window after selecting                                               |
 | `tabs.win_preset`                                   | `"center"`                            | Window preset for tabs sidebar                                                  |
 | `file_float.win_preset`                             | `"center_narrow"`                    | Window preset for the floating file view (`<C-f>` in the lock editor)           |
@@ -125,7 +124,7 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 
 **HUD:**
 
-The HUD sits at the bottom of the active pane, as wide as the pane, and follows you between splits. It shows the file you are in (`[%]`, highlighted), the alternative file, up to 5 locks and 3 recent files with the keys that reach them after `<space>`. A locked current file is highlighted; the current file never takes a recent slot. It moves to the top of the pane while your cursor line runs under it and hides while the tabs sidebar or the lock editor is open and when there is nothing to show.
+The HUD sits at the bottom of the active pane, as wide as the pane, and follows you between splits. It shows the file you are in (`%`, highlighted), the alternative file, up to 5 locks and 3 recent files with the keys that reach them after `<space>`. A locked current file is highlighted; the current file never takes a recent slot. It moves to the top of the pane while your cursor line runs under it and hides while the tabs sidebar or the lock editor is open and when there is nothing to show.
 
 **Lock editor:**
 
@@ -222,15 +221,15 @@ end)
 The HUD at the bottom of the active pane:
 
 ```
- 󰈔 [%] lua/radar/config.lua
- 󰐷 [o] test/spec/hud_spec.lua
+ %  lua/radar/config.lua
+ o  test/spec/hud_spec.lua
 
- 󰋱 [1] lua/radar/init.lua
- 󰋱 [2] lua/radar/config.lua
+ 1  lua/radar/init.lua
+ 2  lua/radar/config.lua
 
- 󰽏 [a] README.md
- 󰽏 [s] AGENTS.md
- 󰽏 [d] lua/radar/ui/keys.lua
+ a  README.md
+ s  AGENTS.md
+ d  lua/radar/ui/keys.lua
 ```
 
 ## Contributing

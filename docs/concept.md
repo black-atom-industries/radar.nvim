@@ -50,11 +50,14 @@ This gives you instant access to 24 files without moving your left hand from hom
 ### HUD (Persistent)
 
 ```
- [o] spec.lua
- [1] config.lua
- [2] init.lua
- [a] radar.lua
- [s] setup.ts
+ %  impl.ts
+ o  spec.lua
+
+ 1  config.lua
+ 2  init.lua
+
+ a  radar.lua
+ s  setup.ts
 ```
 
 - One per tab, anchored to the bottom of the active pane and as wide as it
