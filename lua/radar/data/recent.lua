@@ -49,14 +49,6 @@ function M.get_files(config)
     excluded_files[absolute(alt_file)] = true
   end
 
-  local source = state.get_source_bufnr()
-  local current_buf = source and vim.api.nvim_buf_is_valid(source) and source
-    or vim.api.nvim_get_current_buf()
-  local current = vim.api.nvim_buf_get_name(current_buf)
-  if current ~= "" then
-    excluded_files[absolute(current)] = true
-  end
-
   -- Add current session files first (most recent)
   for i = #state.get_session_files(), 1, -1 do
     local filepath = state.get_session_files()[i]
