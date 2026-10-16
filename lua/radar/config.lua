@@ -42,6 +42,7 @@ M.default = {
     win_opts = {
       number = true,
       relativenumber = false,
+      scrolloff = 0,
       cursorline = true,
       wrap = false,
     },
@@ -63,6 +64,8 @@ M.default = {
     auto_close = true,
     win_opts = {
       number = false,
+      relativenumber = false,
+      scrolloff = 0,
       cursorline = true,
       wrap = false,
     },
