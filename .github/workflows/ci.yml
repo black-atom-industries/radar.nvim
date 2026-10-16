@@ -1,0 +1,31 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: JohnnyMorganz/stylua-action@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: 2.5.2
+          args: --check lua/ test/
+
+  test:
+    runs-on: ubuntu-latest
+    env:
+      XDG_DATA_HOME: ${{ runner.temp }}/xdg
+    steps:
+      - uses: actions/checkout@v7
+      - uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: stable
+      - name: Install mini.nvim
+        run: git clone --depth 1 https://github.com/echasnovski/mini.nvim "$XDG_DATA_HOME/nvim/lazy/mini.nvim"
+      - name: Run specs
+        run: nvim --headless -l test/run.lua
