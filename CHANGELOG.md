@@ -3,6 +3,32 @@
 ## [0.8.0](https://github.com/black-atom-industries/radar.nvim/compare/v0.7.0...v0.8.0) (2026-10-18)
 
 
+### Highlights
+
+#### Locks sit on the home row
+
+`<space>a`, `s`, `d`, `f` and `g` jump to your locks, and `<space>1` to `5` to your recent files. The files you picked stay under your resting fingers, and the list that changes on its own moves up to the number row. Five lock slots, as many as the Lock HUD shows.
+
+![Space a opens a lock, Space o goes back to the alternative file, Space 1 opens a recent file, and Space s opens the second lock](https://raw.githubusercontent.com/black-atom-industries/radar.nvim/v0.8.0/docs/assets/changelog/0.8.0-keys.webp)
+
+#### Important fixes
+
+- Locking a file while every slot is taken shows a warning instead of a Lua error.
+- The help popup and keymap descriptions call the floats Lock HUD and Tab HUD, like the docs.
+
+#### Upgrading from 0.7
+
+Your saved locks carry over and take the new labels when they load. A lock past the fifth gets a number label that no key reaches; delete its line in the lock editor (`<space>e`) to drop it. To keep the previous layout:
+
+```diff
+ require("radar").setup({
++  keys = {
++    locks = { "1", "2", "3", "4", "5", "6", "7", "8", "9" },
++    recent = { "a", "s", "d", "f", "g" },
++  },
+ })
+```
+
 ### ⚠ BREAKING CHANGES
 
 * **keys:** keys.locks defaults to { "a", "s", "d", "f", "g" } and keys.recent to { "1", "2", "3", "4", "5" }. Five lock slots instead of nine. Set both keys in setup() to keep the previous layout.
