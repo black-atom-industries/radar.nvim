@@ -34,16 +34,16 @@ Files are automatically organized into tactical categories:
 
 ## ⌨️ Keybinding Design
 
-The keybindings follow a spatial layout on your keyboard - your fingers move down the keyboard as you move down through categories:
+The keybindings follow a spatial layout on your keyboard, one row per category. Locks, the most important files, sit on the home row:
 
 ```
-[1][2][3][4][5][6][7][8][9]  ← Pins (most important)
-[q][w][e][r][t]              ← Modified files
-[a][s][d][f][g]              ← Recent files
-[z][x][c][v][b]              ← PR files
+[1][2][3][4][5]  ← Recent files
+[q][w][e][r][t]  ← Modified files
+[a][s][d][f][g]  ← Locks (most important)
+[z][x][c][v][b]  ← PR files
 ```
 
-This gives you instant access to 24 files without moving your left hand from home position.
+This gives you instant access to 20 files without moving your left hand from home position.
 
 ## 🎨 Interface Design
 
@@ -53,16 +53,16 @@ This gives you instant access to 24 files without moving your left hand from hom
  %  impl.ts
  o  spec.lua
 
- 1  config.lua
- 2  init.lua
+ a  config.lua
+ s  init.lua
 
- a  radar.lua
- s  setup.ts
+ 1  radar.lua
+ 2  setup.ts
 ```
 
 - One per tab, anchored to the bottom of the active pane and as wide as it
 - Shows the current file, the alternative file, up to 5 locks and 3 recent files; a locked current file is highlighted
-- Labels are the keys that follow `<space>`: `<space>1` jumps to lock 1, `<space>a` to the first recent file, `<space>o` to the alternative file
+- Labels are the keys that follow `<space>`: `<space>a` jumps to the first lock, `<space>1` to the first recent file, `<space>o` to the alternative file
 - Moves to the top of the pane while the cursor line runs under it
 - Updates as you lock; hidden while the Tab HUD or the lock editor is open and when empty; `<space>h` toggles it for the session
 
@@ -76,8 +76,8 @@ require("radar").setup({
     hud_toggle = "h",                               -- <space>h toggles the HUD
     edit = "e",                                     -- <space>e opens the lock editor at the bottom of the pane
     help = "?",                                     -- <space>? lists the keys after the prefix
-    locks = { "1", "2", "3", "4", "5", "6", "7", "8", "9" },
-    recent = { "a", "s", "d", "f", "g" },
+    locks = { "a", "s", "d", "f", "g" },
+    recent = { "1", "2", "3", "4", "5" },
   },
 
   recent = {

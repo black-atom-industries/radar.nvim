@@ -168,9 +168,9 @@ describe("edit", function()
 
       MiniTest.expect.equality(#state.get_locks(), 2)
       MiniTest.expect.equality(state.get_locks()[1].filename, "/test/newfile.lua")
-      MiniTest.expect.equality(state.get_locks()[1].label, "1")
+      MiniTest.expect.equality(state.get_locks()[1].label, "a")
       MiniTest.expect.equality(state.get_locks()[2].filename, "/test/file2.lua")
-      MiniTest.expect.equality(state.get_locks()[2].label, "2")
+      MiniTest.expect.equality(state.get_locks()[2].label, "s")
     end)
 
     it("skips empty lines", function()

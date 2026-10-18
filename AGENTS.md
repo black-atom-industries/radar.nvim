@@ -134,15 +134,15 @@ From [docs/concept.md](docs/concept.md):
 
 ```
 <space> then:
-[1][2][3][4][5][6][7][8][9]  ← Locks (files you lock)
-[a][s][d][f][g]              ← Recent files (per project and branch)
-[o]                          ← Alternative file (test ↔ impl)
+[a][s][d][f][g]  ← Locks (files you lock)
+[1][2][3][4][5]  ← Recent files (per project and branch)
+[o]              ← Alternative file (test ↔ impl)
 ```
 
 **Implemented:**
 
-- Locks (1-9 keys)
-- Recent files (a-g keys, filtered by project root)
+- Locks (a s d f g keys)
+- Recent files (1-5 keys, filtered by project root)
 - Alternative file (`<space>o`)
 - Lock HUD (`<space>h` toggles it)
 - Lock editor (`<space>e`)
@@ -176,8 +176,8 @@ end
 
 ## Implemented Features
 
-- **Locks**: Manual file locking with 1-9 keybindings
-- **Recent Files**: MRU history per project root + git branch, filled up from `vim.v.oldfiles` (a-g keys)
+- **Locks**: Manual file locking with a s d f g keybindings
+- **Recent Files**: MRU history per project root + git branch, filled up from `vim.v.oldfiles` (1-5 keys)
 - **Alternative Files**: Smart test ↔ implementation file switching (`<space>o`)
 - **Lock HUD**: Always-visible float at the bottom of the active pane with the alternative file, up to `hud.max_locks` locks and `hud.max_recent` recent files; dodges the cursor, hides while the Tab HUD or the lock editor is open
 - **Tab HUD**: Tab/buffer tree view with jump and close support

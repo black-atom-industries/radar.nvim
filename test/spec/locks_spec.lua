@@ -15,31 +15,31 @@ describe("locks", function()
 
     it("returns first label when no locks exist", function()
       local label = locks.get_next_unused_label(test_config)
-      MiniTest.expect.equality(label, "1")
+      MiniTest.expect.equality(label, "a")
     end)
 
     it("skips used labels and returns next available", function()
       -- Add some locks
       state.set_locks({
-        { label = "1", filename = "file1.lua" },
-        { label = "3", filename = "file3.lua" },
+        { label = "a", filename = "file1.lua" },
+        { label = "d", filename = "file3.lua" },
       })
 
       local label = locks.get_next_unused_label(test_config)
-      MiniTest.expect.equality(label, "2")
+      MiniTest.expect.equality(label, "s")
     end)
 
     it("returns labels in order defined in config", function()
       -- Fill up first few slots
-      for i = 1, 5 do
+      for i = 1, 3 do
         table.insert(
           state.get_locks(),
-          { label = tostring(i), filename = "file" .. i .. ".lua" }
+          { label = test_config.keys.locks[i], filename = "file" .. i .. ".lua" }
         )
       end
 
       local label = locks.get_next_unused_label(test_config)
-      MiniTest.expect.equality(label, "6")
+      MiniTest.expect.equality(label, "f")
     end)
 
     it("throws error when all slots are used", function()
@@ -64,7 +64,7 @@ describe("locks", function()
       local lock = locks.add("test.lua", test_config)
 
       MiniTest.expect.equality(type(lock), "table")
-      MiniTest.expect.equality(lock.label, "1")
+      MiniTest.expect.equality(lock.label, "a")
       MiniTest.expect.equality(lock.filename, "test.lua")
     end)
 
@@ -81,8 +81,8 @@ describe("locks", function()
       local lock1 = locks.add("file1.lua", test_config)
       local lock2 = locks.add("file2.lua", test_config)
 
-      MiniTest.expect.equality(lock1.label, "1")
-      MiniTest.expect.equality(lock2.label, "2")
+      MiniTest.expect.equality(lock1.label, "a")
+      MiniTest.expect.equality(lock2.label, "s")
       MiniTest.expect.equality(#state.get_locks(), 2)
     end)
   end)
@@ -112,7 +112,7 @@ describe("locks", function()
       local labels = vim.tbl_map(function(lock)
         return lock.label .. ":" .. lock.filename
       end, state.get_locks())
-      MiniTest.expect.equality(labels, { "1:b.lua", "2:c.lua" })
+      MiniTest.expect.equality(labels, { "a:b.lua", "s:c.lua" })
     end)
 
     it("relabels from configured keys", function()
@@ -174,7 +174,7 @@ describe("locks", function()
 
       MiniTest.expect.equality(#state.get_locks(), 1)
       MiniTest.expect.equality(lock.filename, "new.lua")
-      MiniTest.expect.equality(lock.label, "1")
+      MiniTest.expect.equality(lock.label, "a")
     end)
 
     it("removes lock when file is locked", function()

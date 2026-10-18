@@ -201,7 +201,7 @@ describe("project identity", function()
       local data = persistence.read(test_config.persist.path)
       MiniTest.expect.equality(
         data.projects[root].main.locks,
-        { { label = "1", filename = "a.lua" } }
+        { { label = "a", filename = "a.lua" } }
       )
       MiniTest.expect.equality(data.projects[other], nil)
     end)
@@ -268,7 +268,7 @@ describe("project identity", function()
 
       MiniTest.expect.equality(
         state.get_locks(),
-        { { label = "1", filename = "lua/posts.$postId.tsx" } }
+        { { label = "a", filename = "lua/posts.$postId.tsx" } }
       )
       vim.api.nvim_buf_delete(buf, { force = true })
     end)

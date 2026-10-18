@@ -29,7 +29,7 @@ describe("hud content", function()
       " 1  one.lua ",
       " 2  two.lua ",
       "",
-      " a  /r/a.lua ",
+      " 1  /r/a.lua ",
       "    - ",
       "    - ",
     })
@@ -49,7 +49,7 @@ describe("hud content", function()
 
     MiniTest.expect.equality(#content.lines, 2 + 1 + 5 + 1 + 3)
     MiniTest.expect.equality(content.lines[8], " 5  5.lua ")
-    MiniTest.expect.equality(content.lines[12], " d  /r/c ")
+    MiniTest.expect.equality(content.lines[12], " 3  /r/c ")
   end)
 
   it("keeps the current file in locks and highlights it", function()
@@ -94,9 +94,9 @@ describe("hud content", function()
       " %  /r/b ",
       " o  - ",
       "",
-      " a  /r/a ",
-      " d  /r/c ",
-      " f  /r/d ",
+      " 1  /r/a ",
+      " 3  /r/c ",
+      " 4  /r/d ",
     })
   end)
 
@@ -286,7 +286,7 @@ describe("hud window", function()
       false
     )
     MiniTest.expect.equality(
-      table.concat(after, "\n"):find(" 1  c.lua", 1, true) ~= nil,
+      table.concat(after, "\n"):find(" a  c.lua", 1, true) ~= nil,
       true
     )
   end)
@@ -347,25 +347,26 @@ describe("hud window", function()
 
   describe("prefix", function()
     it("jumps to a lock with its label", function()
-      state.set_locks({ { label = "1", filename = "c.lua" } })
-      press("1")
+      state.set_locks({ { label = "a", filename = "c.lua" } })
+      press("a")
       MiniTest.expect.equality(vim.api.nvim_buf_get_name(0), file("c.lua"))
     end)
 
     it("jumps to locks past the HUD cap", function()
+      test_config.hud.max_locks = 3
       local locks = {}
-      for i = 1, 7 do
-        local name = i == 7 and "c.lua" or "a.lua"
-        table.insert(locks, { label = tostring(i), filename = name })
+      for i, label in ipairs(test_config.keys.locks) do
+        local name = i == #test_config.keys.locks and "c.lua" or "a.lua"
+        table.insert(locks, { label = label, filename = name })
       end
       state.set_locks(locks)
-      press("7")
+      press("g")
       MiniTest.expect.equality(vim.api.nvim_buf_get_name(0), file("c.lua"))
     end)
 
     it("jumps to a recent file with its label", function()
       state.set_session_files({ file("c.lua") })
-      press("a")
+      press("1")
       MiniTest.expect.equality(vim.api.nvim_buf_get_name(0), file("c.lua"))
     end)
 

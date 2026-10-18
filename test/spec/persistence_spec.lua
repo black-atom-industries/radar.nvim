@@ -380,7 +380,7 @@ describe("persistence", function()
         state.set_locks({})
         persistence.populate(test_config)
         MiniTest.expect.equality(state.get_locks(), {
-          { label = "1", filename = "b.lua" },
+          { label = "a", filename = "b.lua" },
         })
       end)
     end)
@@ -424,7 +424,7 @@ describe("persistence", function()
 
         MiniTest.expect.equality(
           state.get_locks(),
-          { { label = "1", filename = "kept.lua" } }
+          { { label = "a", filename = "kept.lua" } }
         )
         local saved =
           vim.json.decode(table.concat(vim.fn.readfile(test_data_path), "\n"))

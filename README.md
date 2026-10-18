@@ -4,13 +4,13 @@
 
 radar.nvim shows the file you're in, its alternative, your locks and recent files at the bottom of your pane, each one keystroke after `<space>`.
 
-![Jumping from the Lock HUD: Space 1 opens a lock, Space o goes back to the alternative file, Space a opens a recent file](docs/assets/changelog/0.6.0-hud-jump.webp)
+![Jumping from the Lock HUD: Space a opens a lock, Space o goes back to the alternative file, Space 1 opens a recent file](docs/assets/changelog/0.6.0-hud-jump.webp)
 
 ## Concept
 
 `radar.nvim` provides **instant access** to your working files through spatial keyboard shortcuts, eliminating the need for fuzzy finders or file trees for your active working set.
 
-- **File Pinning**: Lock your most important files to slots 1-9 for instant access
+- **File Pinning**: Lock your most important files to the home row keys a-g for instant access
 - **Smart Persistence**: Context-aware storage per project and git branch
 - **Prefix Keys**: `<space>` plus one key jumps to a lock, a recent file or the alternative file
 - **Lock HUD**: A small always-visible window at the bottom of the active pane with the current and alternative file, the first locks and recent files
@@ -23,9 +23,9 @@ See also [Concept](./docs/concept.md)
 
 ```
 <space> then:
-[1][2][3][4][5][6][7][8][9]  ← Locks (files you lock)
-[a][s][d][f][g]              ← Recent files (per project and branch)
-[o]                          ← Alternative file (test ↔ impl)
+[a][s][d][f][g]  ← Locks (files you lock)
+[1][2][3][4][5]  ← Recent files (per project and branch)
+[o]              ← Alternative file (test ↔ impl)
 ```
 
 This spatial keyboard layout gives you instant access to **15 files** without moving your left hand from home position.
@@ -100,8 +100,8 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 | --------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------- |
 | `keys.prefix`                                       | `"<space>"`                           | Prefix that reads one more key                                                  |
 | `keys.lock`                                         | `"l"`                                 | Lock current buffer to a slot                                                   |
-| `keys.locks`                                        | `{"1".."9"}`                          | Keys for lock slots                                                             |
-| `keys.recent`                                       | `{"a".."g"}`                          | Keys for recent file slots                                                      |
+| `keys.locks`                                        | `{"a","s","d","f","g"}`               | Keys for lock slots                                                             |
+| `keys.recent`                                       | `{"1".."5"}`                          | Keys for recent file slots                                                      |
 | `keys.tabs_toggle`                                  | `"<leader>t"`                         | Toggle Tab HUD                                                                  |
 | `keys.alternative`                                  | `"o"`                                 | Alternative file (after the prefix)                                             |
 | `keys.hud_toggle`                                   | `"h"`                                 | Toggle the Lock HUD for the session (after the prefix)                          |
@@ -129,8 +129,8 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 
 `<space>` waits for one more key:
 
-- **`1-9`**: Jump to a lock
-- **`a-g`**: Jump to a recent file
+- **`a s d f g`**: Jump to a lock
+- **`1-5`**: Jump to a recent file
 - **`o`**: Open the alternative file
 - **`l`**: Lock or unlock the current buffer
 - **`h`**: Toggle the Lock HUD for this session
