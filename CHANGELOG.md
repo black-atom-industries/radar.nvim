@@ -1,5 +1,54 @@
 # Changelog
 
+## [0.8.0](https://github.com/black-atom-industries/radar.nvim/compare/v0.7.0...v0.8.0) (2026-10-18)
+
+
+### Highlights
+
+#### Locks sit on the home row
+
+`<space>a`, `s`, `d`, `f` and `g` jump to your locks, and `<space>1` to `5` to your recent files. The files you picked stay under your resting fingers, and the list that changes on its own moves up to the number row. Five lock slots, as many as the Lock HUD shows.
+
+![Space a opens a lock, Space o goes back to the alternative file, Space 1 opens a recent file, and Space s opens the second lock](https://raw.githubusercontent.com/black-atom-industries/radar.nvim/v0.8.0/docs/assets/changelog/0.8.0-keys.webp)
+
+#### Important fixes
+
+- Locking a file while every slot is taken shows a warning instead of a Lua error.
+- The help popup and keymap descriptions call the floats Lock HUD and Tab HUD, like the docs.
+
+#### Upgrading from 0.7
+
+Your saved locks carry over and take the new labels when they load. A lock past the fifth gets a number label that no key reaches; delete its line in the lock editor (`<space>e`) to drop it. To keep the previous layout:
+
+```diff
+ require("radar").setup({
++  keys = {
++    locks = { "1", "2", "3", "4", "5", "6", "7", "8", "9" },
++    recent = { "a", "s", "d", "f", "g" },
++  },
+ })
+```
+
+### ⚠ BREAKING CHANGES
+
+* **keys:** keys.locks defaults to { "a", "s", "d", "f", "g" } and keys.recent to { "1", "2", "3", "4", "5" }. Five lock slots instead of nine. Set both keys in setup() to keep the previous layout.
+
+### Features
+
+* **keys:** put lock slots on the home row and recent files on numbers ([50f48f4](https://github.com/black-atom-industries/radar.nvim/commit/50f48f4e7d677f7d61be849332313cda7f71f2c8))
+
+
+### Bug Fixes
+
+* **locks:** warn when all lock slots are in use ([35ac047](https://github.com/black-atom-industries/radar.nvim/commit/35ac047cd64d107c9571034ef9f951974706b714))
+* **ui:** call the floats Lock HUD and Tab HUD in help and keymaps ([eb56c2a](https://github.com/black-atom-industries/radar.nvim/commit/eb56c2acdb5646cc66364a02a5f7055e52f5b590))
+
+
+### Documentation
+
+* name the floats Lock HUD and Tab HUD ([7e35af5](https://github.com/black-atom-industries/radar.nvim/commit/7e35af57b45b04e916e6ed03cc10ffc7b4d22299))
+* show how to pick a prefix that fits your leader ([308c0f6](https://github.com/black-atom-industries/radar.nvim/commit/308c0f681ec69110af5f29192e9f2c614b0bf9a9))
+
 ## [0.7.0](https://github.com/black-atom-industries/radar.nvim/compare/v0.6.0...v0.7.0) (2026-10-16)
 
 
