@@ -188,6 +188,34 @@ describe("locks", function()
       MiniTest.expect.equality(#state.get_locks(), 0)
       MiniTest.expect.equality(removed_lock.filename, "existing.lua")
     end)
+
+    it("warns instead of locking when all slots are used", function()
+      for _, label in ipairs(test_config.keys.locks) do
+        locks.add("file_" .. label .. ".lua", test_config)
+      end
+      local original_notify = vim.notify
+      local level
+      vim.notify = function(_, lvl)
+        level = lvl
+      end
+
+      local lock = locks.toggle("new.lua", test_config, mock_persistence)
+      vim.notify = original_notify
+
+      MiniTest.expect.equality(lock, nil)
+      MiniTest.expect.equality(level, vim.log.levels.WARN)
+      MiniTest.expect.equality(#state.get_locks(), #test_config.keys.locks)
+    end)
+
+    it("still unlocks when all slots are used", function()
+      for _, label in ipairs(test_config.keys.locks) do
+        locks.add("file_" .. label .. ".lua", test_config)
+      end
+
+      locks.toggle("file_a.lua", test_config, mock_persistence)
+
+      MiniTest.expect.equality(#state.get_locks(), #test_config.keys.locks - 1)
+    end)
   end)
 
   describe("lock_current_buffer", function()

@@ -99,10 +99,18 @@ end
 ---@param filename string
 ---@param config Radar.Config
 ---@param persistence_module table
----@return Radar.Lock
+---@return Radar.Lock?
 function M.toggle(filename, config, persistence_module)
   local state = require("radar.data.state")
   local exists = state.get_lock_by_field("filename", filename)
+
+  if not exists and #state.get_locks() >= #config.keys.locks then
+    vim.notify(
+      "All " .. #config.keys.locks .. " lock slots are in use. Unlock a file first.",
+      vim.log.levels.WARN
+    )
+    return nil
+  end
 
   local lock
   if not exists then
