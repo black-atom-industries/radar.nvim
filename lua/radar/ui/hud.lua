@@ -148,6 +148,9 @@ end
 ---@param config Radar.Config
 ---@return boolean
 local function should_show(config)
+  if vim.t.radar_disabled then
+    return false
+  end
   local state = require("radar.data.state")
   local tab = vim.api.nvim_get_current_tabpage()
   local function covers(winid)

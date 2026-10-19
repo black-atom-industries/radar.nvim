@@ -153,6 +153,8 @@ vim.o.scrolloffpad = 99   -- Neovim nightly
 require("radar").setup({ hud = { dodge = false } })
 ```
 
+A plugin with a tab of its own hides the Lock HUD there by setting `vim.t.radar_disabled = true`. Locks and recent files keep tracking.
+
 ![The Lock HUD follows the active split and moves to the top of the pane when the cursor reaches the bottom](docs/assets/changelog/0.6.0-hud-split.webp)
 
 **Lock editor:**
