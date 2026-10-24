@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/black-atom-industries/radar.nvim/compare/v0.8.0...v0.8.1) (2026-10-24)
+
+
+### Bug Fixes
+
+* **ui:** keep the Lock HUD on the file pane while a special buffer has focus ([f568115](https://github.com/black-atom-industries/radar.nvim/commit/f5681152fb7153e8e9f9a1258938f39fd395b614))
+
 ## [0.8.0](https://github.com/black-atom-industries/radar.nvim/compare/v0.7.0...v0.8.0) (2026-10-18)
 
 
