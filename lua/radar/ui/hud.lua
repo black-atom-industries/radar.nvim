@@ -165,7 +165,7 @@ local function should_show(config)
 end
 
 ---Pane the HUD belongs to: the current window, or the previous pane while a
----float has focus
+---float or a special buffer (help, quickfix, plugin sidebars) has focus
 ---@param hud Radar.Hud?
 ---@return integer?
 local function anchor_window(hud)
@@ -173,6 +173,7 @@ local function anchor_window(hud)
     return winid ~= 0
       and vim.api.nvim_win_is_valid(winid)
       and vim.api.nvim_win_get_config(winid).relative == ""
+      and vim.bo[vim.api.nvim_win_get_buf(winid)].buftype == ""
   end
   local current = vim.api.nvim_get_current_win()
   if is_pane(current) then
