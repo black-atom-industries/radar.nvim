@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.9.0](https://github.com/black-atom-industries/radar.nvim/compare/v0.8.0...v0.9.0) (2026-10-28)
+
+
+### Features
+
+* **ui:** show locks and recent files side by side in wide panes ([21d74b0](https://github.com/black-atom-industries/radar.nvim/commit/21d74b01f81c03f0bcb0ba4d8a92af8192721f72))
+
+
+### Bug Fixes
+
+* **ui:** keep the Lock HUD on the file pane while a special buffer has focus ([f568115](https://github.com/black-atom-industries/radar.nvim/commit/f5681152fb7153e8e9f9a1258938f39fd395b614))
+
 ## [0.8.0](https://github.com/black-atom-industries/radar.nvim/compare/v0.7.0...v0.8.0) (2026-10-18)
 
 
