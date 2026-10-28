@@ -4,9 +4,12 @@
 local root = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":p:h:h")
 vim.opt.rtp:prepend(root)
 
--- Add mini.nvim to runtime path (assuming it's installed via lazy.nvim)
-local mini_path = vim.fn.stdpath("data") .. "/lazy/mini.nvim"
-if vim.fn.isdirectory(mini_path) == 1 then
+-- Add mini.nvim to runtime path, installed by lazy.nvim or vim.pack
+local data = vim.fn.stdpath("data")
+local mini_path = vim.fn.isdirectory(data .. "/lazy/mini.nvim") == 1
+    and data .. "/lazy/mini.nvim"
+  or vim.fn.globpath(data, "site/pack/*/*/mini.nvim", false, true)[1]
+if mini_path then
   vim.opt.rtp:prepend(mini_path)
 else
   error("mini.nvim not found. Please ensure it's installed.")
