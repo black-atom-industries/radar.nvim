@@ -51,33 +51,57 @@ local function fit(text, max_width)
   return "…" .. vim.fn.strcharpart(text, chars - keep, keep)
 end
 
----Build the HUD lines and highlights
+---@class Radar.HudCell
+---@field text string
+---@field highlights { col_start: integer, col_end: integer, hl_group: string }[]
+
+---Build the HUD lines and highlights: one column, or two side by side from
+---`hud.breakpoint` on
 ---@param config Radar.Config
 ---@param data Radar.HudData
 ---@param max_width integer
 ---@return Radar.HudContent
 function M.build(config, data, max_width)
   local lines, highlights = {}, {}
+  local columns = max_width >= config.hud.breakpoint
+  local col_width = columns and math.floor(max_width / 2) or max_width
+  local blank = { text = "", highlights = {} }
 
-  local function add(label, target, current)
+  ---@return Radar.HudCell
+  local function cell(label, target, current)
     local prefix = " " .. label .. "  "
-    local avail = max_width - vim.fn.strdisplaywidth(prefix) - 1
+    local avail = col_width - vim.fn.strdisplaywidth(prefix) - 1
     local text = target and fit(path_utils.display(target), avail) or "-"
-    local line = prefix .. text .. " "
-    table.insert(lines, line)
-    table.insert(highlights, {
-      line = #lines - 1,
-      col_start = 1,
-      col_end = 1 + #label,
-      hl_group = "@keyword",
-    })
+    local hls = { { col_start = 1, col_end = 1 + #label, hl_group = "@keyword" } }
     if not target or current then
-      table.insert(highlights, {
-        line = #lines - 1,
+      table.insert(hls, {
         col_start = #prefix,
-        col_end = #line,
+        col_end = #prefix + #text + 1,
         hl_group = target and current and "Title" or "Comment",
       })
+    end
+    return { text = prefix .. text .. " ", highlights = hls }
+  end
+
+  ---@param left Radar.HudCell
+  ---@param right Radar.HudCell?
+  local function row(left, right)
+    local line, placed = left.text, { { left, 0 } }
+    if right then
+      line = line .. string.rep(" ", col_width - vim.fn.strdisplaywidth(line))
+      table.insert(placed, { right, #line })
+      line = line .. right.text
+    end
+    table.insert(lines, line)
+    for _, p in ipairs(placed) do
+      for _, hl in ipairs(p[1].highlights) do
+        table.insert(highlights, {
+          line = #lines - 1,
+          col_start = p[2] + hl.col_start,
+          col_end = p[2] + hl.col_end,
+          hl_group = hl.hl_group,
+        })
+      end
     end
   end
 
@@ -98,21 +122,45 @@ function M.build(config, data, max_width)
     return { lines = lines, highlights = highlights }
   end
 
-  add("%", data.current ~= "" and data.current or nil, true)
-  add(config.keys.alternative, data.alt)
+  local current = cell("%", data.current ~= "" and data.current or nil, true)
+  local alt = cell(config.keys.alternative, data.alt)
 
-  if #locks > 0 then
-    table.insert(lines, "")
-    for _, lock in ipairs(locks) do
-      add(lock.label, lock.filename, lock.filename == data.current_lock)
-    end
+  local lock_cells = {}
+  for _, lock in ipairs(locks) do
+    table.insert(
+      lock_cells,
+      cell(lock.label, lock.filename, lock.filename == data.current_lock)
+    )
   end
 
-  if config.hud.max_recent > 0 then
-    table.insert(lines, "")
-    for i = 1, config.hud.max_recent do
-      local entry = recent[i]
-      add(entry and entry.label or " ", entry and entry.file)
+  local recent_cells = {}
+  for i = 1, config.hud.max_recent do
+    local entry = recent[i]
+    table.insert(
+      recent_cells,
+      cell(entry and entry.label or " ", entry and entry.file)
+    )
+  end
+
+  if columns then
+    row(current, alt)
+    local count = math.max(#lock_cells, #recent_cells)
+    if count > 0 then
+      table.insert(lines, "")
+      for i = 1, count do
+        row(lock_cells[i] or blank, recent_cells[i])
+      end
+    end
+  else
+    row(current)
+    row(alt)
+    for _, section in ipairs({ lock_cells, recent_cells }) do
+      if #section > 0 then
+        table.insert(lines, "")
+        for _, c in ipairs(section) do
+          row(c)
+        end
+      end
     end
   end
 

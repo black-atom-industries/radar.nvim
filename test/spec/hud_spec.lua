@@ -112,6 +112,51 @@ describe("hud content", function()
     MiniTest.expect.equality(vim.endswith(content.lines[4], "file.lua "), true)
   end)
 
+  it("puts recent files beside the locks from hud.breakpoint on", function()
+    local content = hud.build(test_config, {
+      alt = "alt.lua",
+      locks = { lock("1", "one.lua") },
+      recent = { "/r/a.lua" },
+      current = "/r/cur.lua",
+      current_lock = "",
+    }, 80)
+
+    local pad = function(text)
+      return text .. string.rep(" ", 40 - #text)
+    end
+    MiniTest.expect.equality(content.lines, {
+      pad(" %  /r/cur.lua ") .. " o  alt.lua ",
+      "",
+      pad(" 1  one.lua ") .. " 1  /r/a.lua ",
+      pad("") .. "    - ",
+      pad("") .. "    - ",
+    })
+    local labels = vim.tbl_filter(function(hl)
+      return hl.hl_group == "@keyword" and hl.line == 0
+    end, content.highlights)
+    MiniTest.expect.equality(
+      vim.tbl_map(function(hl)
+        return { hl.col_start, hl.col_end }
+      end, labels),
+      { { 1, 2 }, { 41, 42 } }
+    )
+  end)
+
+  it("shortens long paths to the column width", function()
+    test_config.hud.max_recent = 0
+    local content = hud.build(test_config, {
+      locks = {
+        lock("1", "some/very/long/directory/path/to/a/deeply/nested/file.lua"),
+      },
+      recent = {},
+      current = "",
+      current_lock = "",
+    }, 80)
+
+    MiniTest.expect.equality(vim.fn.strdisplaywidth(content.lines[3]), 40)
+    MiniTest.expect.equality(vim.endswith(content.lines[3], "file.lua "), true)
+  end)
+
   it("is empty without anything to show", function()
     local content = hud.build(test_config, {
       locks = {},
@@ -142,6 +187,7 @@ describe("hud window", function()
     state.reset()
     test_config = vim.deepcopy(config.default)
     test_config.persist.path = vim.fn.tempname() .. ".json"
+    test_config.hud.breakpoint = 1000
     original_cwd = vim.uv.cwd()
     original_getcharstr = vim.fn.getcharstr
     root = vim.fn.tempname()

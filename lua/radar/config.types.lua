@@ -24,6 +24,7 @@
 ---@field dodge boolean Move the HUD to the top of the pane while the cursor line runs under it
 ---@field max_locks integer Locks shown in the HUD
 ---@field max_recent integer Recent files shown in the HUD
+---@field breakpoint integer Pane width from which locks and recent files sit side by side
 
 ---@class Radar.Config.RadarEdit
 ---@field win_opts table<string, any> Window-local options (see |options-list|)

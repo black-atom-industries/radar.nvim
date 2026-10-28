@@ -36,6 +36,7 @@ M.default = {
     dodge = true,
     max_locks = 5,
     max_recent = 3,
+    breakpoint = 80,
   },
 
   -- Lock label editor window
