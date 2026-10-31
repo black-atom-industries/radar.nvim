@@ -113,6 +113,7 @@ describe("hud content", function()
   end)
 
   it("puts recent files beside the locks from hud.breakpoint on", function()
+    test_config.hud.breakpoint = 80
     local content = hud.build(test_config, {
       alt = "alt.lua",
       locks = { lock("1", "one.lua") },
@@ -143,6 +144,7 @@ describe("hud content", function()
   end)
 
   it("shortens long paths to the column width", function()
+    test_config.hud.breakpoint = 80
     test_config.hud.max_recent = 0
     local content = hud.build(test_config, {
       locks = {
