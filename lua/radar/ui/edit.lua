@@ -196,7 +196,7 @@ function M.edit_locks(radar_config)
     window.pane_bottom(window.active_pane(), #lines)
   )
   state.set_edit_winid(edit_win)
-  vim.api.nvim_set_option_value("winblend", 0, { win = edit_win })
+  window.paint(edit_win, "Locks")
 
   -- Apply window-local options
   for opt, value in pairs(radar_config.radar_edit.win_opts) do

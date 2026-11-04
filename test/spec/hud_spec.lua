@@ -25,10 +25,10 @@ describe("hud content", function()
     MiniTest.expect.equality(content.lines, {
       " %  - ",
       " o  alt.lua ",
-      "",
+      " Locks",
       " 1  one.lua ",
       " 2  two.lua ",
-      "",
+      " Recent",
       " 1  /r/a.lua ",
       "    - ",
       "    - ",
@@ -63,10 +63,10 @@ describe("hud content", function()
     MiniTest.expect.equality(content.lines, {
       " %  /r/two.lua ",
       " o  - ",
-      "",
+      " Locks",
       " 1  one.lua ",
       " 2  two.lua ",
-      "",
+      " Recent",
       "    - ",
       "    - ",
       "    - ",
@@ -78,7 +78,7 @@ describe("hud content", function()
       vim.tbl_map(function(hl)
         return hl.line
       end, current),
-      { 0, 4 }
+      { 4 }
     )
   end)
 
@@ -93,7 +93,7 @@ describe("hud content", function()
     MiniTest.expect.equality(content.lines, {
       " %  /r/b ",
       " o  - ",
-      "",
+      " Recent",
       " 1  /r/a ",
       " 3  /r/c ",
       " 4  /r/d ",
@@ -123,14 +123,14 @@ describe("hud content", function()
     }, 80)
 
     local pad = function(text)
-      return text .. string.rep(" ", 40 - #text)
+      return text .. string.rep(" ", 39 - #text)
     end
     MiniTest.expect.equality(content.lines, {
-      pad(" %  /r/cur.lua ") .. " o  alt.lua ",
-      "",
-      pad(" 1  one.lua ") .. " 1  /r/a.lua ",
-      pad("") .. "    - ",
-      pad("") .. "    - ",
+      pad(" %  /r/cur.lua ") .. "  o  alt.lua ",
+      pad(" Locks") .. "│ Recent",
+      pad(" 1  one.lua ") .. "│ 1  /r/a.lua ",
+      pad("") .. "│    - ",
+      pad("") .. "│    - ",
     })
     local labels = vim.tbl_filter(function(hl)
       return hl.hl_group == "@keyword" and hl.line == 0
@@ -155,7 +155,7 @@ describe("hud content", function()
       current_lock = "",
     }, 80)
 
-    MiniTest.expect.equality(vim.fn.strdisplaywidth(content.lines[3]), 40)
+    MiniTest.expect.equality(vim.fn.strdisplaywidth(content.lines[3]), 39)
     MiniTest.expect.equality(vim.endswith(content.lines[3], "file.lua "), true)
   end)
 
@@ -224,8 +224,9 @@ describe("hud window", function()
     state.reset()
   end)
 
-  local function bottom_of(win_config, pane)
-    return win_config.row + win_config.height == vim.api.nvim_win_get_height(pane)
+  local function hud_at_bottom(win_config, pane)
+    return win_config.row + win_config.height + 1
+      == vim.api.nvim_win_get_height(pane)
   end
 
   it("opens at the bottom of the current pane, as wide as the pane", function()
@@ -236,15 +237,46 @@ describe("hud window", function()
     MiniTest.expect.equality(win_config.relative, "win")
     MiniTest.expect.equality(win_config.win, vim.api.nvim_get_current_win())
     MiniTest.expect.equality(win_config.focusable, false)
-    MiniTest.expect.equality(win_config.border, "none")
+    MiniTest.expect.equality(win_config.border[2], { "·", "RadarHudRule" })
     MiniTest.expect.equality(vim.wo[winid].winblend, 0)
     MiniTest.expect.equality(win_config.col, 0)
-    MiniTest.expect.equality(bottom_of(win_config, 0), true)
+    MiniTest.expect.equality(hud_at_bottom(win_config, 0), true)
     MiniTest.expect.equality(win_config.width, vim.api.nvim_win_get_width(0))
     MiniTest.expect.equality(
       vim.api.nvim_buf_get_lines(vim.api.nvim_win_get_buf(winid), 0, 2, false),
       { " %  b.lua ", " o  a.lua " }
     )
+  end)
+
+  it("draws the rule in the Title color on the panel background", function()
+    local function get(name)
+      return vim.api.nvim_get_hl(0, { name = name, link = false })
+    end
+    MiniTest.expect.equality(get("RadarHudRule").fg, get("Title").fg)
+    MiniTest.expect.equality(get("RadarHudRule").bg, get("RadarHud").bg)
+  end)
+
+  it("repeats hud.fillchar in the rule", function()
+    local window = require("radar.ui.window")
+    test_config.hud.fillchar = "-"
+    window.setup(test_config)
+    hud.refresh()
+    MiniTest.expect.equality(
+      vim.api.nvim_win_get_config(assert(hud.get_winid())).border[2],
+      { "-", "RadarHudRule" }
+    )
+    window.setup(config.default)
+  end)
+
+  it("keeps the highlights a colorscheme defines", function()
+    vim.api.nvim_set_hl(0, "RadarHudTitle", { bg = 0x123456 })
+    hud.setup(test_config)
+    MiniTest.expect.equality(
+      vim.api.nvim_get_hl(0, { name = "RadarHudTitle" }).bg,
+      0x123456
+    )
+    vim.api.nvim_set_hl(0, "RadarHudTitle", {})
+    hud.setup(test_config)
   end)
 
   it("follows the active pane", function()
@@ -353,17 +385,36 @@ describe("hud window", function()
     MiniTest.expect.equality(hud.get_winid(), nil)
   end)
 
-  it("keeps the command line row free with cmdheight 0", function()
+  it("fills the command line row below its text with cmdheight 0", function()
     local cmdheight = vim.o.cmdheight
     vim.o.cmdheight = 0
     hud.refresh()
     local win_config = vim.api.nvim_win_get_config(assert(hud.get_winid()))
     MiniTest.expect.equality(
-      win_config.row + win_config.height,
-      vim.api.nvim_win_get_height(0) - 1
+      win_config.row + win_config.height + 1,
+      vim.api.nvim_win_get_height(0)
     )
+    MiniTest.expect.equality(win_config.height, hud.get_height() + 1)
     vim.o.cmdheight = cmdheight
     hud.refresh()
+  end)
+
+  it("stays inside a pane with a winbar", function()
+    vim.wo.winbar = "%f"
+    local text_rows = vim.api.nvim_win_get_height(0) - 1
+    local function bottom(winid)
+      local win_config = vim.api.nvim_win_get_config(winid)
+      return win_config.row + win_config.height + 1
+    end
+
+    hud.refresh()
+    MiniTest.expect.equality(bottom(assert(hud.get_winid())), text_rows)
+
+    require("radar.ui.tabs").open(test_config)
+    MiniTest.expect.equality(bottom(state.get_tabs_winid()), text_rows)
+    require("radar.ui.tabs").close()
+
+    vim.wo.winbar = ""
   end)
 
   it("stays at the bottom with hud.dodge off", function()
@@ -373,7 +424,10 @@ describe("hud window", function()
     local winid = assert(hud.get_winid())
     vim.cmd("normal! L")
     hud.dodge()
-    MiniTest.expect.equality(bottom_of(vim.api.nvim_win_get_config(winid), 0), true)
+    MiniTest.expect.equality(
+      hud_at_bottom(vim.api.nvim_win_get_config(winid), 0),
+      true
+    )
     test_config.hud.dodge = true
   end)
 
@@ -382,7 +436,10 @@ describe("hud window", function()
     vim.api.nvim_win_set_cursor(0, { 1, 0 })
     hud.refresh()
     local winid = assert(hud.get_winid())
-    MiniTest.expect.equality(bottom_of(vim.api.nvim_win_get_config(winid), 0), true)
+    MiniTest.expect.equality(
+      hud_at_bottom(vim.api.nvim_win_get_config(winid), 0),
+      true
+    )
 
     vim.cmd("normal! L")
     hud.dodge()
@@ -390,7 +447,10 @@ describe("hud window", function()
 
     vim.cmd("normal! H")
     hud.dodge()
-    MiniTest.expect.equality(bottom_of(vim.api.nvim_win_get_config(winid), 0), true)
+    MiniTest.expect.equality(
+      hud_at_bottom(vim.api.nvim_win_get_config(winid), 0),
+      true
+    )
   end)
 
   describe("prefix", function()
@@ -451,6 +511,11 @@ describe("hud window", function()
       press("t")
       local winid = require("radar.data.state").get_tabs_winid()
       MiniTest.expect.equality(vim.api.nvim_win_get_height(winid), hud_height)
+      MiniTest.expect.equality(vim.wo[winid].winbar, " %#RadarHudTitle#Tabs")
+      MiniTest.expect.equality(
+        vim.api.nvim_win_get_config(winid).border[2],
+        { "·", "RadarHudRule" }
+      )
       require("radar.ui.tabs").close()
     end)
 
@@ -490,13 +555,14 @@ describe("hud window", function()
       MiniTest.expect.equality(vim.api.nvim_get_current_win(), edit_win)
       MiniTest.expect.equality(win_config.relative, "win")
       MiniTest.expect.equality(win_config.win, pane)
-      MiniTest.expect.equality(win_config.border, "none")
+      MiniTest.expect.equality(win_config.border[2], { "·", "RadarHudRule" })
+      MiniTest.expect.equality(vim.wo[edit_win].winbar, " %#RadarHudTitle#Locks")
       MiniTest.expect.equality(win_config.focusable, true)
       MiniTest.expect.equality(win_config.zindex > 10, true)
       MiniTest.expect.equality(win_config.col, 0)
       MiniTest.expect.equality(win_config.width, vim.api.nvim_win_get_width(pane))
       MiniTest.expect.equality(win_config.height, 3)
-      MiniTest.expect.equality(bottom_of(win_config, pane), true)
+      MiniTest.expect.equality(hud_at_bottom(win_config, pane), true)
       MiniTest.expect.equality(vim.wo[edit_win].winblend, 0)
       MiniTest.expect.equality(hud.get_winid(), nil)
 

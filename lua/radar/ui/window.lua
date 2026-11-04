@@ -1,5 +1,19 @@
 local M = {}
 
+local fillchar = require("radar.config").default.hud.fillchar
+
+---Store the character the rule of bottom floats repeats
+---@param config Radar.Config
+function M.setup(config)
+  fillchar = config.hud.fillchar
+end
+
+---The rule above a bottom float's header, the only edge of the float
+---@return table
+function M.rule_border()
+  return { "", { fillchar, "RadarHudRule" }, "", "", "", "", "", "" }
+end
+
 ---Base window presets (not user-configurable)
 ---@type table<string, fun(config: Radar.Config): vim.api.keyset.win_config>
 local BASE_PRESETS = {
@@ -223,8 +237,16 @@ function M.active_pane()
   return vim.fn.win_getid(vim.fn.winnr("#"))
 end
 
----Rows a bottom float leaves free in a pane: with cmdheight 0, the bottom pane
----keeps one row for the command line, so opening it does not shift the float
+---Text rows of a pane. A float's `row` with `relative = "win"` counts from below
+---the winbar, and `nvim_win_get_height` includes it.
+---@param pane integer
+---@return integer
+function M.text_height(pane)
+  return vim.fn.getwininfo(pane)[1].height
+end
+
+---Rows a bottom float keeps blank under its text: with cmdheight 0, the command
+---line takes the bottom pane's last row, so opening it does not shift the text
 ---@param pane integer
 ---@return integer
 function M.cmdline_reserve(pane)
@@ -239,24 +261,45 @@ end
 
 ---Float config at the bottom of a pane, as wide as the pane: where the HUD sits
 ---@param pane integer
----@param lines integer content height, at most the pane
----@param min_height? integer fewest rows to take, 3 by default
+---@param lines integer content height
+---@param min_height? integer fewest rows with the header, 3 by default
 ---@return vim.api.keyset.win_config
 function M.pane_bottom(pane, lines, min_height)
-  local pane_height = vim.api.nvim_win_get_height(pane) - M.cmdline_reserve(pane)
-  local height = math.min(math.max(lines, min_height or 3), pane_height)
+  local pane_height = M.text_height(pane)
+  local text = math.max(lines + 1, min_height or 3)
+  local height = math.min(text + M.cmdline_reserve(pane), pane_height - 1)
   return {
     relative = "win",
     win = pane,
-    row = pane_height - height,
+    row = pane_height - height - 1,
     col = 0,
     width = vim.api.nvim_win_get_width(pane),
     height = height,
     style = "minimal",
-    border = "none",
+    border = M.rule_border(),
     focusable = true,
     zindex = 20,
   }
+end
+
+---Paint a bottom float: opaque on the panel background, with `title` as its
+---header
+---@param winid integer
+---@param title? string
+function M.paint(winid, title)
+  vim.api.nvim_set_option_value(
+    "winhighlight",
+    "NormalFloat:RadarHud,WinBar:RadarHud,WinBarNC:RadarHud,LineNr:RadarHudLineNr",
+    { win = winid }
+  )
+  vim.api.nvim_set_option_value("winblend", 0, { win = winid })
+  if title then
+    vim.api.nvim_set_option_value(
+      "winbar",
+      " %#RadarHudTitle#" .. title,
+      { win = winid }
+    )
+  end
 end
 
 return M

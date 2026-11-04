@@ -114,6 +114,7 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 | `hud.max_locks`                                     | `5`                                   | Locks shown in the Lock HUD                                                     |
 | `hud.max_recent`                                    | `3`                                   | Recent files shown in the Lock HUD                                              |
 | `hud.breakpoint`                                    | `120`                                 | Pane width from which the Lock HUD shows locks and recent files side by side    |
+| `hud.fillchar`                                      | `"·"`                                 | Character of the rule above the Lock HUD, Tab HUD and lock editor               |
 | `tabs.auto_close`                                   | `true`                                | Close tabs window after selecting                                               |
 | `file_float.win_preset`                             | `"center_narrow"`                     | Window preset for the floating file view (`<C-f>` in the lock editor)           |
 | `persist.path`                                      | `stdpath("data")/radar/data.json`     | Persistence file location                                                       |
@@ -144,12 +145,12 @@ For full type definitions see [`config.types.lua`](lua/radar/config.types.lua). 
 
 **Lock HUD:**
 
-The Lock HUD sits at the bottom of the active pane, as wide as the pane, and follows you between splits. It shows the file you are in (`%`, highlighted), the alternative file, up to 5 locks and 3 recent files with the keys that reach them after `<space>`. A locked current file is highlighted; the current file never takes a recent slot. From a pane width of 120 (`hud.breakpoint`) it uses two columns: the alternative file next to the current file, recent files next to the locks. It moves to the top of the pane while your cursor line runs under it and hides while the Tab HUD or the lock editor is open and when there is nothing to show.
+The Lock HUD sits at the bottom of the active pane, as wide as the pane, and follows you between splits. It sits on the panel background (`NormalFloat`, or `RadarHud`), under a dotted rule in the `Title` color (`hud.fillchar`). The first row is the file you are in (`%`, bold). Below come the alternative file and, under their headings, up to 5 locks and 3 recent files, each with the key that reaches it after `<space>`. A locked current file is highlighted; the current file never takes a recent slot. From a pane width of 120 (`hud.breakpoint`) it uses two columns: the alternative file joins the current file in the header row, recent files sit next to the locks. It moves to the top of the pane while your cursor line runs under it and hides while the Tab HUD or the lock editor is open and when there is nothing to show.
 
 To keep the Lock HUD at the bottom instead, set `hud = { dodge = false }` and raise `scrolloff` to at least the Lock HUD's height, so the cursor never reaches its rows. On Neovim nightly, `scrolloffpad` keeps that padding at the end of a file too:
 
 ```lua
-vim.o.scrolloff = 11      -- the HUD at its tallest: 5 locks, 3 recent files
+vim.o.scrolloff = 13      -- the HUD at its tallest: 5 locks, 3 recent files
 vim.o.scrolloffpad = 99   -- Neovim nightly
 require("radar").setup({ hud = { dodge = false } })
 ```

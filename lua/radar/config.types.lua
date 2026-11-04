@@ -25,6 +25,7 @@
 ---@field max_locks integer Locks shown in the HUD
 ---@field max_recent integer Recent files shown in the HUD
 ---@field breakpoint integer Pane width from which locks and recent files sit side by side
+---@field fillchar string One-cell character of the rule above the bottom floats
 
 ---@class Radar.Config.RadarEdit
 ---@field win_opts table<string, any> Window-local options (see |options-list|)

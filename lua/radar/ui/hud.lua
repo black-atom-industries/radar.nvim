@@ -4,6 +4,31 @@ local path_utils = require("radar.path")
 
 local ns = vim.api.nvim_create_namespace("radar.hud")
 
+local COLUMN_SEPARATOR = "│"
+
+---Define the groups a colorscheme left undefined
+local function setup_highlights()
+  local function attr(group, key)
+    return vim.api.nvim_get_hl(0, { name = group, link = false })[key]
+  end
+  local function define(name, spec)
+    spec.default = true
+    vim.api.nvim_set_hl(0, name, spec)
+  end
+
+  define("RadarHud", { link = "NormalFloat" })
+  local panel = attr("RadarHud", "bg")
+  local fg = attr("RadarHud", "fg")
+
+  define("RadarHudRule", { fg = attr("Title", "fg"), bg = panel })
+  define("RadarHudTitle", { fg = fg, bg = panel, bold = true })
+  define("RadarHudCurrent", { fg = fg, bold = true })
+  define("RadarHudSection", { link = "Title" })
+  -- Without their theme background, so they sit on the panel.
+  define("RadarHudLineNr", { fg = attr("LineNr", "fg") })
+  define("RadarHudSeparator", { fg = attr("WinSeparator", "fg") })
+end
+
 ---@type Radar.Config?
 local _config = nil
 
@@ -15,7 +40,7 @@ local _enabled = nil
 ---@field bufnr integer
 ---@field winid integer?
 ---@field anchor integer? pane the HUD sits in
----@field height integer
+---@field height integer text rows
 ---@field corner "top" | "bottom"?
 
 ---@type table<integer, Radar.Hud>
@@ -55,8 +80,8 @@ end
 ---@field text string
 ---@field highlights { col_start: integer, col_end: integer, hl_group: string }[]
 
----Build the HUD lines and highlights: one column, or two side by side from
----`hud.breakpoint` on
+---Build the HUD lines and highlights, the first line being the header row: one
+---column, or two side by side from `hud.breakpoint` on
 ---@param config Radar.Config
 ---@param data Radar.HudData
 ---@param max_width integer
@@ -67,28 +92,63 @@ function M.build(config, data, max_width)
   local col_width = columns and math.floor(max_width / 2) or max_width
   local blank = { text = "", highlights = {} }
 
+  -- The left column ends one cell early for the separator.
+  local cell_width = columns and col_width - 1 or col_width
+
+  ---@param label string
+  ---@param target string?
+  ---@param hl_group string? highlight of the path
   ---@return Radar.HudCell
-  local function cell(label, target, current)
+  local function cell(label, target, hl_group)
     local prefix = " " .. label .. "  "
-    local avail = col_width - vim.fn.strdisplaywidth(prefix) - 1
+    local avail = cell_width - vim.fn.strdisplaywidth(prefix) - 1
     local text = target and fit(path_utils.display(target), avail) or "-"
     local hls = { { col_start = 1, col_end = 1 + #label, hl_group = "@keyword" } }
-    if not target or current then
+    if not target or hl_group then
       table.insert(hls, {
         col_start = #prefix,
         col_end = #prefix + #text + 1,
-        hl_group = target and current and "Title" or "Comment",
+        hl_group = target and hl_group or "Comment",
       })
     end
     return { text = prefix .. text .. " ", highlights = hls }
   end
 
+  ---@param title string
+  ---@return Radar.HudCell
+  local function heading(title)
+    return {
+      text = " " .. title,
+      highlights = {
+        { col_start = 1, col_end = 1 + #title, hl_group = "RadarHudSection" },
+      },
+    }
+  end
+
   ---@param left Radar.HudCell
   ---@param right Radar.HudCell?
-  local function row(left, right)
+  ---@param separator string?
+  local function row(left, right, separator)
     local line, placed = left.text, { { left, 0 } }
     if right then
-      line = line .. string.rep(" ", col_width - vim.fn.strdisplaywidth(line))
+      line = line .. string.rep(" ", cell_width - vim.fn.strdisplaywidth(line))
+      local sep_col = #line
+      line = line .. (separator or " ")
+      if separator then
+        table.insert(placed, {
+          {
+            text = separator,
+            highlights = {
+              {
+                col_start = 0,
+                col_end = #separator,
+                hl_group = "RadarHudSeparator",
+              },
+            },
+          },
+          sep_col,
+        })
+      end
       table.insert(placed, { right, #line })
       line = line .. right.text
     end
@@ -122,14 +182,19 @@ function M.build(config, data, max_width)
     return { lines = lines, highlights = highlights }
   end
 
-  local current = cell("%", data.current ~= "" and data.current or nil, true)
+  local current =
+    cell("%", data.current ~= "" and data.current or nil, "RadarHudCurrent")
   local alt = cell(config.keys.alternative, data.alt)
 
   local lock_cells = {}
   for _, lock in ipairs(locks) do
     table.insert(
       lock_cells,
-      cell(lock.label, lock.filename, lock.filename == data.current_lock)
+      cell(
+        lock.label,
+        lock.filename,
+        lock.filename == data.current_lock and "Title" or nil
+      )
     )
   end
 
@@ -145,19 +210,32 @@ function M.build(config, data, max_width)
   if columns then
     row(current, alt)
     local count = math.max(#lock_cells, #recent_cells)
+    local both = #lock_cells > 0 and #recent_cells > 0
+    local separator = both and COLUMN_SEPARATOR or nil
     if count > 0 then
-      table.insert(lines, "")
+      row(
+        #lock_cells > 0 and heading("Locks") or blank,
+        #recent_cells > 0 and heading("Recent") or nil,
+        separator
+      )
       for i = 1, count do
-        row(lock_cells[i] or blank, recent_cells[i])
+        row(
+          lock_cells[i] or blank,
+          recent_cells[i] or (both and blank or nil),
+          separator
+        )
       end
     end
   else
     row(current)
     row(alt)
-    for _, section in ipairs({ lock_cells, recent_cells }) do
-      if #section > 0 then
-        table.insert(lines, "")
-        for _, c in ipairs(section) do
+    for _, section in ipairs({
+      { title = "Locks", cells = lock_cells },
+      { title = "Recent", cells = recent_cells },
+    }) do
+      if #section.cells > 0 then
+        row(heading(section.title))
+        for _, c in ipairs(section.cells) do
           row(c)
         end
       end
@@ -234,16 +312,24 @@ local function anchor_window(hud)
   return is_pane(previous) and previous or nil
 end
 
----Float position at the top or bottom edge of a pane
+---Float position and height at the top or bottom edge of a pane. At the bottom
+---the float reaches down to the pane's edge, blank below its text.
 ---@param anchor integer
 ---@param corner "top" | "bottom"
----@param height integer
+---@param height integer text rows
 ---@return vim.api.keyset.win_config
 local function position(anchor, corner, height)
-  local bottom = vim.api.nvim_win_get_height(anchor)
-    - require("radar.ui.window").cmdline_reserve(anchor)
-  local row = corner == "top" and 0 or math.max(bottom - height, 0)
-  return { relative = "win", win = anchor, row = row, col = 0 }
+  local config =
+    { relative = "win", win = anchor, row = 0, col = 0, height = height }
+  if corner == "bottom" then
+    local reserve = require("radar.ui.window").cmdline_reserve(anchor)
+    config.row = math.max(
+      require("radar.ui.window").text_height(anchor) - reserve - height - 1,
+      0
+    )
+    config.height = height + reserve
+  end
+  return config
 end
 
 ---@param hud Radar.Hud?
@@ -282,6 +368,12 @@ end
 ---@param config Radar.Config
 function M.setup(config)
   _config = config
+  setup_highlights()
+  vim.api.nvim_create_autocmd("ColorScheme", {
+    group = vim.api.nvim_create_augroup("RadarHudUI", { clear = true }),
+    callback = setup_highlights,
+    desc = "Rebuild Lock HUD highlights on theme change",
+  })
 end
 
 ---Rebuild and show the HUD of the current tabpage, or hide it
@@ -314,7 +406,7 @@ function M.refresh()
   local content = M.build(config, gather(), width)
   if
     #content.lines == 0
-    or vim.api.nvim_win_get_height(anchor) < #content.lines + 2
+    or require("radar.ui.window").text_height(anchor) < #content.lines + 3
   then
     hide(hud)
     return
@@ -341,7 +433,6 @@ function M.refresh()
   local win_config =
     vim.tbl_extend("force", position(anchor, "bottom", hud.height), {
       width = width,
-      height = hud.height,
     })
   if is_open(hud) then
     vim.api.nvim_win_set_config(hud.winid, win_config)
@@ -351,18 +442,13 @@ function M.refresh()
       false,
       vim.tbl_extend("force", win_config, {
         style = "minimal",
-        border = "none",
+        border = require("radar.ui.window").rule_border(),
         focusable = false,
         noautocmd = true,
         zindex = 10,
       })
     )
-    vim.api.nvim_set_option_value(
-      "winhighlight",
-      "Normal:NormalFloat",
-      { win = hud.winid }
-    )
-    vim.api.nvim_set_option_value("winblend", 0, { win = hud.winid })
+    require("radar.ui.window").paint(hud.winid)
   end
   hud.corner = "bottom"
   M.dodge()
@@ -385,9 +471,10 @@ function M.dodge()
   end
 
   local under_bottom = vim.fn.winline()
-    > vim.api.nvim_win_get_height(hud.anchor)
+    > require("radar.ui.window").text_height(hud.anchor)
       - require("radar.ui.window").cmdline_reserve(hud.anchor)
       - hud.height
+      - 1
   local corner = under_bottom and "top" or "bottom"
   if corner == hud.corner then
     return
@@ -420,7 +507,7 @@ function M.get_winid()
   return is_open(hud) and hud.winid or nil
 end
 
----Rows the HUD of the current tabpage takes, or last took before it hid
+---Text rows of the HUD of the current tabpage, now or before it last hid
 ---@return integer
 function M.get_height()
   local hud = huds[vim.api.nvim_get_current_tabpage()]

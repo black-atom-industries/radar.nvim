@@ -334,7 +334,7 @@ function M.open(config)
   state.set_tabs_bufid(bufnr)
 
   local winid = vim.api.nvim_open_win(bufnr, true, win_config)
-  vim.api.nvim_set_option_value("winblend", 0, { win = winid })
+  window.paint(winid, "Tabs")
 
   -- Store window id
   state.set_tabs_winid(winid)
