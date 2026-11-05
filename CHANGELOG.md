@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.9.0](https://github.com/black-atom-industries/radar.nvim/compare/v0.8.0...v0.9.0) (2026-11-05)
+
+
+### Features
+
+* **ui:** change HUD fill character to a hyphen ([236e2fa](https://github.com/black-atom-industries/radar.nvim/commit/236e2fa51e00c05ec2e7a7f74ee23fb53def4023))
+* **ui:** restyle the bottom floats as a panel under a dotted rule ([c378798](https://github.com/black-atom-industries/radar.nvim/commit/c3787981b62f7f2170ccd27a224365e9506902fe))
+* **ui:** show locks and recent files side by side in wide panes ([21d74b0](https://github.com/black-atom-industries/radar.nvim/commit/21d74b01f81c03f0bcb0ba4d8a92af8192721f72))
+
+
+### Bug Fixes
+
+* **ui:** keep the Lock HUD in one column below 120 columns ([6583f46](https://github.com/black-atom-industries/radar.nvim/commit/6583f464ff5bcc7452704742c396145f99233cbc))
+* **ui:** keep the Lock HUD on the file pane while a special buffer has focus ([f568115](https://github.com/black-atom-industries/radar.nvim/commit/f5681152fb7153e8e9f9a1258938f39fd395b614))
+
 ## [0.8.0](https://github.com/black-atom-industries/radar.nvim/compare/v0.7.0...v0.8.0) (2026-10-18)
 
 
