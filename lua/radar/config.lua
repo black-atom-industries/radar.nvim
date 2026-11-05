@@ -37,7 +37,7 @@ M.default = {
     max_locks = 5,
     max_recent = 3,
     breakpoint = 120,
-    fillchar = "·",
+    fillchar = "-",
   },
 
   -- Lock label editor window
